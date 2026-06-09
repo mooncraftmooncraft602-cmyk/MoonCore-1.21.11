@@ -51,6 +51,9 @@ permissions:
       mooncore.msg.use: true
       mooncore.warp.use: true
       mooncore.kit.use: true
+      mooncore.shop.use: true
+      mooncore.ah.use: true
+      mooncore.spawner.use: true
 
   mooncore.admin:
     description: Accès administrateur (gestion in-game complète)
@@ -73,6 +76,7 @@ permissions:
       mooncore.admin.ai: true
       mooncore.admin.debug: true
       mooncore.admin.reload: true
+      mooncore.admin.plugins: true
       mooncore.admin.enderchest: true
       mooncore.vanish.use: true
       mooncore.admin.clearlag: true
@@ -103,6 +107,9 @@ permissions:
   mooncore.msg.use: { default: true }
   mooncore.warp.use: { default: true }
   mooncore.kit.use: { default: true }
+  mooncore.shop.use: { default: true }
+  mooncore.ah.use: { default: true }
+  mooncore.spawner.use: { default: true }
   mooncore.admin.spawn: { default: op }
 
   # ----- Admin (feuilles) -----
@@ -123,6 +130,7 @@ permissions:
   mooncore.admin.ai: { default: op }
   mooncore.admin.debug: { default: op }
   mooncore.admin.reload: { default: op }
+  mooncore.admin.plugins: { default: op }
   mooncore.admin.enderchest: { default: op }
   mooncore.vanish.use: { default: op }
   mooncore.vanish.see: { default: op }
@@ -133,6 +141,8 @@ permissions:
   mooncore.god.use: { default: op }
   mooncore.repair.use: { default: op }
   mooncore.admin.warp: { default: op }
+  mooncore.admin.shop: { default: op }
+  mooncore.spawner.mine: { default: op }
 
   # ----- Bypass (staff de confiance) -----
   mooncore.bypass.antifarm: { default: false }

@@ -99,6 +99,13 @@ public final class RigInstance {
         }
     }
 
+    /** UUID des BlockDisplay (bones) — fournis au mod compagnon pour masquer le fallback vanilla. */
+    public java.util.List<java.util.UUID> displayUuids() {
+        java.util.List<java.util.UUID> out = new java.util.ArrayList<>();
+        for (BlockDisplay d : displays.values()) if (d != null) out.add(d.getUniqueId());
+        return out;
+    }
+
     /** Retire toutes les entités du rig. */
     public void remove() {
         for (BlockDisplay d : displays.values()) if (d != null && d.isValid()) d.remove();

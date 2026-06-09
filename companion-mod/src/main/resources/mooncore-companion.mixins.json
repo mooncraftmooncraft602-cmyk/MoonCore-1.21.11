@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "package": "com.mooncore.companion.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MoonCoreHideBlockDisplayMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

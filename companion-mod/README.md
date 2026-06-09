@@ -1,42 +1,49 @@
-# MoonCore Companion (mod client Fabric — OPTIONNEL)
+# MoonCore Companion
 
-Mod **client uniquement** et **facultatif** pour les serveurs MoonCore.
-Il débloque, pour les joueurs **Java** qui l'installent, les outils de création avancés
-(studio 2D/3D, modèles, animations). **Personne n'est obligé de l'avoir** :
-- Java vanilla → jouent normalement, sans les outils avancés ;
-- Bedrock (Geyser) → jouent normalement, sans les outils avancés ;
-- Java + ce mod → accès aux fonctionnalités avancées.
+Optional Fabric client mod for MoonCore servers.
 
-## Comment ça marche
-Le mod et le plugin se parlent via le canal de *plugin message* `mooncore:companion`.
-À la connexion, le mod envoie un `HELLO` ; le plugin (module `companion`) répond `WELCOME`
-avec un bitmask de capacités et retient le joueur comme « moddé ». Côté plugin, n'importe
-quel module peut réserver une fonctionnalité Java-only via
-`CompanionModule.hasCompanion(player)`.
+The server still works for Java vanilla and Bedrock players. Players with this mod get the v2
+`mooncore:companion` protocol: chunked rig/animation payloads, client-side skeletal playback, armor
+metadata storage, and client-side hiding of vanilla fallback BlockDisplay bones when the server
+sends their UUIDs.
 
-Aucun impact sur les autres joueurs : un serveur non-MoonCore ignore simplement le `HELLO`.
+## Build
 
-## Construire le mod
-Prérequis : JDK 21. Le projet utilise **Fabric Loom** (Gradle).
+Requires JDK 21.
 
 ```bash
 cd companion-mod
-./gradlew build      # (Windows : gradlew.bat build)
+gradlew.bat build
 ```
-Le `.jar` final est dans `companion-mod/build/libs/`. À déposer dans le dossier `mods/`
-du client (avec **Fabric Loader** + **Fabric API**), Minecraft **1.21.1**.
 
-> Les versions exactes (yarn, loader, fabric-api) sont dans `gradle.properties` ; ajuste-les
-> au besoin depuis https://fabricmc.net/develop/ . Si tu n'as pas le wrapper Gradle,
-> lance `gradle wrapper` une fois (Gradle 8.10+).
+This workspace currently has no Gradle wrapper files checked into `companion-mod/`; use an installed
+Gradle or generate the wrapper once if needed. The default build target is Minecraft `1.21.11` with
+Yarn `1.21.11+build.6` and Fabric API `0.141.3+1.21.11`.
 
-## État (Phase 1)
-- ✅ Détection serveur ↔ client (HELLO/WELCOME), capacités annoncées.
-- ✅ Touche **M** → écran « Studio » (placeholder).
-- ⏳ Phase 2 : éditeur de texture 2D natif (souris, calques, timeline d'animation),
-  puis modèles 3D et rendu d'entités custom, pilotés par le serveur via le même canal.
+The mod metadata accepts Minecraft `>=1.21.1 <=1.21.11`. To test a 1.21.1 build, override the
+properties:
 
-## Protocole (canal `mooncore:companion`)
-- Client → serveur : `[0x01, protocole]` (HELLO)
-- Serveur → client : `[0x02, protocole, capacités]` (WELCOME)
-  - capacités (bitmask) : `0x01` studio 2D, `0x02` modèles 3D, `0x04` entités.
+```bash
+gradle build -Pminecraft_version=1.21.1 -Pyarn_mappings=1.21.1+build.3 -Pfabric_version=0.105.0+1.21.1
+```
+
+## Protocol
+
+Legacy v1:
+
+- C2S `HELLO`: `[0x01, protocol]`
+- S2C `WELCOME`: `[0x02, protocol, capabilities]`
+
+v2 payloads are chunked S2C messages:
+
+- `0x10 PUSH_RIG`
+- `0x11 PUSH_ANIM`
+- `0x12 PLAY_ANIM`
+- `0x13 PUSH_ARMOR`
+
+Each chunk starts with:
+
+```text
+opcode u8, protocol u8, transferId uuid(2 longs), chunkIndex u16,
+chunkCount u16, totalLength i32, chunkLength i32, bytes[chunkLength]
+```

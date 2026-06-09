@@ -90,7 +90,29 @@ public final class ModelEngineModule extends AbstractModule {
         if (anim != null) r.play(anim);
         rigs.put(owner, r);
         hosts.put(owner, host);
+        pushToCompanions(host, model, anim, r); // tier ultra : rendu GeckoLib-like pour les joueurs avec le mod
         return r;
+    }
+
+    /**
+     * Pousse le rig + animations aux joueurs qui ont le mod compagnon v2 (rendu haute qualité,
+     * masquage du fallback BlockDisplay). No-op pour les joueurs vanilla. Cf. docs/HANDOFF-AI3.md.
+     */
+    private void pushToCompanions(org.bukkit.entity.Entity host, RigModel model, String anim, RigInstance rig) {
+        var comp = plugin().moduleManager().get(com.mooncore.modules.companion.CompanionModule.class);
+        if (comp == null) return;
+        String play = anim != null ? anim : defaultAnim(model);
+        java.util.List<UUID> bones = rig.displayUuids();
+        for (Player pl : plugin().getServer().getOnlinePlayers()) {
+            if (!comp.hasProtocolV2(pl)) continue;
+            try {
+                comp.sendRig(pl, model);
+                for (Animation a : model.animations.values()) comp.sendAnim(pl, model.id, a);
+                comp.playAnim(pl, host.getUniqueId(), model.id, play, true, bones);
+            } catch (Throwable t) {
+                log().warn("[ModelEngine] Envoi compagnon échoué pour " + pl.getName() + " : " + t.getMessage());
+            }
+        }
     }
 
     /**
@@ -138,6 +160,18 @@ public final class ModelEngineModule extends AbstractModule {
         if (model == null) return false;
         spawn(p.getUniqueId(), model, frontOf(p), defaultAnim(model));
         return true;
+    }
+
+    /** Noms de rigs disponibles : {@code golem} (intégré) + chaque {@code models/<x>.bbmodel}. */
+    public java.util.List<String> availableRigs() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        out.add("golem");
+        java.io.File dir = new java.io.File(plugin().getDataFolder(), "models");
+        java.io.File[] files = dir.listFiles((d, n) -> n.toLowerCase(java.util.Locale.ROOT).endsWith(".bbmodel"));
+        if (files != null) for (java.io.File f : files) {
+            out.add(f.getName().substring(0, f.getName().length() - ".bbmodel".length()));
+        }
+        return out;
     }
 
     /** Résout un rig par nom : {@code golem} (intégré) ou {@code models/<name>.bbmodel}. null si introuvable. */

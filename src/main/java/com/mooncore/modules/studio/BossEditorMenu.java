@@ -3,8 +3,6 @@ package com.mooncore.modules.studio;
 import com.mooncore.MoonCore;
 import com.mooncore.modules.boss.BossDefinition;
 import com.mooncore.modules.boss.BossManagerModule;
-import com.mooncore.modules.customitem.CustomItemManagerModule;
-import com.mooncore.modules.customitem.paint.BossPaintTarget;
 import com.mooncore.util.ChatInput;
 import com.mooncore.util.Text;
 import org.bukkit.Bukkit;
@@ -38,16 +36,6 @@ public final class BossEditorMenu implements StudioMenu {
         p.openInventory(menu.inv);
     }
 
-    static void paint(MoonCore plugin, ChatInput chat, Player p, String id) {
-        CustomItemManagerModule ci = plugin.moduleManager().get(CustomItemManagerModule.class);
-        BossManagerModule boss = plugin.moduleManager().get(BossManagerModule.class);
-        if (ci == null || boss == null) return;
-        p.closeInventory();
-        ci.paintManager().open(p, new BossPaintTarget(boss, id), 16, null, () -> {
-            if (p.isOnline()) open(plugin, chat, p, id);
-        });
-    }
-
     private void build() {
         StudioItems.fill(inv);
         BossDefinition def = def();
@@ -55,14 +43,19 @@ public final class BossEditorMenu implements StudioMenu {
             inv.setItem(22, StudioItems.btn(Material.BARRIER, "<red>Boss introuvable"));
             return;
         }
+        var me = plugin.moduleManager().get(com.mooncore.modules.model.ModelEngineModule.class);
+        String model = me == null ? null : me.bossRigName(def.id());
         inv.setItem(4, StudioItems.btn(Material.WITHER_SKELETON_SKULL, "<red>" + def.id(),
                 "<gray>type: <white>" + def.entityType().name(),
                 "<gray>PV: <white>" + (int) def.maxHealth() + " <gray>dégâts: <white>" + def.damage(),
-                "<gray>texture: <white>" + (def.textureKey() == null ? "aucune" : def.textureKey())));
+                "<gray>modèle 3D: <white>" + (model == null ? "aucun (vanilla)" : model)));
 
         inv.setItem(10, StudioItems.btn(Material.NAME_TAG, "<yellow>Nom", "<gray>clic = changer"));
         inv.setItem(11, StudioItems.btn(Material.SPAWNER, "<green>Spawn test"));
-        inv.setItem(12, StudioItems.btn(Material.BRUSH, "<light_purple>Texture boss"));
+        inv.setItem(12, StudioItems.btn(Material.ARMOR_STAND, "<light_purple>Modèle 3D animé",
+                "<gray>un boss = un VRAI modèle 3D animé (pas une texture plate)",
+                "<gray>golem intégré ou import BlockBench",
+                me == null ? "<dark_gray>(moteur de modèles : build 1.21.11)" : "<dark_gray>clic = choisir le modèle"));
         inv.setItem(13, StudioItems.btn(Material.MAP, "<green>Rebuild pack"));
         inv.setItem(14, StudioItems.btn(Material.BEACON, "<aqua>Couleur barre : <white>" + def.barColor(), "<gray>clic = suivant"));
         inv.setItem(15, StudioItems.btn(Material.CHEST, "<gold>Drops du boss", "<gray>choisir les objets lâchés + leur chance"));
@@ -93,7 +86,7 @@ public final class BossEditorMenu implements StudioMenu {
         switch (slot) {
             case 10 -> askName(p, module);
             case 11 -> module.spawn(id, p.getLocation());
-            case 12 -> paint(plugin, chat, p, id);
+            case 12 -> BossModelMenu.open(plugin, chat, p, id);
             case 13 -> StudioItems.rebuildAndResend(plugin, p);
             case 14 -> { module.setField(id, "bar-color", nextBar(def.barColor())); build(); }
             case 15 -> BossDropMenu.open(plugin, chat, p, id, 0);

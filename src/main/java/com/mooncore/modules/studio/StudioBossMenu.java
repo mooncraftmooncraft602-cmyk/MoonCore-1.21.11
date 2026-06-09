@@ -110,7 +110,7 @@ public final class StudioBossMenu implements StudioMenu {
         int bossIndex = page * StudioItems.CONTENT_SLOTS.length + idx;
         if (bossIndex >= ids.size()) return;
         String id = ids.get(bossIndex);
-        if (shiftClick) BossEditorMenu.paint(plugin, chat, p, id);
+        if (shiftClick) BossModelMenu.open(plugin, chat, p, id);
         else if (rightClick) module.spawn(id, p.getLocation());
         else BossEditorMenu.open(plugin, chat, p, id);
     }

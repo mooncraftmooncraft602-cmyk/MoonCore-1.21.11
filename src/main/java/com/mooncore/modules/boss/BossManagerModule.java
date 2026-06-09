@@ -54,6 +54,8 @@ public final class BossManagerModule extends AbstractModule {
     private final Map<String, BossDefinition> registry = new ConcurrentHashMap<>();
     private final Map<String, File> definitionFiles = new ConcurrentHashMap<>();
     private final Map<UUID, ActiveBoss> active = new ConcurrentHashMap<>();
+    /** Drops VANILLA (et items custom construits) par boss, persistés dans boss-drops.yml ; lâchés à la mort. */
+    private final Map<String, List<org.bukkit.inventory.ItemStack>> vanillaDrops = new ConcurrentHashMap<>();
     private NamespacedKey bossKey;
     private BukkitTask tickTask;
 
@@ -61,6 +63,7 @@ public final class BossManagerModule extends AbstractModule {
     protected void onEnable() {
         this.bossKey = new NamespacedKey(plugin(), "boss");
         loadBosses();
+        loadVanillaDrops();
         registerListener(new BossListener(this));
         plugin().rootCommand().register(new BossSubCommand(this));
         // Boucle d'IA throttlée (toutes les 10 ticks = 0,5 s).
@@ -464,8 +467,17 @@ public final class BossManagerModule extends AbstractModule {
         ActiveBoss ab = active.remove(entityId);
         if (ab == null) return;
         ab.bar().removeAll();
+        clearRig(entityId);
         BossDefinition def = ab.definition();
         UUID top = ab.topDamager();
+
+        // Drops VANILLA configurés (lâchés au sol à la position du boss).
+        org.bukkit.Location loc = ab.entity().getLocation();
+        if (loc.getWorld() != null) {
+            for (org.bukkit.inventory.ItemStack it : vanillaDrops(def.id())) {
+                loc.getWorld().dropItemNaturally(loc, it.clone());
+            }
+        }
 
         eventBus().post(new BossDefeatedEvent(def.id(), top, Map.copyOf(ab.damageByPlayer())));
         Bukkit.broadcast(plugin().configManager().message("boss-defeated", "name", def.displayName()));
@@ -497,6 +509,48 @@ public final class BossManagerModule extends AbstractModule {
         File f = new File(plugin().getDataFolder(), "boss-textures");
         if (!f.exists()) f.mkdirs();
         return f;
+    }
+
+    // ---- Drops directs (vanilla ou items custom construits), persistés dans boss-drops.yml ----
+
+    public java.util.List<org.bukkit.inventory.ItemStack> vanillaDrops(String bossId) {
+        return vanillaDrops.getOrDefault(bossId.toLowerCase(Locale.ROOT), java.util.List.of());
+    }
+
+    public void addVanillaDrop(String bossId, org.bukkit.inventory.ItemStack item) {
+        if (item == null || item.getType().isAir()) return;
+        vanillaDrops.computeIfAbsent(bossId.toLowerCase(Locale.ROOT), k -> new java.util.ArrayList<>()).add(item.clone());
+        saveVanillaDrops();
+    }
+
+    public void clearVanillaDrops(String bossId) {
+        if (vanillaDrops.remove(bossId.toLowerCase(Locale.ROOT)) != null) saveVanillaDrops();
+    }
+
+    private File vanillaDropsFile() { return new File(plugin().getDataFolder(), "boss-drops.yml"); }
+
+    private void loadVanillaDrops() {
+        vanillaDrops.clear();
+        File f = vanillaDropsFile();
+        if (!f.isFile()) return;
+        var y = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(f);
+        for (String key : y.getKeys(false)) {
+            java.util.List<?> raw = y.getList(key);
+            if (raw == null) continue;
+            java.util.List<org.bukkit.inventory.ItemStack> items = new java.util.ArrayList<>();
+            for (Object o : raw) if (o instanceof org.bukkit.inventory.ItemStack is) items.add(is);
+            if (!items.isEmpty()) vanillaDrops.put(key.toLowerCase(Locale.ROOT), items);
+        }
+    }
+
+    private void saveVanillaDrops() {
+        try {
+            var y = new org.bukkit.configuration.file.YamlConfiguration();
+            vanillaDrops.forEach((id, list) -> y.set(id, list));
+            y.save(vanillaDropsFile());
+        } catch (Exception e) {
+            log().warn("[Boss] Sauvegarde boss-drops.yml échouée : " + e.getMessage());
+        }
     }
 
     public BossDefinition definition(String id) {

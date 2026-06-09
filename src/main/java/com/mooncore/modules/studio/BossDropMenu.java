@@ -49,10 +49,23 @@ public final class BossDropMenu implements StudioMenu {
     private void build() {
         StudioItems.fill(inv);
         inv.setItem(4, StudioItems.btn(Material.WITHER_SKELETON_SKULL, "<red>Drops de " + bossId,
-                "<gray>clic = (dé)activer le drop", "<gray>clic droit = changer la chance"));
+                "<gray>en bas : objets custom (clic = on/off, clic droit = chance)",
+                "<gray>en haut : ajoute n'importe quel objet (même vanilla)"));
+        // Ajout direct de l'objet tenu en main (vanilla OU custom) — résout « on ne peut pas ajouter de drop ».
+        inv.setItem(2, StudioItems.btn(Material.HOPPER, "<green>➕ Ajouter l'objet en main",
+                "<gray>tiens un objet (vanilla ou custom) et clique",
+                "<gray>→ il sera lâché par le boss à sa mort"));
+        var bm = boss();
+        int vanilla = bm == null ? 0 : bm.vanillaDrops(bossId).size();
+        inv.setItem(6, StudioItems.btn(Material.CHEST_MINECART, "<gold>Drops directs : <white>" + vanilla,
+                "<gray>objets ajoutés via « objet en main »",
+                "<dark_gray>clic droit = tout vider"));
         inv.setItem(8, StudioItems.btn(Material.OAK_DOOR, "<yellow>Retour"));
         CustomItemManagerModule module = items();
         if (module == null) { inv.setItem(22, StudioItems.btn(Material.BARRIER, "<red>custom-item inactif")); return; }
+        if (ids.isEmpty()) inv.setItem(31, StudioItems.btn(Material.WRITABLE_BOOK, "<yellow>Aucun objet custom",
+                "<gray>utilise « ➕ Ajouter l'objet en main » ci-dessus,",
+                "<gray>ou crée un objet : <white>/moon item create <id></white>"));
 
         int per = StudioItems.CONTENT_SLOTS.length;
         int start = page * per;
@@ -72,6 +85,12 @@ public final class BossDropMenu implements StudioMenu {
     @Override
     public void click(Player p, int slot, boolean rightClick, boolean shiftClick) {
         if (slot == 8) { BossEditorMenu.open(plugin, chat, p, bossId); return; }
+        if (slot == 2) { addHeld(p); return; }
+        if (slot == 6) {
+            var bm = boss();
+            if (bm != null && rightClick) { bm.clearVanillaDrops(bossId); p.sendMessage(Text.mm("<yellow>Drops directs vidés.")); build(); }
+            return;
+        }
         if (slot == 45) { if (page > 0) open(plugin, chat, p, bossId, page - 1); return; }
         if (slot == 53) { open(plugin, chat, p, bossId, page + 1); return; }
         CustomItemManagerModule module = items();
@@ -123,6 +142,29 @@ public final class BossDropMenu implements StudioMenu {
     private static int indexFor(int slot) {
         for (int i = 0; i < StudioItems.CONTENT_SLOTS.length; i++) if (StudioItems.CONTENT_SLOTS[i] == slot) return i;
         return -1;
+    }
+
+    /** Ajoute l'objet en main comme drop : item custom → règle boss:&lt;id&gt; ; sinon → drop direct (vanilla). */
+    private void addHeld(Player p) {
+        org.bukkit.inventory.ItemStack hand = p.getInventory().getItemInMainHand();
+        if (hand == null || hand.getType().isAir()) { p.sendMessage(Text.mm("<red>Tiens un objet en main.")); return; }
+        CustomItemManagerModule ci = items();
+        String customId = ci == null ? null : ci.factory().idOf(hand);
+        if (customId != null && ci.rawDef(customId) != null) {
+            setRule(ci, ci.rawDef(customId), 0.25, hand.getAmount()); // active le drop de l'objet custom
+            p.sendMessage(Text.mm("<green>Objet custom <white>" + customId + "</white> ajouté aux drops (25% ×" + hand.getAmount() + ")."));
+        } else {
+            var bm = boss();
+            if (bm == null) { p.sendMessage(Text.mm("<red>Module boss inactif.")); return; }
+            bm.addVanillaDrop(bossId, hand);
+            p.sendMessage(Text.mm("<green>Objet <white>" + hand.getType().name().toLowerCase(java.util.Locale.ROOT)
+                    + "</white> ×" + hand.getAmount() + " ajouté aux drops directs du boss."));
+        }
+        build();
+    }
+
+    private com.mooncore.modules.boss.BossManagerModule boss() {
+        return plugin.moduleManager().get(com.mooncore.modules.boss.BossManagerModule.class);
     }
 
     private CustomItemManagerModule items() { return plugin.moduleManager().get(CustomItemManagerModule.class); }

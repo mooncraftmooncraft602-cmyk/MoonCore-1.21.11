@@ -116,7 +116,7 @@ public final class StudioMobMenu implements StudioMenu {
         int mobIndex = page * StudioItems.CONTENT_SLOTS.length + idx;
         if (mobIndex >= ids.size()) return;
         String id = ids.get(mobIndex);
-        if (shiftClick) BossEditorMenu.paint(plugin, chat, p, id);
+        if (shiftClick) BossModelMenu.open(plugin, chat, p, id);
         else if (rightClick) module.spawn(id, p.getLocation());
         else BossEditorMenu.open(plugin, chat, p, id);
     }
