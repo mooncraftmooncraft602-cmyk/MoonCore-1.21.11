@@ -21,6 +21,7 @@ import java.util.List;
 public final class ModelEditorSession {
 
     private final EditableRig rig;
+    private final RigHistory history = new RigHistory();
     private Location anchor;
     private float scale = 1f;
     private RigInstance instance;
@@ -47,12 +48,74 @@ public final class ModelEditorSession {
         instance.spawn(anchor);
     }
 
-    /** Applique une édition sur le rig puis re-pousse l'affichage (idempotent vis-à-vis du monde). */
+    /** Applique une édition sur le rig (avec snapshot undo) puis re-pousse l'affichage. */
     public void edit(Runnable mutation) {
+        history.push(rig);
         mutation.run();
         if (selected != null && rig.bone(selected) == null) selected = null; // cube supprimé
         materialize();
     }
+
+    // ---- Outils hotbar (Étape D3) — opèrent sur le cube sélectionné ----
+
+    /** Déplace le cube sélectionné de {@code (dx,dy,dz)} (sneak = pas fin côté appelant). */
+    public boolean translateSelected(float dx, float dy, float dz) {
+        return withSelected(b -> ModelEditorTools.translate(b, dx, dy, dz));
+    }
+
+    public boolean movePivotSelected(float dx, float dy, float dz) {
+        return withSelected(b -> ModelEditorTools.movePivot(b, dx, dy, dz));
+    }
+
+    public boolean resizeSelected(float dx, float dy, float dz) {
+        return withSelected(b -> ModelEditorTools.resize(b, dx, dy, dz));
+    }
+
+    public boolean scaleSelected(float factor) {
+        return withSelected(b -> ModelEditorTools.scaleAroundPivot(b, factor));
+    }
+
+    public boolean deleteSelected() {
+        if (selected == null) return false;
+        edit(() -> rig.removeCube(selected));
+        return true;
+    }
+
+    /** Duplique le cube sélectionné (décalé d'un bloc) et sélectionne la copie. */
+    public boolean duplicateSelected() {
+        if (selected == null) return false;
+        history.push(rig);
+        EditableBone copy = ModelEditorTools.duplicate(rig, selected, 1f, 0f, 0f);
+        if (copy != null) selected = copy.name;
+        materialize();
+        return copy != null;
+    }
+
+    private boolean withSelected(java.util.function.Consumer<EditableBone> op) {
+        EditableBone b = selectedBone();
+        if (b == null) return false;
+        history.push(rig);
+        op.accept(b);
+        materialize();
+        return true;
+    }
+
+    public boolean undo() {
+        if (!history.undo(rig)) return false;
+        if (selected != null && rig.bone(selected) == null) selected = null;
+        materialize();
+        return true;
+    }
+
+    public boolean redo() {
+        if (!history.redo(rig)) return false;
+        if (selected != null && rig.bone(selected) == null) selected = null;
+        materialize();
+        return true;
+    }
+
+    public boolean canUndo() { return history.canUndo(); }
+    public boolean canRedo() { return history.canRedo(); }
 
     /** Déplace l'ancre (et le rig matérialisé) vers une nouvelle position. */
     public void moveTo(Location newAnchor) {

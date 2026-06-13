@@ -114,4 +114,13 @@ public final class EditableRig {
         r.animations.putAll(animations);
         return r;
     }
+
+    /** Restaure l'état depuis un instantané (pour undo/redo) : remplace bones + animations + id. */
+    public void copyFrom(EditableRig other) {
+        this.id = other.id;
+        bones.clear();
+        for (EditableBone b : other.bones) bones.add(b.copy());
+        animations.clear();
+        animations.putAll(other.animations);
+    }
 }
