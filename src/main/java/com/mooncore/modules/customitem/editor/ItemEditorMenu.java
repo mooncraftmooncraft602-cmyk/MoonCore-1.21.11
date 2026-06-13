@@ -86,6 +86,10 @@ public final class ItemEditorMenu implements InventoryHolder {
                 "<gold>Outil natif : " + onOff(d.hasToolComponent()),
                 "<gray>composant minecraft:tool (règles de minage)",
                 "<dark_gray>clic = éditer"));
+        inv.setItem(39, btn(Material.DAMAGED_ANVIL,
+                "<gold>Durabilité custom : <white>" + (d.maxDamage() > 0 ? d.maxDamage() : "vanilla"),
+                "<gray>composant minecraft:max_damage",
+                "<dark_gray>clic = définir · clic droit = vanilla (0)"));
         inv.setItem(33, btn(Material.CHEST, "<green>📦 Recevoir l'objet"));
         inv.setItem(34, btn(Material.STONECUTTER, "<yellow>Tailleur : " + cutLabel(d),
                 "<gray>clic = définir le résultat : <white>Material</white> ou <white>id d'item custom</white>",
@@ -124,6 +128,17 @@ public final class ItemEditorMenu implements InventoryHolder {
             case 27 -> ConsumableEditorMenu.open(module, chat, p, id);
             case 37 -> FoodEditorMenu.open(module, chat, p, id);
             case 38 -> ToolRulesMenu.open(module, chat, p, id);
+            case 39 -> {
+                if (right) { d.setMaxDamage(0); module.put(d); refresh(); }
+                else {
+                    p.closeInventory();
+                    chat.request(p, "<yellow>Durabilité max custom (entier, <white>0</white> = vanilla) :", in -> {
+                        try { d.setMaxDamage(Integer.parseInt(in.trim())); module.put(d); }
+                        catch (NumberFormatException e) { p.sendMessage(Text.mm("<red>Nombre invalide : " + in)); }
+                        reopen(p);
+                    });
+                }
+            }
             case 28 -> EnchantEditorMenu.open(module, chat, p, id);
             case 29 -> StatEditorMenu.open(module, chat, p, id);
             case 30 -> AbilityEditorMenu.open(module, chat, p, id);
