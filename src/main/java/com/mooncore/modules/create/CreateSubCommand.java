@@ -110,6 +110,7 @@ public final class CreateSubCommand implements SubCommand {
                         msg(s, "<red>Échec IA : " + (err != null ? err.getMessage() : "réponse vide"));
                         return;
                     }
+                    String cmd = "content create " + h.type() + (dry ? " --dry" : "");
                     if (dry) {
                         String preview = h.validateAi(text, id);
                         if (preview != null) {
@@ -118,6 +119,7 @@ public final class CreateSubCommand implements SubCommand {
                         } else {
                             msg(s, "<red>Sortie IA invalide (dry-run) pour un " + h.type() + ".");
                         }
+                        audit(ai, s, cmd, description, preview != null ? preview : "invalide", preview != null ? "dry" : "fail");
                         return;
                     }
                     String created = h.createFromAi(text, id);
@@ -128,6 +130,7 @@ public final class CreateSubCommand implements SubCommand {
                     } else {
                         msg(s, "<red>Sortie IA invalide pour un " + h.type() + ".");
                     }
+                    audit(ai, s, cmd, description, created != null ? created : "invalide", created != null ? "ok" : "fail");
                 }));
     }
 
@@ -136,6 +139,13 @@ public final class CreateSubCommand implements SubCommand {
             rp.rebuild();
             rp.resendAll();
         });
+    }
+
+    /** Trace une création IA dans {@code mooncore_ai_audit} (best-effort). */
+    private static void audit(com.mooncore.modules.ai.AiAdminModule ai, CommandSender s,
+                              String command, String prompt, String result, String status) {
+        if (ai == null || ai.audit() == null) return;
+        ai.audit().record(s.getName(), command, prompt, result, status, System.currentTimeMillis());
     }
 
     /**
@@ -190,6 +200,8 @@ public final class CreateSubCommand implements SubCommand {
                     msg(s, "<green>" + created + " élément(s) créé(s)"
                             + (skipped > 0 ? " <gray>(" + skipped + " ignoré(s) : type non géré par la commande unifiée ou sortie invalide)" : "")
                             + ".");
+                    audit(ai, s, "content createall", description,
+                            created + " créé(s), " + skipped + " ignoré(s)", created > 0 ? "ok" : "fail");
                 }));
     }
 
