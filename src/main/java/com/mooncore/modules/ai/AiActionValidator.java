@@ -195,6 +195,11 @@ public final class AiActionValidator {
             def.setFood(nutrition, sat, always, eat);
         }
 
+        // Durabilité custom (composant minecraft:max_damage).
+        if (root.has("max_damage")) {
+            def.setMaxDamage(intOf(root, "max_damage", 0)); // setMaxDamage borne 0..100000
+        }
+
         // Composant outil NATIF (minecraft:tool) + règles de minage.
         if (root.has("tool") && root.get("tool").isJsonObject()) {
             JsonObject t = root.getAsJsonObject("tool");

@@ -102,6 +102,8 @@ public final class AiPrompts {
                             "speed": nombre, "correct_for_drops": booléen } ] }
                             (optionnel ; outil NATIF avec vraies règles de minage ; si tu mets
                             tool_kind, laisse rules vide pour une règle auto, ou précise des tags),
+                  "max_damage": entier (durabilité maximale custom ; optionnel, 0/absent = durabilité
+                            vanilla du matériau ; ignoré si unbreakable),
                   "glowing": booléen,
                   "unbreakable": booléen
                 }
