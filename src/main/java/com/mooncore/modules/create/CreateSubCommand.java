@@ -101,6 +101,10 @@ public final class CreateSubCommand implements SubCommand {
             return;
         }
         if (!dry && h.exists(id)) { msg(s, "<red>Cet id existe déjà : <white>" + id); return; }
+        if (!ai.client().tryAcquireRate(System.currentTimeMillis())) {
+            msg(s, "<red>Trop de requêtes IA, réessaie dans un instant.");
+            return;
+        }
 
         msg(s, "<gray>" + (dry ? "Prévisualisation IA" : "Génération IA") + " d'un <white>" + h.type()
                 + "</white> « <white>" + description + "</white> »…");
@@ -162,6 +166,10 @@ public final class CreateSubCommand implements SubCommand {
         var ai = plugin.moduleManager().get(com.mooncore.modules.ai.AiAdminModule.class);
         if (ai == null || ai.client() == null || !ai.client().config().hasApiKey()) {
             msg(s, "<red>IA indisponible (module ai-assistant inactif ou clé API absente).");
+            return;
+        }
+        if (!ai.client().tryAcquireRate(System.currentTimeMillis())) {
+            msg(s, "<red>Trop de requêtes IA, réessaie dans un instant.");
             return;
         }
         String description = String.join(" ", java.util.Arrays.copyOfRange(a, 1, a.length));
