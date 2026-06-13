@@ -29,10 +29,14 @@ import java.util.Set;
 @ModuleInfo(id = "custom-block", name = "CustomBlockManager", softDepends = {"custom-item", "resource-pack"})
 public final class CustomBlockManagerModule extends AbstractModule implements CustomBlockService {
 
+    /** Type de contenu pour le store universel SQL (Étape A). */
+    private static final String CONTENT_TYPE = "block";
+
     private final Map<String, CustomBlockDef> defs = new LinkedHashMap<>();
     private final Map<Integer, CustomBlockDef> byState = new LinkedHashMap<>();
     private NamespacedKey idKey;
     private CustomBlockStore store;
+    private com.mooncore.data.content.ContentSyncService contentSync; // null = miroir SQL indisponible
     private boolean worldgenEnabled = true;
 
     @Override
@@ -40,6 +44,7 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
         this.idKey = new NamespacedKey(plugin(), "cb_id");
         this.store = new CustomBlockStore(plugin().getDataFolder(), log());
         this.worldgenEnabled = moduleConfig().getBoolean("worldgen-enabled", true);
+        setupContentSync();
         reloadDefinitions();
         services().register(CustomBlockService.class, this);
         registerListener(new CustomBlockListener(this));
@@ -62,6 +67,32 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
     }
 
     public boolean worldgenEnabled() { return worldgenEnabled; }
+
+    /**
+     * Initialise le miroir SQL requêtable (Étape A) si la base est prête. Pour les blocs, le YAML reste
+     * la source canonique (l'attribution des états note_block en dépend) ; le SQL est un miroir en
+     * écriture (mode {@code both}/{@code sql}). Échec → {@code contentSync} null (YAML pur).
+     */
+    private void setupContentSync() {
+        try {
+            var dm = data();
+            if (dm != null && dm.isReady()) {
+                dm.applyMigrations(com.mooncore.data.content.ContentSyncService.migrations());
+                this.contentSync = new com.mooncore.data.content.ContentSyncService(dm.database(),
+                        () -> plugin().getConfig().getString("content.storage-mode", "yaml"), log());
+            }
+        } catch (Exception e) {
+            log().error("Init du miroir SQL des blocs échouée (YAML pur)", e);
+            this.contentSync = null;
+        }
+    }
+
+    /** Sérialise une définition de bloc en JSON via le pont YAML↔JSON (réutilise {@code def.save}). */
+    private static String toJson(CustomBlockDef def) {
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        def.save(cfg);
+        return com.mooncore.data.content.ContentJson.toJson(cfg);
+    }
 
     @Override
     public void reloadDefinitions() {
@@ -138,12 +169,17 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
         defs.put(def.id(), def);
         byState.put(def.stateIndex(), def);
         store.save(def);
+        if (contentSync != null) {
+            int version = com.mooncore.data.content.ContentSchemas.currentVersion(CONTENT_TYPE);
+            contentSync.mirror(CONTENT_TYPE, def.id(), toJson(def), version, System.currentTimeMillis());
+        }
     }
 
     public boolean removeDef(String id) {
         CustomBlockDef d = defs.remove(id.toLowerCase(Locale.ROOT));
         if (d != null) byState.remove(d.stateIndex());
         store.delete(id);
+        if (contentSync != null) contentSync.remove(CONTENT_TYPE, id.toLowerCase(Locale.ROOT));
         return d != null;
     }
 
