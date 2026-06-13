@@ -108,6 +108,24 @@ public final class EditableRig {
         return r;
     }
 
+    /**
+     * Construit depuis un {@code RawRig} (sortie de {@code BlockBenchImporter.parse}) — chargement
+     * <b>sans dépendance Bukkit</b> (pas de BlockData). Coordonnées déjà en blocs.
+     */
+    public static EditableRig fromRaw(com.mooncore.modules.model.BlockBenchImporter.RawRig raw) {
+        EditableRig r = new EditableRig(raw.id());
+        for (com.mooncore.modules.model.BlockBenchImporter.RawBone rb : raw.bones()) {
+            EditableBone b = new EditableBone(rb.name());
+            b.parent = rb.parent();
+            b.pivot.set(rb.pivot()[0], rb.pivot()[1], rb.pivot()[2]);
+            b.from.set(rb.from()[0], rb.from()[1], rb.from()[2]);
+            b.to.set(rb.to()[0], rb.to()[1], rb.to()[2]);
+            r.bones.add(b);
+        }
+        if (raw.animations() != null) r.animations.putAll(raw.animations());
+        return r;
+    }
+
     public EditableRig copy() {
         EditableRig r = new EditableRig(id);
         for (EditableBone b : bones) r.bones.add(b.copy());
