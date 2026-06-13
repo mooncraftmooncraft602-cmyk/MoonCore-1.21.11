@@ -42,4 +42,10 @@ public interface ContentTypeHandler {
 
     /** Description courte d'une entrée (pour {@code info}). Défaut : l'id. */
     default String describe(String id) { return id; }
+
+    /**
+     * Valide une sortie IA <b>sans persister</b> (dry-run) : retourne une description lisible du
+     * résultat si la sortie est valide, ou {@code null}. Défaut : non supporté.
+     */
+    default String validateAi(String aiText, String forcedId) { return null; }
 }

@@ -38,6 +38,15 @@ public final class CropContentHandler implements ContentTypeHandler {
     }
 
     @Override
+    public String validateAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        CropDef d = validator.validateCrop(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        return d.displayName() + " (" + d.stages() + " étapes, sur "
+                + d.placeOn().name().toLowerCase(java.util.Locale.ROOT) + ")";
+    }
+
+    @Override
     public boolean create(String id) {
         String n = ContentIds.norm(id);
         if (!ContentIds.valid(n) || module.def(n) != null) return false;

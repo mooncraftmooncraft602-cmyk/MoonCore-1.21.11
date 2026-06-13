@@ -38,6 +38,15 @@ public final class ItemContentHandler implements ContentTypeHandler {
     }
 
     @Override
+    public String validateAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        var r = validator.validateItem(aiText, ContentIds.norm(forcedId), -1);
+        if (r == null || !r.ok() || r.def() == null) return null;
+        return r.def().displayName() + " (" + r.def().material().name().toLowerCase(java.util.Locale.ROOT)
+                + ", " + r.def().rarity().id() + ", " + r.def().stats().size() + " stat(s))";
+    }
+
+    @Override
     public boolean create(String id) {
         String n = ContentIds.norm(id);
         if (!ContentIds.valid(n) || module.rawDef(n) != null) return false;

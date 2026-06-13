@@ -41,6 +41,13 @@ public final class CreateSubCommand implements SubCommand {
         ContentTypeHandler h = registry.get(a[1]);
         if (h == null) { msg(s, "<red>Type inconnu : <white>" + a[1] + "</white>. Voir <white>/moon content types"); return; }
 
+        // Permission granulaire par type : refus si mooncore.admin.create.<type> est explicitement nié.
+        if (!canManage(s, h.type())) {
+            msg(s, "<red>Permission refusée pour le type <white>" + h.type() + "</white> "
+                    + "<dark_gray>(mooncore.admin.create." + h.type() + ").");
+            return;
+        }
+
         switch (action) {
             case "create" -> create(plugin, s, h, a);
             case "delete", "remove" -> delete(s, h, a);
@@ -54,12 +61,18 @@ public final class CreateSubCommand implements SubCommand {
     }
 
     private void create(MoonCore plugin, CommandSender s, ContentTypeHandler h, String[] a) {
-        if (a.length < 3) { msg(s, "<red>/moon content create " + h.type() + " <id> [description IA…]"); return; }
+        if (a.length < 3) { msg(s, "<red>/moon content create " + h.type() + " <id> [description IA… | --dry]"); return; }
         String id = a[2];
 
         // Avec description → génération IA (si le type la supporte et l'IA est dispo).
         if (a.length > 3) {
-            createWithAi(plugin, s, h, id, String.join(" ", java.util.Arrays.copyOfRange(a, 3, a.length)));
+            // Flag dry-run : --dry / dry en dernier → prévisualise sans persister.
+            int end = a.length;
+            boolean dry = isDryFlag(a[end - 1]);
+            if (dry) end--;
+            if (end <= 3) { msg(s, "<red>Description manquante avant --dry."); return; }
+            String description = String.join(" ", java.util.Arrays.copyOfRange(a, 3, end));
+            createWithAi(plugin, s, h, id, description, dry);
             return;
         }
 
@@ -67,8 +80,12 @@ public final class CreateSubCommand implements SubCommand {
         else msg(s, "<red>Création impossible (id invalide ou déjà existant) : <white>" + id);
     }
 
-    /** Génère une définition depuis une description en langage naturel via l'IA. */
-    private void createWithAi(MoonCore plugin, CommandSender s, ContentTypeHandler h, String id, String description) {
+    private static boolean isDryFlag(String token) {
+        return token.equalsIgnoreCase("--dry") || token.equalsIgnoreCase("dry") || token.equalsIgnoreCase("dryrun");
+    }
+
+    /** Génère une définition depuis une description en langage naturel via l'IA (dry-run = prévisualise). */
+    private void createWithAi(MoonCore plugin, CommandSender s, ContentTypeHandler h, String id, String description, boolean dry) {
         String system = h.aiSystemPrompt();
         if (system == null) {
             msg(s, "<yellow>Pas de génération IA pour le type <white>" + h.type() + "</white>. "
@@ -80,13 +97,24 @@ public final class CreateSubCommand implements SubCommand {
             msg(s, "<red>IA indisponible (module ai-assistant inactif ou clé API absente).");
             return;
         }
-        if (h.exists(id)) { msg(s, "<red>Cet id existe déjà : <white>" + id); return; }
+        if (!dry && h.exists(id)) { msg(s, "<red>Cet id existe déjà : <white>" + id); return; }
 
-        msg(s, "<gray>Génération IA d'un <white>" + h.type() + "</white> « <white>" + description + "</white> »…");
+        msg(s, "<gray>" + (dry ? "Prévisualisation IA" : "Génération IA") + " d'un <white>" + h.type()
+                + "</white> « <white>" + description + "</white> »…");
         ai.client().ask(system, description).whenComplete((text, err) ->
                 plugin.schedulers().sync(() -> {
                     if (err != null || text == null || text.isBlank()) {
                         msg(s, "<red>Échec IA : " + (err != null ? err.getMessage() : "réponse vide"));
+                        return;
+                    }
+                    if (dry) {
+                        String preview = h.validateAi(text, id);
+                        if (preview != null) {
+                            msg(s, "<aqua>Dry-run</aqua> <gray>— le " + h.type() + " serait : <reset>" + preview);
+                            msg(s, "<dark_gray>Relance sans <white>--dry</white> pour créer.");
+                        } else {
+                            msg(s, "<red>Sortie IA invalide (dry-run) pour un " + h.type() + ".");
+                        }
                         return;
                     }
                     String created = h.createFromAi(text, id);
@@ -108,8 +136,22 @@ public final class CreateSubCommand implements SubCommand {
     }
 
     private void delete(CommandSender s, ContentTypeHandler h, String[] a) {
-        if (a.length < 3) { msg(s, "<red>/moon content delete " + h.type() + " <id>"); return; }
-        msg(s, h.delete(a[2]) ? "<green>Supprimé : <white>" + a[2] : "<red>Id inconnu : <white>" + a[2]);
+        if (a.length < 3) { msg(s, "<red>/moon content delete " + h.type() + " <id> confirm"); return; }
+        String id = a[2];
+        if (!h.exists(id)) { msg(s, "<red>Id inconnu : <white>" + id); return; }
+        boolean confirmed = a.length >= 4 && a[3].equalsIgnoreCase("confirm");
+        if (!confirmed) {
+            msg(s, "<yellow>⚠ Suppression DÉFINITIVE de <white>" + h.type() + " " + id + "</white>. "
+                    + "Confirme : <white>/moon content delete " + h.type() + " " + id + " confirm");
+            return;
+        }
+        msg(s, h.delete(id) ? "<green>Supprimé : <white>" + id : "<red>Échec de suppression : <white>" + id);
+    }
+
+    /** Refuse seulement si {@code mooncore.admin.create.<type>} est explicitement nié (granularité par type). */
+    private static boolean canManage(CommandSender s, String type) {
+        String node = "mooncore.admin.create." + type;
+        return !s.isPermissionSet(node) || s.hasPermission(node);
     }
 
     private void list(CommandSender s, ContentTypeHandler h) {
