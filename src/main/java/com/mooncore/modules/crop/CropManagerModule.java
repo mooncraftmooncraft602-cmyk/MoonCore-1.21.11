@@ -36,8 +36,12 @@ public final class CropManagerModule extends AbstractModule {
     private final Map<String, UUID> displays = new ConcurrentHashMap<>();                            // locKey → display
     private final Map<String, java.util.Set<String>> byChunk = new ConcurrentHashMap<>();           // chunkKey → locKeys
 
+    /** Type de contenu pour le store universel SQL (Étape A). */
+    private static final String CONTENT_TYPE = "crop";
+
     private CropDefStore defStore;
     private CropPlacementStore placementStore;
+    private com.mooncore.data.content.ContentSyncService contentSync; // miroir SQL des défs (null = YAML pur)
     private org.bukkit.scheduler.BukkitTask growthTask;
 
     @Override
@@ -49,7 +53,10 @@ public final class CropManagerModule extends AbstractModule {
         if (dm != null && dm.isReady()) {
             try {
                 dm.applyMigrations(CropPlacementStore.migrations());
+                dm.applyMigrations(com.mooncore.data.content.ContentSyncService.migrations());
                 this.placementStore = new CropPlacementStore(dm.database());
+                this.contentSync = new com.mooncore.data.content.ContentSyncService(dm.database(),
+                        () -> plugin().getConfig().getString("content.storage-mode", "yaml"), log());
                 for (CropPlacementStore.Placement p : placementStore.loadAll()) {
                     if (defs.containsKey(p.cropId())) { placements.put(p.locKey(), p); indexAdd(p); }
                 }
@@ -106,6 +113,10 @@ public final class CropManagerModule extends AbstractModule {
     public void put(CropDef def) {
         defs.put(def.id(), def);
         defStore.save(def);
+        if (contentSync != null) {
+            int version = com.mooncore.data.content.ContentSchemas.currentVersion(CONTENT_TYPE);
+            contentSync.mirror(CONTENT_TYPE, def.id(), toJson(def), version, System.currentTimeMillis());
+        }
     }
 
     public boolean removeDef(String id) {
@@ -113,7 +124,15 @@ public final class CropManagerModule extends AbstractModule {
         if (norm == null) return false;
         boolean mem = defs.remove(norm) != null;
         boolean disk = defStore.delete(norm);
+        if (contentSync != null) contentSync.remove(CONTENT_TYPE, norm);
         return mem || disk;
+    }
+
+    /** Sérialise une culture en JSON via le pont YAML↔JSON (réutilise {@code def.save}). */
+    private static String toJson(CropDef def) {
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        def.save(cfg);
+        return com.mooncore.data.content.ContentJson.toJson(cfg);
     }
 
     public java.util.Set<String> ids() { return java.util.Set.copyOf(defs.keySet()); }
