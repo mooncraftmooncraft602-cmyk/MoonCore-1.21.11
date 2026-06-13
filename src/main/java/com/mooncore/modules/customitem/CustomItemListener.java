@@ -49,7 +49,13 @@ public final class CustomItemListener implements Listener {
         CustomItemDef def = defOf(item);
         if (def == null) return;
 
-        // Consommable custom (potion/nourriture) : applique les effets puis consomme 1 exemplaire.
+        // Nourriture NATIVE (composant minecraft:food/consumable) : on laisse le mécanisme vanilla
+        // gérer la mastication ; les effets sont appliqués dans onConsume(PlayerItemConsumeEvent).
+        if (def.hasFood() && ItemComponentApplier.consumableSupported()) {
+            return;
+        }
+        // Consommable custom (potion/nourriture) — fallback simulé au clic droit (Bedrock / Paper sans
+        // composant consumable) : applique les effets puis consomme 1 exemplaire.
         if (def.type() == com.mooncore.api.customitem.ItemType.CONSUMABLE && !def.consumeEffects().isEmpty()) {
             consume(e, p, item, def);
             return;
@@ -100,6 +106,24 @@ public final class CustomItemListener implements Listener {
         else item.setAmount(item.getAmount() - 1);
         p.getWorld().playSound(p.getLocation(), "minecraft:entity.generic.drink", 1f, 1f);
         e.setCancelled(true);
+    }
+
+    /**
+     * Nourriture NATIVE mangée par le mécanisme vanilla : on applique les effets de consommation
+     * custom. La faim/saturation et le retrait de l'item sont déjà gérés par le composant food.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onConsume(org.bukkit.event.player.PlayerItemConsumeEvent e) {
+        CustomItemDef def = defOf(e.getItem());
+        if (def == null || !def.hasFood() || def.consumeEffects().isEmpty()) return;
+        Player p = e.getPlayer();
+        for (CustomItemDef.ConsumeEffect ce : def.consumeEffects()) {
+            var type = org.bukkit.Registry.EFFECT.get(NamespacedKey.minecraft(ce.key()));
+            if (type != null) {
+                p.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                        type, ce.duration(), Math.max(0, ce.amplifier()), true, true));
+            }
+        }
     }
 
     // ============================================================
@@ -266,6 +290,24 @@ public final class CustomItemListener implements Listener {
         for (ItemStack drop : drops) {
             if (loc.getWorld() != null) loc.getWorld().dropItemNaturally(loc, drop.clone());
         }
+    }
+
+    // ============================================================
+    //  Cuisson — résultat custom (four / haut-fourneau / fumoir)
+    // ============================================================
+
+    /**
+     * Garantit le bon résultat quand un objet custom est cuit : remplace la sortie par
+     * l'item configuré (Material <b>ou item custom</b>), même si le matériau de base possède
+     * une recette vanilla concurrente. Filet de sécurité de {@link RecipeManager#registerSmelt}
+     * (qui n'enregistre la recette ExactChoice que pour faire démarrer la cuisson).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onSmelt(org.bukkit.event.inventory.FurnaceSmeltEvent e) {
+        CustomItemDef def = defOf(e.getSource());
+        if (def == null) return;
+        ItemStack result = module.smeltOutput(def);
+        if (result != null) e.setResult(result);
     }
 
     // ============================================================

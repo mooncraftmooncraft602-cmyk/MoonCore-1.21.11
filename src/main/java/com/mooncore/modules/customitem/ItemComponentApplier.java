@@ -28,6 +28,27 @@ import java.util.Map;
  */
 public final class ItemComponentApplier {
 
+    /**
+     * Le composant {@code minecraft:consumable} (Paper 1.21.2+) est-il disponible ? Probé une fois
+     * par réflexion. S'il l'est, une nourriture custom est mangée par le mécanisme VANILLA ; sinon
+     * on retombe sur la consommation simulée au clic droit ({@code CustomItemListener}).
+     */
+    private static final boolean CONSUMABLE_SUPPORTED = probeConsumable();
+
+    private static boolean probeConsumable() {
+        try {
+            Class.forName("org.bukkit.inventory.meta.components.ConsumableComponent");
+            ItemMeta.class.getMethod("setConsumable",
+                    Class.forName("org.bukkit.inventory.meta.components.ConsumableComponent"));
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** La nourriture native (food + consumable) est-elle réellement mangeable sur ce serveur ? */
+    public static boolean consumableSupported() { return CONSUMABLE_SUPPORTED; }
+
     private final MoonCore plugin;
 
     public ItemComponentApplier(MoonCore plugin) {
@@ -44,6 +65,39 @@ public final class ItemComponentApplier {
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         applyAttributes(def, meta);
         applyEnchants(def, meta);
+        applyFood(def, meta);
+    }
+
+    /**
+     * Nourriture NATIVE (composants {@code minecraft:food} + {@code minecraft:consumable}, 1.21.2+).
+     * Le {@code FoodComponent} (nutrition/saturation/canAlwaysEat) est posé via l'API stable ; la
+     * durée de consommation passe par le {@code ConsumableComponent} (réflexion, best-effort).
+     * Sur un Paper sans consumable, l'item reste fonctionnel via le fallback clic droit du listener.
+     */
+    private void applyFood(CustomItemDef def, ItemMeta meta) {
+        if (!def.hasFood()) return;
+        try {
+            org.bukkit.inventory.meta.components.FoodComponent fc = meta.getFood();
+            fc.setNutrition(def.foodNutrition());
+            fc.setSaturation(def.foodSaturation());
+            fc.setCanAlwaysEat(def.foodCanAlwaysEat());
+            meta.setFood(fc);
+        } catch (Throwable ignored) {
+            // FoodComponent indisponible : la conso restera gérée par le listener (fallback).
+        }
+        if (CONSUMABLE_SUPPORTED) applyConsumable(def, meta);
+    }
+
+    /** Pose le composant consumable (durée d'animation) par réflexion — best-effort. */
+    private void applyConsumable(CustomItemDef def, ItemMeta meta) {
+        try {
+            Class<?> compClass = Class.forName("org.bukkit.inventory.meta.components.ConsumableComponent");
+            Object consumable = ItemMeta.class.getMethod("getConsumable").invoke(meta);
+            compClass.getMethod("setConsumeSeconds", float.class).invoke(consumable, def.foodEatSeconds());
+            ItemMeta.class.getMethod("setConsumable", compClass).invoke(meta, consumable);
+        } catch (Throwable ignored) {
+            // Variante d'API différente : on garde la durée de consommation vanilla par défaut.
+        }
     }
 
     /**

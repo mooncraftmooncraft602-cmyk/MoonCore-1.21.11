@@ -81,6 +81,24 @@ public final class CustomItemDef implements CustomItemView {
         }
     }
 
+    /** Appareil de cuisson pour la recette de fonte d'un item custom. */
+    public enum SmeltType {
+        FURNACE("furnace", "four"),
+        BLAST("blast", "haut-fourneau"),
+        SMOKER("smoker", "fumoir");
+
+        private final String id;
+        private final String label;
+        SmeltType(String id, String label) { this.id = id; this.label = label; }
+        public String id() { return id; }
+        public String label() { return label; }
+        public static SmeltType fromId(String id) {
+            if (id == null) return FURNACE;
+            for (SmeltType t : values()) if (t.id.equalsIgnoreCase(id.trim())) return t;
+            return FURNACE;
+        }
+    }
+
     private final String id;
     private String displayName;
     private ItemType type = ItemType.WEAPON;
@@ -99,9 +117,20 @@ public final class CustomItemDef implements CustomItemView {
     private final List<DropRule> drops = new ArrayList<>();
     private Recipe recipe = null;
     private Material smeltsInto = null;          // null = ne fond pas (pas de recette de fournaise)
+    private String smeltsIntoCustom = null;      // si non null : résultat = item custom (prioritaire sur smeltsInto)
+    private SmeltType smeltType = SmeltType.FURNACE; // four / haut-fourneau / fumoir
     private int smeltAmount = 1;
+    private Material cutsInto = null;            // tailleur de pierre : null = ne se coupe pas
+    private String cutsIntoCustom = null;        // si non null : résultat de coupe = item custom
+    private int cutAmount = 1;
     private final Map<String, Integer> enchants = new LinkedHashMap<>(); // clé registre → niveau
     private final List<ConsumeEffect> consumeEffects = new ArrayList<>(); // effets à la consommation
+    // Composant minecraft:food (+ consumable) — nourriture NATIVE (mangée par le mécanisme vanilla).
+    private boolean food = false;                 // true = compose minecraft:food/consumable
+    private int foodNutrition = 4;                // points de faim restaurés
+    private float foodSaturation = 2.4f;          // saturation restaurée
+    private boolean foodCanAlwaysEat = false;     // mangeable même barre de faim pleine
+    private float foodEatSeconds = 1.6f;          // durée de l'animation de consommation
 
     public CustomItemDef(String id) {
         this.id = id.toLowerCase(Locale.ROOT);
@@ -163,13 +192,47 @@ public final class CustomItemDef implements CustomItemView {
 
     // ---- Fonte (l'objet comme entrée de fournaise) ----
     public Material smeltsInto() { return smeltsInto; }
+    /** Id de l'item custom produit par la fonte (prioritaire sur {@link #smeltsInto()}), ou null. */
+    public String smeltsIntoCustom() { return smeltsIntoCustom; }
+    public SmeltType smeltType() { return smeltType; }
     public int smeltAmount() { return smeltAmount; }
-    public boolean canSmelt() { return smeltsInto != null; }
+    public boolean canSmelt() { return smeltsInto != null || smeltsIntoCustom != null; }
+    /** Définit un résultat de fonte VANILLA (Material). Efface un éventuel résultat custom. */
     public void setSmeltsInto(Material result, int amount) {
         this.smeltsInto = result;
+        this.smeltsIntoCustom = null;
         this.smeltAmount = Math.max(1, Math.min(64, amount));
     }
-    public void clearSmelt() { this.smeltsInto = null; this.smeltAmount = 1; }
+    /** Définit un résultat de fonte CUSTOM (id d'item MoonCore). Efface un éventuel résultat vanilla. */
+    public void setSmeltsIntoCustom(String customId, int amount) {
+        if (customId == null || customId.isBlank()) { this.smeltsIntoCustom = null; return; }
+        this.smeltsIntoCustom = customId.toLowerCase(Locale.ROOT).trim();
+        this.smeltsInto = null;
+        this.smeltAmount = Math.max(1, Math.min(64, amount));
+    }
+    public void setSmeltType(SmeltType type) { this.smeltType = type == null ? SmeltType.FURNACE : type; }
+    public void clearSmelt() {
+        this.smeltsInto = null;
+        this.smeltsIntoCustom = null;
+        this.smeltAmount = 1;
+        this.smeltType = SmeltType.FURNACE;
+    }
+
+    // ---- Tailleur de pierre (l'objet comme entrée de stonecutter) ----
+    public Material cutsInto() { return cutsInto; }
+    /** Id de l'item custom produit par le tailleur de pierre (prioritaire sur {@link #cutsInto()}), ou null. */
+    public String cutsIntoCustom() { return cutsIntoCustom; }
+    public int cutAmount() { return cutAmount; }
+    public boolean canCut() { return cutsInto != null || cutsIntoCustom != null; }
+    public void setCutsInto(Material result, int amount) {
+        this.cutsInto = result; this.cutsIntoCustom = null; this.cutAmount = Math.max(1, Math.min(64, amount));
+    }
+    public void setCutsIntoCustom(String customId, int amount) {
+        if (customId == null || customId.isBlank()) { this.cutsIntoCustom = null; return; }
+        this.cutsIntoCustom = customId.toLowerCase(Locale.ROOT).trim(); this.cutsInto = null;
+        this.cutAmount = Math.max(1, Math.min(64, amount));
+    }
+    public void clearCut() { this.cutsInto = null; this.cutsIntoCustom = null; this.cutAmount = 1; }
 
     // ---- Enchantements vanilla (clé de registre minecraft, ex "sharpness" → niveau) ----
     public List<ConsumeEffect> consumeEffects() { return consumeEffects; }
@@ -180,6 +243,22 @@ public final class CustomItemDef implements CustomItemView {
         consumeEffects.removeIf(c -> c.key().equals(k));
         if (duration > 0) consumeEffects.add(new ConsumeEffect(k, duration, Math.max(0, amplifier)));
     }
+    // ---- Composant nourriture NATIVE (minecraft:food + consumable) ----
+    public boolean hasFood() { return food; }
+    public int foodNutrition() { return foodNutrition; }
+    public float foodSaturation() { return foodSaturation; }
+    public boolean foodCanAlwaysEat() { return foodCanAlwaysEat; }
+    public float foodEatSeconds() { return foodEatSeconds; }
+    /** Active la nourriture native avec ses paramètres (bornés). */
+    public void setFood(int nutrition, float saturation, boolean canAlwaysEat, float eatSeconds) {
+        this.food = true;
+        this.foodNutrition = Math.max(0, Math.min(20, nutrition));
+        this.foodSaturation = Math.max(0f, Math.min(20f, saturation));
+        this.foodCanAlwaysEat = canAlwaysEat;
+        this.foodEatSeconds = Math.max(0.1f, Math.min(60f, eatSeconds));
+    }
+    public void clearFood() { this.food = false; }
+
     public Map<String, Integer> enchants() { return enchants; }
     public void setEnchant(String key, int level) {
         if (key == null || key.isBlank()) return;
@@ -241,9 +320,19 @@ public final class CustomItemDef implements CustomItemView {
             c.recipe = r;
         }
         c.smeltsInto = this.smeltsInto;
+        c.smeltsIntoCustom = this.smeltsIntoCustom;
+        c.smeltType = this.smeltType;
         c.smeltAmount = this.smeltAmount;
+        c.cutsInto = this.cutsInto;
+        c.cutsIntoCustom = this.cutsIntoCustom;
+        c.cutAmount = this.cutAmount;
         c.enchants.putAll(this.enchants);
         c.consumeEffects.addAll(this.consumeEffects);
+        c.food = this.food;
+        c.foodNutrition = this.foodNutrition;
+        c.foodSaturation = this.foodSaturation;
+        c.foodCanAlwaysEat = this.foodCanAlwaysEat;
+        c.foodEatSeconds = this.foodEatSeconds;
         return c;
     }
 
@@ -301,11 +390,26 @@ public final class CustomItemDef implements CustomItemView {
             s.set("recipe", null);
         }
 
-        if (smeltsInto != null) {
-            s.set("smelt.result", smeltsInto.name());
+        if (canSmelt()) {
             s.set("smelt.amount", smeltAmount);
+            s.set("smelt.type", smeltType.id());
+            if (smeltsIntoCustom != null) {
+                s.set("smelt.result-custom", smeltsIntoCustom);
+                s.set("smelt.result", null);
+            } else {
+                s.set("smelt.result", smeltsInto.name());
+                s.set("smelt.result-custom", null);
+            }
         } else {
             s.set("smelt", null);
+        }
+
+        if (canCut()) {
+            s.set("stonecut.amount", cutAmount);
+            if (cutsIntoCustom != null) { s.set("stonecut.result-custom", cutsIntoCustom); s.set("stonecut.result", null); }
+            else { s.set("stonecut.result", cutsInto.name()); s.set("stonecut.result-custom", null); }
+        } else {
+            s.set("stonecut", null);
         }
 
         if (!enchants.isEmpty()) {
@@ -327,6 +431,15 @@ public final class CustomItemDef implements CustomItemView {
             s.set("consume-effects", ce);
         } else {
             s.set("consume-effects", null);
+        }
+
+        if (food) {
+            s.set("food.nutrition", foodNutrition);
+            s.set("food.saturation", foodSaturation);
+            s.set("food.can-always-eat", foodCanAlwaysEat);
+            s.set("food.eat-seconds", foodEatSeconds);
+        } else {
+            s.set("food", null);
         }
     }
 
@@ -392,8 +505,23 @@ public final class CustomItemDef implements CustomItemView {
 
         ConfigurationSection sm = s.getConfigurationSection("smelt");
         if (sm != null) {
-            Material rm = matchMaterial(sm.getString("result"));
-            if (rm != null) d.setSmeltsInto(rm, sm.getInt("amount", 1));
+            int amt = sm.getInt("amount", 1);
+            String custom = sm.getString("result-custom");
+            if (custom != null && !custom.isBlank()) {
+                d.setSmeltsIntoCustom(custom, amt);
+            } else {
+                Material rm = matchMaterial(sm.getString("result"));
+                if (rm != null) d.setSmeltsInto(rm, amt);
+            }
+            d.setSmeltType(SmeltType.fromId(sm.getString("type", "furnace")));
+        }
+
+        ConfigurationSection cut = s.getConfigurationSection("stonecut");
+        if (cut != null) {
+            int camt = cut.getInt("amount", 1);
+            String cc = cut.getString("result-custom");
+            if (cc != null && !cc.isBlank()) d.setCutsIntoCustom(cc, camt);
+            else { Material cm = matchMaterial(cut.getString("result")); if (cm != null) d.setCutsInto(cm, camt); }
         }
 
         ConfigurationSection encSec = s.getConfigurationSection("enchants");
@@ -407,6 +535,14 @@ public final class CustomItemDef implements CustomItemView {
             int dur = m.get("duration") instanceof Number n ? n.intValue() : 100;
             int amp = m.get("amplifier") instanceof Number n ? n.intValue() : 0;
             d.consumeEffects.add(new ConsumeEffect(String.valueOf(k).toLowerCase(Locale.ROOT), dur, amp));
+        }
+
+        ConfigurationSection foodSec = s.getConfigurationSection("food");
+        if (foodSec != null) {
+            d.setFood(foodSec.getInt("nutrition", 4),
+                    (float) foodSec.getDouble("saturation", 2.4),
+                    foodSec.getBoolean("can-always-eat", false),
+                    (float) foodSec.getDouble("eat-seconds", 1.6));
         }
         return d;
     }
