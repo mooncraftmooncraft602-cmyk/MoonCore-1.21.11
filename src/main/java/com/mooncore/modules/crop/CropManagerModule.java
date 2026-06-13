@@ -187,6 +187,52 @@ public final class CropManagerModule extends AbstractModule {
 
     public Collection<CropPlacementStore.Placement> placements() { return placements.values(); }
 
+    public boolean isMature(CropPlacementStore.Placement p) {
+        if (p == null) return false;
+        CropDef def = def(p.cropId());
+        return def != null && p.stage() >= def.stages() - 1;
+    }
+
+    private com.mooncore.api.customitem.CustomItemManagerService customItems() {
+        return services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+    }
+
+    /** Trouve la culture dont le bloc support == {@code placeOn} ET dont la graine correspond à l'item en main. */
+    public CropDef matchSeed(org.bukkit.inventory.ItemStack item, org.bukkit.Material placeOn) {
+        if (item == null || item.getType().isAir()) return null;
+        var ci = customItems();
+        String customId = ci != null ? ci.idOf(item) : null;
+        for (CropDef def : defs.values()) {
+            if (def.placeOn() != placeOn) continue;
+            if (def.seedCustomId() != null) {
+                if (customId != null && customId.equalsIgnoreCase(def.seedCustomId())) return def;
+            } else if (customId == null && item.getType() == def.seed()) {
+                return def;
+            }
+        }
+        return null;
+    }
+
+    /** Item de récolte (item custom prioritaire, sinon Material). {@code null} si quantité nulle. */
+    public org.bukkit.inventory.ItemStack harvestDrop(CropDef def, int amount) {
+        if (def == null || amount <= 0) return null;
+        if (def.dropItemId() != null) {
+            var ci = customItems();
+            return ci == null ? null : ci.create(def.dropItemId(), amount);
+        }
+        return new org.bukkit.inventory.ItemStack(def.dropMaterial(), amount);
+    }
+
+    /** Item graine (custom prioritaire, sinon Material). {@code null} si quantité nulle. */
+    public org.bukkit.inventory.ItemStack seedItem(CropDef def, int amount) {
+        if (def == null || amount <= 0) return null;
+        if (def.seedCustomId() != null) {
+            var ci = customItems();
+            return ci == null ? null : ci.create(def.seedCustomId(), amount);
+        }
+        return new org.bukkit.inventory.ItemStack(def.seed(), amount);
+    }
+
     // ---- Croissance (tick batché par chunk chargé) ----
 
     /**
