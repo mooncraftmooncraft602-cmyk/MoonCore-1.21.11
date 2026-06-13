@@ -144,6 +144,7 @@ public final class CustomItemDef implements CustomItemView {
     private float toolMiningSpeed = 1f;           // vitesse par défaut (hors règles)
     private int toolDamagePerBlock = 1;           // durabilité perdue par bloc miné
     private final List<ToolRule> toolRules = new ArrayList<>(); // règles explicites ; vide = auto depuis ToolKind
+    private int maxDamage = 0;                     // composant minecraft:max_damage (durabilité custom ; 0 = vanilla)
 
     public CustomItemDef(String id) {
         this.id = id.toLowerCase(Locale.ROOT);
@@ -289,6 +290,11 @@ public final class CustomItemDef implements CustomItemView {
     }
     public void clearToolComponent() { this.toolComp = false; toolRules.clear(); }
 
+    // ---- Durabilité custom (composant minecraft:max_damage) ----
+    public int maxDamage() { return maxDamage; }
+    /** Définit la durabilité maximale custom ({@code 0} = durabilité vanilla du matériau). */
+    public void setMaxDamage(int value) { this.maxDamage = Math.max(0, Math.min(100_000, value)); }
+
     public Map<String, Integer> enchants() { return enchants; }
     public void setEnchant(String key, int level) {
         if (key == null || key.isBlank()) return;
@@ -367,6 +373,7 @@ public final class CustomItemDef implements CustomItemView {
         c.toolMiningSpeed = this.toolMiningSpeed;
         c.toolDamagePerBlock = this.toolDamagePerBlock;
         c.toolRules.addAll(this.toolRules);
+        c.maxDamage = this.maxDamage;
         return c;
     }
 
@@ -491,6 +498,8 @@ public final class CustomItemDef implements CustomItemView {
         } else {
             s.set("tool", null);
         }
+
+        s.set("max-damage", maxDamage > 0 ? maxDamage : null);
     }
 
     public static CustomItemDef load(String id, ConfigurationSection s) {
@@ -607,6 +616,8 @@ public final class CustomItemDef implements CustomItemView {
                 d.addToolRule(String.valueOf(blocks), speed, correct);
             }
         }
+
+        d.setMaxDamage(s.getInt("max-damage", 0));
         return d;
     }
 

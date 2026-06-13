@@ -67,6 +67,23 @@ public final class ItemComponentApplier {
         applyEnchants(def, meta);
         applyFood(def, meta);
         applyToolComponent(def, meta);
+        applyMaxDamage(def, meta);
+    }
+
+    /**
+     * Durabilité custom (composant {@code minecraft:max_damage}). Posé sur le meta {@code Damageable}
+     * (outils/armures) via l'API stable, gardé par try/catch. Sans effet si l'objet est incassable ou
+     * si le matériau n'a pas de durabilité.
+     */
+    private void applyMaxDamage(CustomItemDef def, ItemMeta meta) {
+        if (def.maxDamage() <= 0 || def.unbreakable()) return;
+        try {
+            if (meta instanceof org.bukkit.inventory.meta.Damageable dmg) {
+                dmg.setMaxDamage(def.maxDamage());
+            }
+        } catch (Throwable ignored) {
+            // API max_damage indisponible (Paper plus ancien) : durabilité vanilla conservée.
+        }
     }
 
     /**
