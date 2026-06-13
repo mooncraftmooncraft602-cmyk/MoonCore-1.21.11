@@ -7,6 +7,9 @@ import com.mooncore.api.progression.ProgressionService;
 import com.mooncore.api.stats.StatKeys;
 import com.mooncore.api.stats.StatisticsService;
 import com.mooncore.command.SubCommand;
+import com.mooncore.data.content.ContentMigrator;
+import com.mooncore.data.content.ContentSyncService;
+import com.mooncore.data.content.UniversalContentStore;
 import com.mooncore.modules.antifarm.AntiFarmModule;
 import com.mooncore.modules.boss.BossManagerModule;
 import com.mooncore.modules.event.EventManagerModule;
@@ -35,6 +38,7 @@ public final class AdminSubCommand implements SubCommand {
         String sub = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "info";
         switch (sub) {
             case "inspect" -> inspect(plugin, sender, args);
+            case "migrate-content" -> migrateContent(plugin, sender);
             case "debug" -> debug(plugin, sender);
             case "info" -> sender.sendMessage(cm.prefixed("version",
                     "version", plugin.getPluginMeta().getVersion(),
@@ -83,6 +87,40 @@ public final class AdminSubCommand implements SubCommand {
         }
     }
 
+    /**
+     * {@code /moon admin migrate-content} — importe (idempotent) le contenu YAML
+     * (items/blocks/bosses) dans le store SQL universel {@code mooncore_content} (Étape A4).
+     * Exécuté en asynchrone ; le YAML reste intact.
+     */
+    private void migrateContent(MoonCore plugin, CommandSender sender) {
+        var dm = plugin.dataManager();
+        String prefix = plugin.configManager().prefix();
+        if (dm == null || !dm.isReady()) {
+            sender.sendMessage(com.mooncore.util.Text.mm(prefix
+                    + "<red>Base de données indisponible : migration impossible.</red>"));
+            return;
+        }
+        sender.sendMessage(com.mooncore.util.Text.mm(prefix
+                + "<gray>Migration du contenu YAML → SQL en cours…</gray>"));
+        plugin.schedulers().async(() -> {
+            try {
+                dm.applyMigrations(ContentSyncService.migrations());
+                UniversalContentStore store = new UniversalContentStore(dm.database());
+                ContentMigrator.Result r = ContentMigrator.migrate(
+                        plugin.getDataFolder(), store, System.currentTimeMillis());
+                plugin.schedulers().sync(() -> sender.sendMessage(com.mooncore.util.Text.mm(prefix
+                        + "<green>Migration terminée :</green> <white>" + r.items() + "</white> item(s), <white>"
+                        + r.blocks() + "</white> bloc(s), <white>" + r.bosses() + "</white> boss"
+                        + (r.errors() > 0 ? " <red>(" + r.errors() + " erreur(s) ignorée(s))</red>" : "")
+                        + " <gray>→ mooncore_content.</gray>")));
+            } catch (Exception e) {
+                plugin.logger().error("migrate-content échoué", e);
+                plugin.schedulers().sync(() -> sender.sendMessage(com.mooncore.util.Text.mm(prefix
+                        + "<red>Échec de la migration (voir console).</red>")));
+            }
+        });
+    }
+
     private void debug(MoonCore plugin, CommandSender sender) {
         var cm = plugin.configManager();
         Runtime rt = Runtime.getRuntime();
@@ -111,7 +149,7 @@ public final class AdminSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender sender, String[] args) {
         if (args.length == 1) {
             List<String> out = new java.util.ArrayList<>();
-            for (String s : List.of("inspect", "debug", "info")) {
+            for (String s : List.of("inspect", "migrate-content", "debug", "info")) {
                 if (s.startsWith(args[0].toLowerCase(Locale.ROOT))) out.add(s);
             }
             return out;
