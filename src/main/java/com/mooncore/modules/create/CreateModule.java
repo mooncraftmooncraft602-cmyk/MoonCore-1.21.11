@@ -29,7 +29,11 @@ public final class CreateModule extends AbstractModule {
         }
 
         CustomBlockManagerModule block = plugin().moduleManager().get(CustomBlockManagerModule.class);
-        if (block != null) registry.register(new BlockContentHandler(block));
+        if (block != null) {
+            BlockContentHandler h = new BlockContentHandler(block);
+            if (ai != null) h.withAi(ai.prompts());
+            registry.register(h);
+        }
 
         CropManagerModule crop = plugin().moduleManager().get(CropManagerModule.class);
         if (crop != null) {
