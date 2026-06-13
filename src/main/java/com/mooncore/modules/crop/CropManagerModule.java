@@ -60,6 +60,7 @@ public final class CropManagerModule extends AbstractModule {
         }
 
         registerListener(new CropListener(this));
+        plugin().rootCommand().register(new CropSubCommand(this));
 
         // Affiche les plants des chunks déjà chargés (les autres apparaîtront au ChunkLoad).
         for (World w : Bukkit.getWorlds()) {
@@ -106,6 +107,16 @@ public final class CropManagerModule extends AbstractModule {
         defs.put(def.id(), def);
         defStore.save(def);
     }
+
+    public boolean removeDef(String id) {
+        String norm = id == null ? null : id.toLowerCase(Locale.ROOT);
+        if (norm == null) return false;
+        boolean mem = defs.remove(norm) != null;
+        boolean disk = defStore.delete(norm);
+        return mem || disk;
+    }
+
+    public java.util.Set<String> ids() { return java.util.Set.copyOf(defs.keySet()); }
 
     // ---- API emplantations ----
 
