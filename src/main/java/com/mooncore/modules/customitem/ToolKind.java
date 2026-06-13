@@ -55,9 +55,11 @@ public enum ToolKind {
     public static ToolKind fromText(String text) {
         if (text == null) return NONE;
         String s = text.toLowerCase(Locale.ROOT);
+        // « pickaxe »/« pioche » AVANT « axe »/« hache » : sinon « pickaxe » (qui contient « axe »)
+        // serait classé en hache.
+        if (s.contains("pioche") || s.contains("pickaxe")) return PICKAXE;
         if (s.contains("hache") || s.contains("axe")) return AXE;
         if (s.contains("pelle") || s.contains("shovel")) return SHOVEL;
-        if (s.contains("pioche") || s.contains("pickaxe")) return PICKAXE;
         if (s.contains("houe") || s.contains("hoe")) return HOE;
         if (s.contains("epee") || s.contains("epée") || s.contains("sword") || s.contains("lame")) return SWORD;
         return NONE;
