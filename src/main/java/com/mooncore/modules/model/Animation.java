@@ -48,6 +48,17 @@ public final class Animation {
     public double length() { return length; }
     public boolean loop() { return loop; }
 
+    /** Noms des os animés (lecture seule). */
+    public java.util.Set<String> bones() {
+        return java.util.Collections.unmodifiableSet(tracks.keySet());
+    }
+
+    /** Keyframes (triées) d'un os, copie immuable ; vide si l'os n'est pas animé. */
+    public List<Keyframe> keyframes(String bone) {
+        List<Keyframe> k = tracks.get(bone);
+        return k == null ? List.of() : List.copyOf(k);
+    }
+
     /** Pose interpolée de l'os {@code bone} à l'instant {@code t} (s). {@link Pose#rest()} si non animé. */
     public Pose sample(String bone, double t) {
         List<Keyframe> kfs = tracks.get(bone);
