@@ -33,7 +33,9 @@ public final class PackAssembler {
                           File blockTexturesSrc,
                           Map<String, com.mooncore.modules.boss.BossDefinition> bossDefs,
                           File bossTexturesSrc,
-                          File armorTexturesSrc) throws Exception {
+                          File armorTexturesSrc,
+                          Map<String, com.mooncore.modules.crop.CropDef> cropDefs,
+                          File cropTexturesSrc) throws Exception {
         deleteRecursive(buildDir);
         buildDir.mkdirs();
 
@@ -67,12 +69,19 @@ public final class PackAssembler {
                 .build(defs, buildDir, armorTexturesSrc, r.warnings());
         int armorModels = ar.models(), armorCopied = ar.copied();
 
+        // 2e) Cultures custom : un item-model par étape de croissance (<modelKey>_stage<n>).
+        int cropModels = 0;
+        if (cropDefs != null && !cropDefs.isEmpty()) {
+            cropModels = new com.mooncore.modules.crop.CropPackBuilder(log)
+                    .build(cropDefs, buildDir, cropTexturesSrc, r.warnings());
+        }
+
         // 3) Zip + SHA-1.
         outZip.getParentFile().mkdirs();
         zipDir(buildDir, outZip);
         byte[] sha1 = sha1(outZip);
         return new Built(outZip, sha1,
-                r.models() + blocks + bossModels + armorModels,
+                r.models() + blocks + bossModels + armorModels + cropModels,
                 r.copied() + bossCopied + armorCopied);
     }
 

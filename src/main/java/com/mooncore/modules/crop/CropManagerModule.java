@@ -118,6 +118,16 @@ public final class CropManagerModule extends AbstractModule {
 
     public java.util.Set<String> ids() { return java.util.Set.copyOf(defs.keySet()); }
 
+    /** Vue des définitions (pour le builder de resource pack). */
+    public Map<String, CropDef> rawDefs() { return defs; }
+
+    /** Dossier source des PNG de cultures par étape ({@code crops-textures/<modelKey>_stage<n>.png}). */
+    public java.io.File texturesFolder() {
+        java.io.File f = new java.io.File(plugin().getDataFolder(), "crops-textures");
+        if (!f.exists()) f.mkdirs();
+        return f;
+    }
+
     // ---- API emplantations ----
 
     public CropPlacementStore.Placement placementAt(Location loc) {

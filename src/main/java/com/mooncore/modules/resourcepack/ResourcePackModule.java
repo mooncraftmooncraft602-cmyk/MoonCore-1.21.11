@@ -157,9 +157,14 @@ public final class ResourcePackModule extends AbstractModule implements Resource
 
             File armorTex = ci != null ? ci.armorTexturesFolder() : null;
 
+            var crop = plugin().moduleManager().get(com.mooncore.modules.crop.CropManagerModule.class);
+            Map<String, com.mooncore.modules.crop.CropDef> cropDefs =
+                    crop != null ? crop.rawDefs() : Map.of();
+            File cropTex = crop != null ? crop.texturesFolder() : null;
+
             PackAssembler.Built built = new PackAssembler(log())
                     .assemble(defs, buildDir, texturesSrc, packSources, packZip,
-                            blockDefs, blockTex, bossDefs, bossTex, armorTex);
+                            blockDefs, blockTex, bossDefs, bossTex, armorTex, cropDefs, cropTex);
             this.sha1 = built.sha1();
             log().info("[ResourcePack] Pack assemblé : " + built.models() + " modèle(s), "
                     + (packZip.length() / 1024) + " Ko, SHA-1=" + PackAssembler.hex(built.sha1()).substring(0, 12) + "…");
