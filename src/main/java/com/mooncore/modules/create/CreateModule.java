@@ -12,7 +12,7 @@ import com.mooncore.modules.customitem.CustomItemManagerModule;
  * S'active après les modules de contenu (softDepends) pour qu'ils soient présents.
  */
 @ModuleInfo(id = "create", name = "CreateCommand",
-        softDepends = {"custom-item", "custom-block", "crop", "ai-assistant"})
+        softDepends = {"custom-item", "custom-block", "crop", "boss", "ai-assistant"})
 public final class CreateModule extends AbstractModule {
 
     private final ContentTypeRegistry registry = new ContentTypeRegistry();
@@ -35,6 +35,13 @@ public final class CreateModule extends AbstractModule {
         if (crop != null) {
             CropContentHandler h = new CropContentHandler(crop);
             if (ai != null) h.withAi(ai.prompts(), ai.validator());
+            registry.register(h);
+        }
+
+        var boss = plugin().moduleManager().get(com.mooncore.modules.boss.BossManagerModule.class);
+        if (boss != null) {
+            BossContentHandler h = new BossContentHandler(boss);
+            if (ai != null) h.withAi(ai.prompts());
             registry.register(h);
         }
 

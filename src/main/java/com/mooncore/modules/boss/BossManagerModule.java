@@ -502,6 +502,29 @@ public final class BossManagerModule extends AbstractModule {
 
     public Collection<String> bossIds() { return registry.keySet(); }
     public boolean exists(String id) { return id != null && registry.containsKey(id.toLowerCase(Locale.ROOT)); }
+
+    /**
+     * Supprime un boss : le retire du registre et de son fichier YAML ({@code bosses.<id>}), en
+     * effaçant le fichier seulement s'il ne contient plus aucun boss. Retourne false si inconnu.
+     */
+    public boolean removeBoss(String id) {
+        if (id == null) return false;
+        String norm = id.toLowerCase(Locale.ROOT);
+        BossDefinition def = registry.remove(norm);
+        File f = definitionFiles.remove(norm);
+        if (f != null && f.isFile()) {
+            YamlConfiguration yml = YamlConfiguration.loadConfiguration(f);
+            yml.set("bosses." + norm, null);
+            var remaining = yml.getConfigurationSection("bosses");
+            try {
+                if (remaining == null || remaining.getKeys(false).isEmpty()) f.delete();
+                else yml.save(f);
+            } catch (java.io.IOException e) {
+                log().error("Suppression du boss " + norm + " échouée", e);
+            }
+        }
+        return def != null;
+    }
     public int activeCount() { return active.size(); }
     public Map<String, BossDefinition> rawDefs() { return Map.copyOf(registry); }
 
