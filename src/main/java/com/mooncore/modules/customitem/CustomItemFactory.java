@@ -9,9 +9,6 @@ import com.mooncore.util.Text;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -34,17 +31,17 @@ public final class CustomItemFactory {
         String label(Rarity rarity);
     }
 
-    private final MoonCore plugin;
     private final NamespacedKey idKey;
     private final AbilityRegistry abilities;
     private final RarityResolver rarities;
+    private final ItemComponentApplier components;
 
     public CustomItemFactory(MoonCore plugin, NamespacedKey idKey,
                              AbilityRegistry abilities, RarityResolver rarities) {
-        this.plugin = plugin;
         this.idKey = idKey;
         this.abilities = abilities;
         this.rarities = rarities;
+        this.components = new ItemComponentApplier(plugin);
     }
 
     public ItemStack build(CustomItemDef def, int amount) {
@@ -61,43 +58,9 @@ public final class CustomItemFactory {
         // PDC : identité de l'objet.
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, def.id());
 
-        // Modèle custom MODERNE (composant item_model, 1.21.4+) : pointe vers
-        // assets/mooncore/items/<key>.json (cf. ResourcePackBuilder). Clé string, zéro collision.
-        // Ignoré silencieusement par les clients sans le pack ; remplace l'ancien custom_model_data.
-        if (def.modelKey() != null && !def.modelKey().isBlank()) {
-            meta.setItemModel(new NamespacedKey(ResourcePackBuilder.NS,
-                    def.modelKey().toLowerCase(java.util.Locale.ROOT)));
-        }
-        // ARMURE PORTÉE custom (composant equippable, 1.21.2+) : la texture s'affiche sur le CORPS
-        // du joueur (3e personne) au lieu de l'armure vanilla. L'asset est généré par EquipmentPackBuilder.
-        if (def.equipmentKey() != null && !def.equipmentKey().isBlank()) {
-            org.bukkit.inventory.EquipmentSlot slot = armorSlot(def.material());
-            if (slot != null) {
-                org.bukkit.inventory.meta.components.EquippableComponent eq = meta.getEquippable();
-                eq.setSlot(slot);
-                eq.setModel(new NamespacedKey(ResourcePackBuilder.NS, def.equipmentKey()));
-                meta.setEquippable(eq);
-            }
-        }
-        if (def.glowing()) {
-            meta.setEnchantmentGlintOverride(true);
-        }
-        if (def.unbreakable()) {
-            meta.setUnbreakable(true);
-            meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_UNBREAKABLE);
-        }
-        // On masque l'affichage vanilla des attributs (« +13 Attack Damage »…) : nos stats sont
-        // déjà listées dans la section « Statistiques » → évite le doublon et raccourcit l'infobulle.
-        meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ATTRIBUTES);
-
-        // Attributs vanilla (s'appliquent serveur-side → identiques Java/Bedrock).
-        applyAttributes(def, meta);
-
-        // Enchantements vanilla (Sharpness, Protection, Efficiency…).
-        for (Map.Entry<String, Integer> e : def.enchants().entrySet()) {
-            org.bukkit.enchantments.Enchantment ench = resolveEnchant(e.getKey());
-            if (ench != null) meta.addEnchant(ench, Math.max(1, e.getValue()), true);
-        }
+        // Composants 1.21 (item_model, equippable, glint, unbreakable, attributs, enchants) :
+        // centralisés dans ItemComponentApplier (Étape B1).
+        components.apply(def, meta);
 
         item.setItemMeta(meta);
         return item;
@@ -166,53 +129,6 @@ public final class CustomItemFactory {
             }
         }
         return lore;
-    }
-
-    private void applyAttributes(CustomItemDef def, ItemMeta meta) {
-        EquipmentSlotGroup group;
-        if (def.type().appliesWorn()) {
-            group = EquipmentSlotGroup.ARMOR;
-        } else if (def.type().appliesHeld()) {
-            group = EquipmentSlotGroup.MAINHAND;
-        } else {
-            group = EquipmentSlotGroup.ANY;
-        }
-
-        for (Map.Entry<String, Double> e : def.stats().entrySet()) {
-            ItemStats.StatMeta m = ItemStats.meta(e.getKey());
-            if (m == null || m.vanillaAttribute() == null) continue; // stat gérée par le listener
-            Attribute attr = matchAttribute(m.vanillaAttribute());
-            if (attr == null) continue;
-
-            double value = e.getValue();
-            AttributeModifier.Operation op;
-            if (m.percent()) {
-                op = AttributeModifier.Operation.MULTIPLY_SCALAR_1;
-                value = value / 100.0;
-            } else {
-                op = AttributeModifier.Operation.ADD_NUMBER;
-            }
-            NamespacedKey modKey = new NamespacedKey(plugin, "ci_" + e.getKey());
-            meta.addAttributeModifier(attr, new AttributeModifier(modKey, value, op, group));
-        }
-    }
-
-    private static Attribute matchAttribute(String name) {
-        return com.mooncore.util.Attrs.byKey(name);
-    }
-
-    /** Slot d'armure déduit du matériau de base (null = matériau non portable comme armure). */
-    private static org.bukkit.inventory.EquipmentSlot armorSlot(org.bukkit.Material mat) {
-        String n = mat.name();
-        if (n.endsWith("_HELMET") || n.endsWith("_HEAD") || n.endsWith("_SKULL") || n.equals("CARVED_PUMPKIN"))
-            return org.bukkit.inventory.EquipmentSlot.HEAD;
-        if (n.endsWith("_CHESTPLATE") || n.equals("ELYTRA"))
-            return org.bukkit.inventory.EquipmentSlot.CHEST;
-        if (n.endsWith("_LEGGINGS"))
-            return org.bukkit.inventory.EquipmentSlot.LEGS;
-        if (n.endsWith("_BOOTS"))
-            return org.bukkit.inventory.EquipmentSlot.FEET;
-        return null;
     }
 
     /** "fire_resistance" → "Fire Resistance" (libellé lisible d'une clé d'effet). */

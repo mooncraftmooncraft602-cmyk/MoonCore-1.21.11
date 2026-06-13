@@ -115,12 +115,8 @@ public final class EndgameItemsModule extends AbstractModule implements CustomIt
      * antérieures (le Flight Core reste alors un plastron netherite sans vol).
      */
     private void applyGliderComponent(ItemStack item) {
-        try {
-            Class<?> types = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes");
-            Object glider = types.getField("GLIDER").get(null);
-            Class<?> nonValued = Class.forName("io.papermc.paper.datacomponent.DataComponentType$NonValued");
-            ItemStack.class.getMethod("setData", nonValued).invoke(item, glider);
-        } catch (Throwable ignored) {
+        // Centralisé dans ItemComponentApplier (Étape B1) : même pattern réflexion+fallback.
+        if (!com.mooncore.modules.customitem.ItemComponentApplier.applyGlider(item)) {
             log().debug("Composant GLIDER indisponible (Paper < 1.21.4) : Flight Core en mode armure seule.");
         }
     }
