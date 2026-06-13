@@ -20,15 +20,28 @@ public final class RigBone {
     public final Vector3f pivot;  // centre de rotation (blocs)
     public final Vector3f from;   // coin min de la boîte (blocs)
     public final Vector3f to;     // coin max de la boîte (blocs)
-    public final BlockData block; // bloc affiché
+    public final BlockData block; // bloc affiché (rendu « blocky » fallback)
+    /** Clé item-model si l'os doit être rendu par un ItemDisplay texturé (null = BlockDisplay du {@link #block}). */
+    public final String itemModelKey;
 
     public RigBone(String name, String parent, Vector3f pivot, Vector3f from, Vector3f to, BlockData block) {
+        this(name, parent, pivot, from, to, block, null);
+    }
+
+    public RigBone(String name, String parent, Vector3f pivot, Vector3f from, Vector3f to,
+                   BlockData block, String itemModelKey) {
         this.name = name;
         this.parent = parent;
         this.pivot = pivot;
         this.from = from;
         this.to = to;
         this.block = block;
+        this.itemModelKey = itemModelKey;
+    }
+
+    /** True si l'os doit être rendu via un ItemDisplay texturé plutôt qu'un BlockDisplay. */
+    public boolean hasItemModel() {
+        return itemModelKey != null && !itemModelKey.isBlank();
     }
 
     /** Taille de la boîte (to - from), en blocs. */
