@@ -87,6 +87,7 @@ modules:
   custom-item: true     # objets custom data-driven (armes/armures/artefacts/boss/event)
   custom-block: true    # blocs/minerais custom (note-block + resource pack)
   crop: true            # cultures/plantes custom à cycle de ticks (ItemDisplay)
+  create: true          # commande de création/gestion de contenu unifiée (/moon content)
   ai-assistant: true    # assistant IA admin (nécessite une clé API dans modules/ai-assistant.yml)
   resource-pack: true   # resource pack forcé (HTTP embarqué + sons + textures)
   auto-update: true     # vérifie GitHub Releases et télécharge la mise à jour (dossier update/)
