@@ -50,6 +50,15 @@ cache:
   # Taille max par cache nommé (entrées). 0 = illimité.
   default-maximum-size: 50000
 
+# Stockage du contenu data-driven (items, blocs, boss, modèles…).
+content:
+  # Où persister/charger les définitions :
+  #   yaml  (défaut) — fichiers YAML uniquement (comportement historique) ;
+  #   both          — double-écriture : YAML + miroir SQL requêtable (mooncore_content) ;
+  #   sql           — SQL fait autorité (le YAML n'est plus réécrit mais reste lisible).
+  # Avant de passer à sql/both sur un serveur existant : lancer /moon admin migrate-content.
+  storage-mode: "yaml"
+
 # Activation/désactivation des modules. Un module désactivé n'est jamais chargé.
 # L'ordre de chargement est déterminé automatiquement par les dépendances.
 modules:

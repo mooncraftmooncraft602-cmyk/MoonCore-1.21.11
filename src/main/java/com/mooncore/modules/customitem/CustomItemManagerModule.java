@@ -4,6 +4,9 @@ import com.mooncore.api.customitem.CustomItemManagerService;
 import com.mooncore.api.customitem.Rarity;
 import com.mooncore.core.module.AbstractModule;
 import com.mooncore.core.module.ModuleInfo;
+import com.mooncore.data.content.ContentJson;
+import com.mooncore.data.content.ContentSyncService;
+import com.mooncore.data.content.UniversalContentStore;
 import com.mooncore.modules.customitem.ability.AbilityRegistry;
 import com.mooncore.modules.customitem.command.CustomItemSubCommand;
 import com.mooncore.util.Cooldowns;
@@ -39,9 +42,13 @@ public final class CustomItemManagerModule extends AbstractModule
     private final Map<Rarity, String> rarityLabels = new LinkedHashMap<>();
     private final Cooldowns<String> abilityCooldowns = new Cooldowns<>();
 
+    /** Type de contenu pour le store universel SQL (Étape A). */
+    private static final String CONTENT_TYPE = "item";
+
     private NamespacedKey idKey;
     private NamespacedKey bossKey;
     private CustomItemDefStore store;
+    private ContentSyncService contentSync;     // null = miroir SQL indisponible → YAML pur
     private CustomItemFactory factory;
     private AbilityRegistry abilities;
     private RecipeManager recipeManager;
@@ -60,6 +67,7 @@ public final class CustomItemManagerModule extends AbstractModule
         this.abilities = new AbilityRegistry(plugin());
         this.factory = new CustomItemFactory(plugin(), idKey, abilities, this);
         this.store = new CustomItemDefStore(plugin().getDataFolder(), log());
+        setupContentSync();
 
         reloadDefinitions();
 
@@ -158,10 +166,48 @@ public final class CustomItemManagerModule extends AbstractModule
 
     @Override public boolean isCustom(ItemStack item) { return idOf(item) != null; }
 
+    /**
+     * Initialise le miroir SQL requêtable (Étape A3) si la base est prête. En cas d'échec,
+     * {@link #contentSync} reste {@code null} et le module se comporte en YAML pur (aucune régression).
+     */
+    private void setupContentSync() {
+        try {
+            var dm = data();
+            if (dm != null && dm.isReady()) {
+                dm.applyMigrations(ContentSyncService.migrations());
+                this.contentSync = new ContentSyncService(dm.database(),
+                        () -> plugin().getConfig().getString("content.storage-mode", "yaml"), log());
+            }
+        } catch (Exception e) {
+            log().error("Init du miroir SQL de contenu échouée (repli YAML pur)", e);
+            this.contentSync = null;
+        }
+    }
+
     @Override
     public void reloadDefinitions() {
         defs.clear();
-        defs.putAll(store.loadAll());
+        Map<String, CustomItemDef> loaded = new LinkedHashMap<>();
+        // Base YAML (sauf en mode SQL pur où le YAML n'est plus autoritaire).
+        if (contentSync == null || contentSync.writesYaml()) {
+            loaded.putAll(store.loadAll());
+        }
+        // Recouvrement SQL (mode sql|both). Repli silencieux sur YAML si la lecture échoue.
+        if (contentSync != null && contentSync.writesSql()) {
+            try {
+                Map<String, UniversalContentStore.Row> rows = contentSync.store().loadAll(CONTENT_TYPE).join();
+                for (UniversalContentStore.Row row : rows.values()) {
+                    try {
+                        loaded.put(row.id(), CustomItemDef.load(row.id(), ContentJson.toSection(row.dataJson())));
+                    } catch (Exception ex) {
+                        log().error("Item SQL invalide ignoré : " + row.id(), ex);
+                    }
+                }
+            } catch (Exception e) {
+                log().error("Chargement SQL des items échoué, repli YAML.", e);
+            }
+        }
+        defs.putAll(loaded);
     }
 
     // ============================================================
@@ -183,18 +229,33 @@ public final class CustomItemManagerModule extends AbstractModule
 
     public void put(CustomItemDef def) {
         defs.put(def.id(), def);
-        store.save(def);
+        if (contentSync == null || contentSync.writesYaml()) {
+            store.save(def);
+        }
+        if (contentSync != null) {
+            contentSync.mirror(CONTENT_TYPE, def.id(), toJson(def), 1, System.currentTimeMillis());
+        }
     }
 
     public boolean removeDef(String id) {
         String norm = id.toLowerCase(java.util.Locale.ROOT);
         boolean disk = store.delete(norm);
         boolean mem = defs.remove(norm) != null;
-        if (mem && !disk) {
+        if (contentSync != null) {
+            contentSync.remove(CONTENT_TYPE, norm);
+        }
+        if (mem && !disk && (contentSync == null || contentSync.writesYaml())) {
             log().warn("Objet custom « " + norm + " » retiré de la mémoire mais son fichier n'a pas pu "
                     + "être supprimé : il réapparaîtra au prochain reload.");
         }
         return disk || mem;
+    }
+
+    /** Sérialise une définition d'item en JSON via le pont YAML↔JSON (réutilise {@code def.save}). */
+    private static String toJson(CustomItemDef def) {
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        def.save(cfg);
+        return ContentJson.toJson(cfg);
     }
 
     public CustomItemDefStore store() { return store; }
@@ -214,6 +275,36 @@ public final class CustomItemManagerModule extends AbstractModule
     }
 
     public ItemStack buildItem(CustomItemDef def, int amount) { return factory.build(def, amount); }
+
+    /**
+     * Résultat de la recette de fonte d'un item custom : un autre item <b>custom</b>
+     * ({@code smeltsIntoCustom}, prioritaire) ou un {@link org.bukkit.Material} vanilla
+     * ({@code smeltsInto}). {@code null} si l'item ne fond pas ou si l'item custom
+     * résultat est introuvable. Utilisé par {@link RecipeManager} (recette) et par
+     * {@link CustomItemListener} (filet de sécurité {@code FurnaceSmeltEvent}).
+     */
+    public ItemStack smeltOutput(CustomItemDef def) {
+        if (def == null || !def.canSmelt()) return null;
+        int amt = Math.max(1, def.smeltAmount());
+        if (def.smeltsIntoCustom() != null) {
+            CustomItemDef out = rawDef(def.smeltsIntoCustom());
+            return out == null ? null : factory.build(out, amt);
+        }
+        if (def.smeltsInto() != null) return new ItemStack(def.smeltsInto(), amt);
+        return null;
+    }
+
+    /** Résultat de la recette de tailleur de pierre (item custom prioritaire, sinon Material). null si rien/introuvable. */
+    public ItemStack cutOutput(CustomItemDef def) {
+        if (def == null || !def.canCut()) return null;
+        int amt = Math.max(1, def.cutAmount());
+        if (def.cutsIntoCustom() != null) {
+            CustomItemDef out = rawDef(def.cutsIntoCustom());
+            return out == null ? null : factory.build(out, amt);
+        }
+        if (def.cutsInto() != null) return new ItemStack(def.cutsInto(), amt);
+        return null;
+    }
 
     public static boolean isAir(ItemStack item) {
         return item == null || item.getType() == org.bukkit.Material.AIR;
