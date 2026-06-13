@@ -93,6 +93,15 @@ public final class AiPrompts {
                   "consume_effects": [ { "effect": "<effet vanilla>", "duration": secondes,
                             "amplifier": entier } ] (optionnel ; UNIQUEMENT pour type=consumable,
                             ex potion/nourriture ; effets comme speed, regeneration, strength…),
+                  "food": { "nutrition": entier 0-20, "saturation": nombre 0-20,
+                            "can_always_eat": booléen, "eat_seconds": nombre 0.1-60 }
+                            (optionnel ; nourriture NATIVE mangeable par le mécanisme vanilla ;
+                            ajoute-le pour pain/fruits/ragoûts. Combinable avec consume_effects),
+                  "tool": { "mining_speed": nombre, "damage_per_block": entier,
+                            "rules": [ { "blocks": "#minecraft:mineable/pickaxe ou MAT1,MAT2",
+                            "speed": nombre, "correct_for_drops": booléen } ] }
+                            (optionnel ; outil NATIF avec vraies règles de minage ; si tu mets
+                            tool_kind, laisse rules vide pour une règle auto, ou précise des tags),
                   "glowing": booléen,
                   "unbreakable": booléen
                 }

@@ -184,6 +184,35 @@ public final class AiActionValidator {
             }
         }
 
+        // Nourriture NATIVE (composant minecraft:food + consumable).
+        if (root.has("food") && root.get("food").isJsonObject()) {
+            JsonObject f = root.getAsJsonObject("food");
+            int nutrition = Math.max(0, Math.min(20, intOf(f, "nutrition", 4)));
+            float sat = (float) Math.max(0, Math.min(20, dblOf(f, "saturation", 2.4)));
+            boolean always = bool(f, "can_always_eat", false);
+            float eat = (float) Math.max(0.1, Math.min(60, dblOf(f, "eat_seconds", 1.6)));
+            def.setFood(nutrition, sat, always, eat);
+        }
+
+        // Composant outil NATIF (minecraft:tool) + règles de minage.
+        if (root.has("tool") && root.get("tool").isJsonObject()) {
+            JsonObject t = root.getAsJsonObject("tool");
+            float speed = (float) Math.max(0, Math.min(1024, dblOf(t, "mining_speed", 1.0)));
+            int dmg = Math.max(0, Math.min(1000, intOf(t, "damage_per_block", 1)));
+            def.setToolComponent(speed, dmg);
+            if (t.has("rules") && t.get("rules").isJsonArray()) {
+                for (JsonElement el : t.getAsJsonArray("rules")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject r = el.getAsJsonObject();
+                    String blocks = str(r, "blocks", null);
+                    if (blocks == null || blocks.isBlank()) continue;
+                    float rspeed = (float) Math.max(0, Math.min(1024, dblOf(r, "speed", speed)));
+                    boolean correct = bool(r, "correct_for_drops", true);
+                    def.addToolRule(blocks, rspeed, correct);
+                }
+            }
+        }
+
         return new Result(true, def, warnings, null);
     }
 
@@ -296,6 +325,11 @@ public final class AiActionValidator {
 
     private static int intOf(JsonObject o, String key, int def) {
         try { return o.has(key) ? o.get(key).getAsInt() : def; }
+        catch (Exception e) { return def; }
+    }
+
+    private static double dblOf(JsonObject o, String key, double def) {
+        try { return o.has(key) ? o.get(key).getAsDouble() : def; }
         catch (Exception e) { return def; }
     }
 }
