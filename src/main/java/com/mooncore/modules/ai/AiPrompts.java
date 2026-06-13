@@ -275,6 +275,28 @@ public final class AiPrompts {
                 """;
     }
 
+    public String cropSchemaSystem() {
+        return """
+                Tu conçois une culture/plante custom à cycle de croissance pour un serveur Minecraft (MoonCore).
+                Réponds UNIQUEMENT par un objet JSON valide, sans texte ni markdown :
+                {
+                  "id": "string a-z0-9_-",
+                  "display-name": "nom MiniMessage, ex: <green>Blé Lunaire</green>",
+                  "seed": "Material de la graine en MAJUSCULES (ex WHEAT_SEEDS) ou 'custom:<itemId>'",
+                  "place-on": "Material du bloc support (ex FARMLAND, GRASS_BLOCK, SAND)",
+                  "stages": entier 1-16 (nombre d'étapes de croissance),
+                  "growth-ticks": entier (ticks par étape ; 600 = 30 s ; 1200 = 1 min),
+                  "min-light": entier 0-15 (lumière minimale pour pousser),
+                  "requires-water": booléen (exige une terre labourée hydratée),
+                  "drop": { "item": "Material ou custom:<itemId>", "min": entier, "max": entier },
+                  "seed-return": { "min": entier, "max": entier },
+                  "replantable": booléen (repart à l'étape 0 après récolte au lieu de disparaître)
+                }
+                Valeurs équilibrées : 4 étapes, 600-1200 ticks/étape, min-light 9, drop 1-2,
+                seed-return 0-1. Réponds en français pour le nom.
+                """;
+    }
+
     /** Prompt système pour modifier la configuration d'un module existant. */
     public String configSchemaSystem(java.util.List<String> moduleIds) {
         return """

@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mooncore.api.customitem.ItemType;
 import com.mooncore.api.customitem.Rarity;
+import com.mooncore.modules.crop.CropDef;
 import com.mooncore.modules.customitem.CustomItemDef;
 import com.mooncore.modules.customitem.ToolKind;
 import com.mooncore.modules.customitem.ToolTier;
@@ -312,6 +313,57 @@ public final class AiActionValidator {
             case CONSUMABLE -> Material.POTION;
             case EVENT_ITEM -> Material.NETHER_STAR;
         };
+    }
+
+    /**
+     * Valide une sortie IA décrivant une culture ({@link AiPrompts#cropSchemaSystem()}) et la
+     * transforme en {@link CropDef} sûr (valeurs bornées). Retourne {@code null} si le JSON est invalide.
+     */
+    public CropDef validateCrop(String aiText, String forcedId) {
+        JsonObject root = parse(aiText);
+        if (root == null) return null;
+        String id = sanitizeId(forcedId != null ? forcedId
+                : str(root, "id", "ai_crop_" + Math.abs(aiText.hashCode() % 100000)));
+        CropDef d = new CropDef(id);
+
+        if (root.has("display-name")) d.setDisplayName(str(root, "display-name", d.displayName()));
+
+        String seed = str(root, "seed", null);
+        if (seed != null) {
+            if (seed.toLowerCase(Locale.ROOT).startsWith("custom:")) {
+                d.setSeedCustomId(seed.substring("custom:".length()));
+            } else {
+                Material m = Material.matchMaterial(seed.toUpperCase(Locale.ROOT));
+                if (m != null && m.isItem()) d.setSeed(m);
+            }
+        }
+        Material on = Material.matchMaterial(str(root, "place-on", "FARMLAND").toUpperCase(Locale.ROOT));
+        if (on != null && on.isBlock()) d.setPlaceOn(on);
+
+        d.setStages(intOf(root, "stages", 4));
+        d.setGrowthTicks(intOf(root, "growth-ticks", 600));
+        d.setMinLight(intOf(root, "min-light", 9));
+        d.setRequiresWater(bool(root, "requires-water", true));
+        d.setReplantable(bool(root, "replantable", true));
+
+        if (root.has("drop") && root.get("drop").isJsonObject()) {
+            JsonObject dr = root.getAsJsonObject("drop");
+            String item = str(dr, "item", null);
+            if (item != null) {
+                if (item.toLowerCase(Locale.ROOT).startsWith("custom:")) {
+                    d.setDropItemId(item.substring("custom:".length()));
+                } else {
+                    Material m = Material.matchMaterial(item.toUpperCase(Locale.ROOT));
+                    if (m != null && m.isItem()) d.setDropMaterial(m);
+                }
+            }
+            d.setDropRange(intOf(dr, "min", 1), intOf(dr, "max", 2));
+        }
+        if (root.has("seed-return") && root.get("seed-return").isJsonObject()) {
+            JsonObject sr = root.getAsJsonObject("seed-return");
+            d.setSeedReturnRange(intOf(sr, "min", 0), intOf(sr, "max", 1));
+        }
+        return d;
     }
 
     private static String str(JsonObject o, String key, String def) {
