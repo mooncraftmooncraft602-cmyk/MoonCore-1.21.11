@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
  */
 public final class CreateSubCommand implements SubCommand {
 
+    private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
+
     private final ContentTypeRegistry registry;
 
     public CreateSubCommand(ContentTypeRegistry registry) {
@@ -36,6 +38,7 @@ public final class CreateSubCommand implements SubCommand {
         if (a.length == 0) { help(s); return; }
         String action = a[0].toLowerCase(Locale.ROOT);
         if (action.equals("types")) { types(s); return; }
+        if (action.equals("createall") || action.equals("createmulti")) { createAll(plugin, s, a); return; }
 
         if (a.length < 2) { help(s); return; }
         ContentTypeHandler h = registry.get(a[1]);
@@ -135,6 +138,71 @@ public final class CreateSubCommand implements SubCommand {
         });
     }
 
+    /**
+     * Multi-création IA chaînée (Étape E5) : une description génère plusieurs objets via
+     * {@code unifiedCreateSystem()} ; chaque élément {@code creations[]} est routé vers le
+     * {@link ContentTypeHandler} de son {@code kind} (item, block, crop…) qui le valide et le persiste.
+     */
+    @SuppressWarnings("unchecked")
+    private void createAll(MoonCore plugin, CommandSender s, String[] a) {
+        if (a.length < 2) {
+            msg(s, "<red>/moon content createall <description> <gray>(ex : <white>un minerai lunaire, sa pioche et sa recette</white>)");
+            return;
+        }
+        var ai = plugin.moduleManager().get(com.mooncore.modules.ai.AiAdminModule.class);
+        if (ai == null || ai.client() == null || !ai.client().config().hasApiKey()) {
+            msg(s, "<red>IA indisponible (module ai-assistant inactif ou clé API absente).");
+            return;
+        }
+        String description = String.join(" ", java.util.Arrays.copyOfRange(a, 1, a.length));
+        msg(s, "<gray>Génération IA multiple « <white>" + description + "</white> »…");
+
+        ai.client().ask(ai.prompts().unifiedCreateSystem(), description).whenComplete((text, err) ->
+                plugin.schedulers().sync(() -> {
+                    if (err != null || text == null || text.isBlank()) {
+                        msg(s, "<red>Échec IA : " + (err != null ? err.getMessage() : "réponse vide"));
+                        return;
+                    }
+                    java.util.Map<String, Object> root = ai.validator().extractMap(text);
+                    Object listObj = root == null ? null : root.get("creations");
+                    if (!(listObj instanceof java.util.List<?> creations) || creations.isEmpty()) {
+                        msg(s, "<red>Rien à créer (réponse IA inattendue).");
+                        return;
+                    }
+                    int created = 0, skipped = 0;
+                    int max = Math.min(8, creations.size());
+                    for (int i = 0; i < max; i++) {
+                        if (!(creations.get(i) instanceof java.util.Map<?, ?> elRaw)) continue;
+                        java.util.Map<String, Object> el = (java.util.Map<String, Object>) elRaw;
+                        String kind = normalizeKind(String.valueOf(el.getOrDefault("kind", "item")));
+                        ContentTypeHandler h = registry.get(kind);
+                        if (h == null) { skipped++; continue; }
+                        try {
+                            String createdId = h.createFromAi(GSON.toJson(el), null);
+                            if (createdId != null) { created++; msg(s, "<green>▸ " + kind + " <white>" + createdId); }
+                            else skipped++;
+                        } catch (Exception ex) {
+                            skipped++;
+                            msg(s, "<yellow>⚠ élément ignoré (" + kind + ") : " + ex.getMessage());
+                        }
+                    }
+                    if (created > 0) rebuildPack(plugin);
+                    msg(s, "<green>" + created + " élément(s) créé(s)"
+                            + (skipped > 0 ? " <gray>(" + skipped + " ignoré(s) : type non géré par la commande unifiée ou sortie invalide)" : "")
+                            + ".");
+                }));
+    }
+
+    /** Normalise les synonymes de {@code kind} de l'IA vers les types enregistrés. */
+    private static String normalizeKind(String kind) {
+        return switch (kind.toLowerCase(Locale.ROOT)) {
+            case "ore", "minerai" -> "block";
+            case "mob" -> "boss";
+            case "plant", "plante", "culture" -> "crop";
+            default -> kind.toLowerCase(Locale.ROOT);
+        };
+    }
+
     private void delete(CommandSender s, ContentTypeHandler h, String[] a) {
         if (a.length < 3) { msg(s, "<red>/moon content delete " + h.type() + " <id> confirm"); return; }
         String id = a[2];
@@ -202,9 +270,10 @@ public final class CreateSubCommand implements SubCommand {
     private void help(CommandSender s) {
         msg(s, "<gradient:#8a2be2:#c77dff>/moon content</gradient> <gray>— gestion de contenu unifiée");
         String[] l = {
-                "create <type> <id> · edit <type> <id> · delete <type> <id>",
-                "list <type> · info <type> <id> · clone <type> <src> <nouvel>",
-                "give <type> <joueur> <id> [n] · types",
+                "create <type> <id> [description IA… | --dry] · edit <type> <id>",
+                "delete <type> <id> confirm · list <type> · info <type> <id>",
+                "clone <type> <src> <nouvel> · give <type> <joueur> <id> [n]",
+                "createall <description> (multi-création IA chaînée) · types",
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, " <dark_gray>types : <white>" + String.join("<gray>, <white>", registry.types()));
@@ -219,7 +288,7 @@ public final class CreateSubCommand implements SubCommand {
     @Override
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
-            return filter(List.of("create", "edit", "delete", "list", "info", "clone", "give", "types"), a[0]);
+            return filter(List.of("create", "createall", "edit", "delete", "list", "info", "clone", "give", "types"), a[0]);
         }
         if (a.length == 2) {
             return filter(new ArrayList<>(registry.types()), a[1]);
