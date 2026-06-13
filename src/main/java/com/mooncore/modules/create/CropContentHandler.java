@@ -11,12 +11,31 @@ import java.util.Collection;
 public final class CropContentHandler implements ContentTypeHandler {
 
     private final CropManagerModule module;
+    private com.mooncore.modules.ai.AiPrompts prompts;
+    private com.mooncore.modules.ai.AiActionValidator validator;
 
     public CropContentHandler(CropManagerModule module) {
         this.module = module;
     }
 
+    /** Branche la génération IA (optionnel). */
+    public void withAi(com.mooncore.modules.ai.AiPrompts prompts, com.mooncore.modules.ai.AiActionValidator validator) {
+        this.prompts = prompts;
+        this.validator = validator;
+    }
+
     @Override public String type() { return "crop"; }
+
+    @Override public String aiSystemPrompt() { return prompts == null ? null : prompts.cropSchemaSystem(); }
+
+    @Override
+    public String createFromAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        CropDef d = validator.validateCrop(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        module.put(d);
+        return d.id();
+    }
 
     @Override
     public boolean create(String id) {

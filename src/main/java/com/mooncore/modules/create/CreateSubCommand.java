@@ -42,7 +42,7 @@ public final class CreateSubCommand implements SubCommand {
         if (h == null) { msg(s, "<red>Type inconnu : <white>" + a[1] + "</white>. Voir <white>/moon content types"); return; }
 
         switch (action) {
-            case "create" -> create(s, h, a);
+            case "create" -> create(plugin, s, h, a);
             case "delete", "remove" -> delete(s, h, a);
             case "list" -> list(s, h);
             case "info" -> info(s, h, a);
@@ -53,11 +53,58 @@ public final class CreateSubCommand implements SubCommand {
         }
     }
 
-    private void create(CommandSender s, ContentTypeHandler h, String[] a) {
-        if (a.length < 3) { msg(s, "<red>/moon content create " + h.type() + " <id>"); return; }
+    private void create(MoonCore plugin, CommandSender s, ContentTypeHandler h, String[] a) {
+        if (a.length < 3) { msg(s, "<red>/moon content create " + h.type() + " <id> [description IA…]"); return; }
         String id = a[2];
+
+        // Avec description → génération IA (si le type la supporte et l'IA est dispo).
+        if (a.length > 3) {
+            createWithAi(plugin, s, h, id, String.join(" ", java.util.Arrays.copyOfRange(a, 3, a.length)));
+            return;
+        }
+
         if (h.create(id)) msg(s, "<green>" + h.type() + " <white>" + id + "<green> créé. <gray>Édite-le avec <white>/moon content edit " + h.type() + " " + id);
         else msg(s, "<red>Création impossible (id invalide ou déjà existant) : <white>" + id);
+    }
+
+    /** Génère une définition depuis une description en langage naturel via l'IA. */
+    private void createWithAi(MoonCore plugin, CommandSender s, ContentTypeHandler h, String id, String description) {
+        String system = h.aiSystemPrompt();
+        if (system == null) {
+            msg(s, "<yellow>Pas de génération IA pour le type <white>" + h.type() + "</white>. "
+                    + "Crée-le vide : <white>/moon content create " + h.type() + " " + id);
+            return;
+        }
+        var ai = plugin.moduleManager().get(com.mooncore.modules.ai.AiAdminModule.class);
+        if (ai == null || ai.client() == null || !ai.client().config().hasApiKey()) {
+            msg(s, "<red>IA indisponible (module ai-assistant inactif ou clé API absente).");
+            return;
+        }
+        if (h.exists(id)) { msg(s, "<red>Cet id existe déjà : <white>" + id); return; }
+
+        msg(s, "<gray>Génération IA d'un <white>" + h.type() + "</white> « <white>" + description + "</white> »…");
+        ai.client().ask(system, description).whenComplete((text, err) ->
+                plugin.schedulers().sync(() -> {
+                    if (err != null || text == null || text.isBlank()) {
+                        msg(s, "<red>Échec IA : " + (err != null ? err.getMessage() : "réponse vide"));
+                        return;
+                    }
+                    String created = h.createFromAi(text, id);
+                    if (created != null) {
+                        msg(s, "<green>" + h.type() + " <white>" + created + "<green> généré par l'IA. "
+                                + "<gray>Édite : <white>/moon content edit " + h.type() + " " + created);
+                        rebuildPack(plugin);
+                    } else {
+                        msg(s, "<red>Sortie IA invalide pour un " + h.type() + ".");
+                    }
+                }));
+    }
+
+    private void rebuildPack(MoonCore plugin) {
+        plugin.services().get(com.mooncore.api.resourcepack.ResourcePackService.class).ifPresent(rp -> {
+            rp.rebuild();
+            rp.resendAll();
+        });
     }
 
     private void delete(CommandSender s, ContentTypeHandler h, String[] a) {

@@ -11,12 +11,31 @@ import java.util.Collection;
 public final class ItemContentHandler implements ContentTypeHandler {
 
     private final CustomItemManagerModule module;
+    private com.mooncore.modules.ai.AiPrompts prompts;
+    private com.mooncore.modules.ai.AiActionValidator validator;
 
     public ItemContentHandler(CustomItemManagerModule module) {
         this.module = module;
     }
 
+    /** Branche la génération IA (optionnel ; sans cela, aiSystemPrompt/createFromAi renvoient null). */
+    public void withAi(com.mooncore.modules.ai.AiPrompts prompts, com.mooncore.modules.ai.AiActionValidator validator) {
+        this.prompts = prompts;
+        this.validator = validator;
+    }
+
     @Override public String type() { return "item"; }
+
+    @Override public String aiSystemPrompt() { return prompts == null ? null : prompts.itemSchemaSystem(); }
+
+    @Override
+    public String createFromAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        var r = validator.validateItem(aiText, ContentIds.norm(forcedId), -1);
+        if (r == null || !r.ok() || r.def() == null) return null;
+        module.put(r.def());
+        return r.def().id();
+    }
 
     @Override
     public boolean create(String id) {
