@@ -68,8 +68,21 @@ public final class EditableRig {
     public boolean setParent(String name, String parent) {
         EditableBone b = bone(name);
         if (b == null) return false;
+        if (wouldCycle(name, parent)) return false; // refuse auto-parent et cycles (hiérarchie corrompue)
         b.parent = parent;
         return true;
+    }
+
+    /** Vrai si donner {@code parent} à l'os {@code name} créerait un cycle (parent == name ou descendant). */
+    private boolean wouldCycle(String name, String parent) {
+        String ancestor = parent;
+        int guard = 0;
+        while (ancestor != null && guard++ < bones.size() + 1) {
+            if (ancestor.equals(name)) return true;
+            EditableBone a = bone(ancestor);
+            ancestor = a == null ? null : a.parent;
+        }
+        return false;
     }
 
     public boolean setItemModelKey(String name, String key) {
