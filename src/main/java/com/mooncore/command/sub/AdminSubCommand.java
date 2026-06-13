@@ -110,7 +110,8 @@ public final class AdminSubCommand implements SubCommand {
                         plugin.getDataFolder(), store, System.currentTimeMillis());
                 plugin.schedulers().sync(() -> sender.sendMessage(com.mooncore.util.Text.mm(prefix
                         + "<green>Migration terminée :</green> <white>" + r.items() + "</white> item(s), <white>"
-                        + r.blocks() + "</white> bloc(s), <white>" + r.bosses() + "</white> boss"
+                        + r.blocks() + "</white> bloc(s), <white>" + r.bosses() + "</white> boss, <white>"
+                        + r.crops() + "</white> culture(s)"
                         + (r.errors() > 0 ? " <red>(" + r.errors() + " erreur(s) ignorée(s))</red>" : "")
                         + " <gray>→ mooncore_content.</gray>")));
             } catch (Exception e) {

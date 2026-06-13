@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class ContentMigrator {
 
-    public record Result(int items, int blocks, int bosses, int errors) {
-        public int total() { return items + blocks + bosses; }
+    public record Result(int items, int blocks, int bosses, int crops, int errors) {
+        public int total() { return items + blocks + bosses + crops; }
     }
 
     private ContentMigrator() {}
@@ -35,13 +35,14 @@ public final class ContentMigrator {
         int items = migrateFlat(new File(dataFolder, "items"), "item", store, nowMs, futures, errors);
         int blocks = migrateFlat(new File(dataFolder, "blocks"), "block", store, nowMs, futures, errors);
         int bosses = migrateBosses(new File(dataFolder, "content/bosses"), store, nowMs, futures, errors);
+        int crops = migrateFlat(new File(dataFolder, "crops"), "crop", store, nowMs, futures, errors);
 
         try {
             CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         } catch (Exception e) {
             errors.incrementAndGet();
         }
-        return new Result(items, blocks, bosses, errors.get());
+        return new Result(items, blocks, bosses, crops, errors.get());
     }
 
     /** Dossier plat : un fichier {@code <id>.yml} = une définition. */
