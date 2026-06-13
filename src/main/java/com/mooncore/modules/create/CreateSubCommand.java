@@ -248,13 +248,16 @@ public final class CreateSubCommand implements SubCommand {
     }
 
     private void clone(CommandSender s, ContentTypeHandler h, String[] a) {
-        // Clonage générique minimal : crée une nouvelle entrée vide (la copie profonde par type
-        // viendra via un hook dédié). Sert surtout d'amorce d'édition.
         if (a.length < 4) { msg(s, "<red>/moon content clone " + h.type() + " <source> <nouvelId>"); return; }
         if (!h.exists(a[2])) { msg(s, "<red>Source inconnue : <white>" + a[2]); return; }
-        if (h.create(a[3])) msg(s, "<green>Nouvel " + h.type() + " <white>" + a[3] + "<green> créé (à éditer). "
-                + "<gray>Copie profonde par type à venir.");
-        else msg(s, "<red>Création impossible : <white>" + a[3]);
+        if (h.cloneEntry(a[2], a[3])) {
+            msg(s, "<green>" + h.type() + " <white>" + a[2] + "<green> cloné en <white>" + a[3] + "<green>.");
+        } else if (h.create(a[3])) {
+            msg(s, "<yellow>Copie profonde non supportée pour " + h.type()
+                    + " : nouvel <white>" + a[3] + "</white> vide créé (à éditer).");
+        } else {
+            msg(s, "<red>Clonage impossible (id invalide ou déjà existant) : <white>" + a[3]);
+        }
     }
 
     private void give(CommandSender s, ContentTypeHandler h, String[] a) {

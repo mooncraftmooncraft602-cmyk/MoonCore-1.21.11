@@ -76,4 +76,14 @@ public final class ItemContentHandler implements ContentTypeHandler {
         CustomItemDef d = module.rawDef(ContentIds.norm(id));
         return d == null ? id : d.displayName();
     }
+
+    @Override
+    public boolean cloneEntry(String sourceId, String newId) {
+        String src = ContentIds.norm(sourceId);
+        String dst = ContentIds.norm(newId);
+        CustomItemDef source = module.rawDef(src);
+        if (source == null || !ContentIds.valid(dst) || module.rawDef(dst) != null) return false;
+        module.put(source.cloneAs(dst));
+        return true;
+    }
 }

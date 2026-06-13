@@ -101,4 +101,18 @@ public final class BlockContentHandler implements ContentTypeHandler {
         CustomBlockDef d = module.rawDef(ContentIds.norm(id));
         return d == null ? id : d.displayName();
     }
+
+    @Override
+    public boolean cloneEntry(String sourceId, String newId) {
+        String src = ContentIds.norm(sourceId);
+        String dst = ContentIds.norm(newId);
+        CustomBlockDef source = module.rawDef(src);
+        if (source == null || !ContentIds.valid(dst) || module.rawDef(dst) != null) return false;
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        source.save(cfg);
+        CustomBlockDef copy = CustomBlockDef.load(dst, cfg);
+        copy.setStateIndex(-1); // état note_block frais (évite la collision avec la source)
+        module.put(copy);
+        return true;
+    }
 }

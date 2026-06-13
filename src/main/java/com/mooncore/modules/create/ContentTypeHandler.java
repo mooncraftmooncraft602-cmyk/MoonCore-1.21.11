@@ -44,6 +44,12 @@ public interface ContentTypeHandler {
     default String describe(String id) { return id; }
 
     /**
+     * Clone une entrée (copie profonde) {@code sourceId} → {@code newId}. Retourne false si la source
+     * est introuvable, la cible existe déjà ou l'id est invalide. Défaut : non supporté.
+     */
+    default boolean cloneEntry(String sourceId, String newId) { return false; }
+
+    /**
      * Valide une sortie IA <b>sans persister</b> (dry-run) : retourne une description lisible du
      * résultat si la sortie est valide, ou {@code null}. Défaut : non supporté.
      */

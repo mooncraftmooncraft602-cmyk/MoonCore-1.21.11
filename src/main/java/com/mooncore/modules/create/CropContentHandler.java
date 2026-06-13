@@ -74,4 +74,16 @@ public final class CropContentHandler implements ContentTypeHandler {
         CropDef d = module.def(ContentIds.norm(id));
         return d == null ? id : d.displayName();
     }
+
+    @Override
+    public boolean cloneEntry(String sourceId, String newId) {
+        String src = ContentIds.norm(sourceId);
+        String dst = ContentIds.norm(newId);
+        CropDef source = module.def(src);
+        if (source == null || !ContentIds.valid(dst) || module.def(dst) != null) return false;
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        source.save(cfg);
+        module.put(CropDef.load(dst, cfg));
+        return true;
+    }
 }
