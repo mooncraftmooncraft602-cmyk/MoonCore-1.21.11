@@ -29,6 +29,14 @@ public final class CustomItemDef implements CustomItemView {
     /** Effet appliqué à la consommation (clic droit) : clé de registre + durée(ticks) + amplificateur(0-based). */
     public record ConsumeEffect(String key, int duration, int amplifier) {}
 
+    /**
+     * Règle de minage du composant {@code minecraft:tool}. {@code blocks} = soit un tag
+     * ({@code "#minecraft:mineable/pickaxe"}), soit une liste de matériaux séparés par des virgules
+     * ({@code "STONE,DEEPSLATE"}). {@code speed} = vitesse de minage ; {@code correctForDrops} =
+     * cette règle rend-elle les blocs « correctement minés » (donc droppants).
+     */
+    public record ToolRule(String blocks, float speed, boolean correctForDrops) {}
+
     /** Ingredient de recette : material vanilla ou item custom exact. */
     public record RecipeIngredient(Material material, String customItemId) {
         public RecipeIngredient {
@@ -131,6 +139,11 @@ public final class CustomItemDef implements CustomItemView {
     private float foodSaturation = 2.4f;          // saturation restaurée
     private boolean foodCanAlwaysEat = false;     // mangeable même barre de faim pleine
     private float foodEatSeconds = 1.6f;          // durée de l'animation de consommation
+    // Composant minecraft:tool — règles de minage NATIVES (vitesse réelle, durabilité par bloc).
+    private boolean toolComp = false;             // true = compose minecraft:tool
+    private float toolMiningSpeed = 1f;           // vitesse par défaut (hors règles)
+    private int toolDamagePerBlock = 1;           // durabilité perdue par bloc miné
+    private final List<ToolRule> toolRules = new ArrayList<>(); // règles explicites ; vide = auto depuis ToolKind
 
     public CustomItemDef(String id) {
         this.id = id.toLowerCase(Locale.ROOT);
@@ -259,6 +272,23 @@ public final class CustomItemDef implements CustomItemView {
     }
     public void clearFood() { this.food = false; }
 
+    // ---- Composant outil NATIF (minecraft:tool) ----
+    public boolean hasToolComponent() { return toolComp; }
+    public float toolMiningSpeed() { return toolMiningSpeed; }
+    public int toolDamagePerBlock() { return toolDamagePerBlock; }
+    public List<ToolRule> toolRules() { return toolRules; }
+    /** Active le composant outil (paramètres bornés). N'efface pas les règles existantes. */
+    public void setToolComponent(float miningSpeed, int damagePerBlock) {
+        this.toolComp = true;
+        this.toolMiningSpeed = Math.max(0f, Math.min(1024f, miningSpeed));
+        this.toolDamagePerBlock = Math.max(0, Math.min(1000, damagePerBlock));
+    }
+    public void addToolRule(String blocks, float speed, boolean correctForDrops) {
+        if (blocks == null || blocks.isBlank()) return;
+        toolRules.add(new ToolRule(blocks.trim(), Math.max(0f, Math.min(1024f, speed)), correctForDrops));
+    }
+    public void clearToolComponent() { this.toolComp = false; toolRules.clear(); }
+
     public Map<String, Integer> enchants() { return enchants; }
     public void setEnchant(String key, int level) {
         if (key == null || key.isBlank()) return;
@@ -333,6 +363,10 @@ public final class CustomItemDef implements CustomItemView {
         c.foodSaturation = this.foodSaturation;
         c.foodCanAlwaysEat = this.foodCanAlwaysEat;
         c.foodEatSeconds = this.foodEatSeconds;
+        c.toolComp = this.toolComp;
+        c.toolMiningSpeed = this.toolMiningSpeed;
+        c.toolDamagePerBlock = this.toolDamagePerBlock;
+        c.toolRules.addAll(this.toolRules);
         return c;
     }
 
@@ -441,6 +475,22 @@ public final class CustomItemDef implements CustomItemView {
         } else {
             s.set("food", null);
         }
+
+        if (toolComp) {
+            s.set("tool.mining-speed", toolMiningSpeed);
+            s.set("tool.damage-per-block", toolDamagePerBlock);
+            List<Map<String, Object>> rules = new ArrayList<>();
+            for (ToolRule r : toolRules) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("blocks", r.blocks());
+                m.put("speed", r.speed());
+                m.put("correct-for-drops", r.correctForDrops());
+                rules.add(m);
+            }
+            s.set("tool.rules", rules);
+        } else {
+            s.set("tool", null);
+        }
     }
 
     public static CustomItemDef load(String id, ConfigurationSection s) {
@@ -543,6 +593,19 @@ public final class CustomItemDef implements CustomItemView {
                     (float) foodSec.getDouble("saturation", 2.4),
                     foodSec.getBoolean("can-always-eat", false),
                     (float) foodSec.getDouble("eat-seconds", 1.6));
+        }
+
+        ConfigurationSection toolSec = s.getConfigurationSection("tool");
+        if (toolSec != null) {
+            d.setToolComponent((float) toolSec.getDouble("mining-speed", 1.0),
+                    toolSec.getInt("damage-per-block", 1));
+            for (Map<?, ?> m : toolSec.getMapList("rules")) {
+                Object blocks = m.get("blocks");
+                if (blocks == null) continue;
+                float speed = m.get("speed") instanceof Number n ? n.floatValue() : 1f;
+                boolean correct = !(m.get("correct-for-drops") instanceof Boolean b) || b;
+                d.addToolRule(String.valueOf(blocks), speed, correct);
+            }
         }
         return d;
     }

@@ -66,6 +66,70 @@ public final class ItemComponentApplier {
         applyAttributes(def, meta);
         applyEnchants(def, meta);
         applyFood(def, meta);
+        applyToolComponent(def, meta);
+    }
+
+    /**
+     * Composant outil NATIF ({@code minecraft:tool}, 1.20.5+) : vitesse de minage réelle et
+     * durabilité par bloc. Si aucune règle explicite n'est fournie, une règle est déduite du
+     * {@link ToolKind} de l'objet (tag {@code minecraft:mineable/<kind>}), reliant ainsi le
+     * composant à {@code ToolKind}/{@code ToolTier}. API stable, gardée par try/catch.
+     */
+    private void applyToolComponent(CustomItemDef def, ItemMeta meta) {
+        if (!def.hasToolComponent()) return;
+        try {
+            org.bukkit.inventory.meta.components.ToolComponent tc = meta.getTool();
+            tc.setDefaultMiningSpeed(def.toolMiningSpeed());
+            tc.setDamagePerBlock(def.toolDamagePerBlock());
+
+            if (def.toolRules().isEmpty()) {
+                org.bukkit.Tag<Material> tag = mineableTag(def.toolKind());
+                if (tag != null) tc.addRule(tag, def.toolMiningSpeed(), true);
+            } else {
+                for (CustomItemDef.ToolRule r : def.toolRules()) addRule(tc, r);
+            }
+            meta.setTool(tc);
+        } catch (Throwable ignored) {
+            // ToolComponent indisponible : l'outil garde son comportement vanilla de base.
+        }
+    }
+
+    private void addRule(org.bukkit.inventory.meta.components.ToolComponent tc, CustomItemDef.ToolRule r) {
+        String blocks = r.blocks();
+        if (blocks.startsWith("#")) {
+            org.bukkit.Tag<Material> tag = resolveBlockTag(blocks.substring(1));
+            if (tag != null) tc.addRule(tag, r.speed(), r.correctForDrops());
+            return;
+        }
+        java.util.List<Material> mats = new java.util.ArrayList<>();
+        for (String part : blocks.split(",")) {
+            Material m = Material.matchMaterial(part.trim().toUpperCase(Locale.ROOT));
+            if (m != null && m.isBlock()) mats.add(m);
+        }
+        if (!mats.isEmpty()) tc.addRule(mats, r.speed(), r.correctForDrops());
+    }
+
+    /** Tag mineable correspondant à une famille d'outil (null pour épée/none). */
+    private static org.bukkit.Tag<Material> mineableTag(ToolKind kind) {
+        return switch (kind) {
+            case PICKAXE -> resolveBlockTag("minecraft:mineable/pickaxe");
+            case AXE -> resolveBlockTag("minecraft:mineable/axe");
+            case SHOVEL -> resolveBlockTag("minecraft:mineable/shovel");
+            case HOE -> resolveBlockTag("minecraft:mineable/hoe");
+            default -> null;
+        };
+    }
+
+    private static org.bukkit.Tag<Material> resolveBlockTag(String key) {
+        try {
+            NamespacedKey nk = key.contains(":")
+                    ? NamespacedKey.fromString(key)
+                    : NamespacedKey.minecraft(key);
+            if (nk == null) return null;
+            return org.bukkit.Bukkit.getTag(org.bukkit.Tag.REGISTRY_BLOCKS, nk, Material.class);
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /**
