@@ -81,6 +81,16 @@ public final class ModelEditorSession {
         return true;
     }
 
+    /**
+     * Marque le cube sélectionné comme texturé (rendu via item-model {@code key}). {@code key} null/blank
+     * = revient au rendu blocky. Le modèle d'item est émis dans le pack par {@link RigModelPackBuilder}.
+     */
+    public boolean setSelectedTextured(String key) {
+        if (selected == null) return false;
+        edit(() -> rig.setItemModelKey(selected, key));
+        return true;
+    }
+
     /** Duplique le cube sélectionné (décalé d'un bloc) et sélectionne la copie. */
     public boolean duplicateSelected() {
         if (selected == null) return false;
