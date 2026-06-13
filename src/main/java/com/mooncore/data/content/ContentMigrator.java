@@ -55,7 +55,8 @@ public final class ContentMigrator {
             if (!UniversalContentStore.isValidId(id)) { errors.incrementAndGet(); continue; }
             try {
                 YamlConfiguration yml = YamlConfiguration.loadConfiguration(f);
-                futures.add(store.upsert(type, id, ContentJson.toJson(yml), 1, nowMs));
+                futures.add(store.upsert(type, id, ContentJson.toJson(yml),
+                        ContentSchemas.currentVersion(type), nowMs));
                 count++;
             } catch (Exception e) {
                 errors.incrementAndGet();
@@ -80,7 +81,8 @@ public final class ContentMigrator {
                     ConfigurationSection b = sec.getConfigurationSection(key);
                     if (b == null) continue;
                     if (!UniversalContentStore.isValidId(id)) { errors.incrementAndGet(); continue; }
-                    futures.add(store.upsert("boss", id, ContentJson.toJson(b), 1, nowMs));
+                    futures.add(store.upsert("boss", id, ContentJson.toJson(b),
+                            ContentSchemas.currentVersion("boss"), nowMs));
                     count++;
                 }
             } catch (Exception e) {

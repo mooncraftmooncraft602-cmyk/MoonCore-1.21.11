@@ -198,7 +198,10 @@ public final class CustomItemManagerModule extends AbstractModule
                 Map<String, UniversalContentStore.Row> rows = contentSync.store().loadAll(CONTENT_TYPE).join();
                 for (UniversalContentStore.Row row : rows.values()) {
                     try {
-                        loaded.put(row.id(), CustomItemDef.load(row.id(), ContentJson.toSection(row.dataJson())));
+                        // Rétro-compat intra-objet : met à niveau la forme JSON si stockée dans une version antérieure.
+                        String json = com.mooncore.data.content.ContentSchemas.upgradeToCurrent(
+                                CONTENT_TYPE, row.dataJson(), row.schemaVersion());
+                        loaded.put(row.id(), CustomItemDef.load(row.id(), ContentJson.toSection(json)));
                     } catch (Exception ex) {
                         log().error("Item SQL invalide ignoré : " + row.id(), ex);
                     }
@@ -233,7 +236,8 @@ public final class CustomItemManagerModule extends AbstractModule
             store.save(def);
         }
         if (contentSync != null) {
-            contentSync.mirror(CONTENT_TYPE, def.id(), toJson(def), 1, System.currentTimeMillis());
+            int version = com.mooncore.data.content.ContentSchemas.currentVersion(CONTENT_TYPE);
+            contentSync.mirror(CONTENT_TYPE, def.id(), toJson(def), version, System.currentTimeMillis());
         }
     }
 
