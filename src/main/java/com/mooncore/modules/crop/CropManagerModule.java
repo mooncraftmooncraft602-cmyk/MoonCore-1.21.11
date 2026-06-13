@@ -28,12 +28,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @ModuleInfo(id = "crop", name = "CropManager", softDepends = {"custom-item", "resource-pack"})
 public final class CropManagerModule extends AbstractModule {
 
+    /** Période du tick de croissance (ticks). Chaque contrôle fait avancer une étape avec prob. period/growthTicks. */
+    private static final long GROWTH_PERIOD = 40L; // 2 s
+
     private final Map<String, CropDef> defs = new LinkedHashMap<>();
     private final Map<String, CropPlacementStore.Placement> placements = new ConcurrentHashMap<>(); // locKey → plant
     private final Map<String, UUID> displays = new ConcurrentHashMap<>();                            // locKey → display
+    private final Map<String, java.util.Set<String>> byChunk = new ConcurrentHashMap<>();           // chunkKey → locKeys
 
     private CropDefStore defStore;
     private CropPlacementStore placementStore;
+    private org.bukkit.scheduler.BukkitTask growthTask;
 
     @Override
     protected void onEnable() {
@@ -46,7 +51,7 @@ public final class CropManagerModule extends AbstractModule {
                 dm.applyMigrations(CropPlacementStore.migrations());
                 this.placementStore = new CropPlacementStore(dm.database());
                 for (CropPlacementStore.Placement p : placementStore.loadAll()) {
-                    if (defs.containsKey(p.cropId())) placements.put(p.locKey(), p);
+                    if (defs.containsKey(p.cropId())) { placements.put(p.locKey(), p); indexAdd(p); }
                 }
             } catch (SQLException e) {
                 log().error("Chargement des emplantations de cultures échoué", e);
@@ -54,22 +59,29 @@ public final class CropManagerModule extends AbstractModule {
             }
         }
 
-        // Affiche les plants des chunks déjà chargés (les autres apparaîtront au ChunkLoad — Étape C4).
+        registerListener(new CropListener(this));
+
+        // Affiche les plants des chunks déjà chargés (les autres apparaîtront au ChunkLoad).
         for (World w : Bukkit.getWorlds()) {
             for (Chunk ch : w.getLoadedChunks()) spawnVisualsInChunk(ch);
         }
+
+        // Tick de croissance batché par chunk chargé (jamais de scan global du monde).
+        this.growthTask = schedulers().syncTimer(this::tickGrowth, GROWTH_PERIOD, GROWTH_PERIOD);
 
         log().info("CropManager : " + defs.size() + " culture(s), " + placements.size() + " plant(s).");
     }
 
     @Override
     protected void onDisable() {
+        if (growthTask != null) { growthTask.cancel(); growthTask = null; }
         for (UUID id : displays.values()) {
             Entity e = Bukkit.getEntity(id);
             if (e != null) e.remove();
         }
         displays.clear();
         placements.clear();
+        byChunk.clear();
         defs.clear();
     }
 
@@ -111,6 +123,7 @@ public final class CropManagerModule extends AbstractModule {
         CropPlacementStore.Placement p = new CropPlacementStore.Placement(
                 loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), def.id(), 0, nowMs);
         placements.put(key, p);
+        indexAdd(p);
         spawnVisual(loc.getWorld(), p, def);
         if (placementStore != null) {
             placementStore.save(p).exceptionally(t -> { log().error("Sauvegarde plant échouée", t); return null; });
@@ -145,6 +158,7 @@ public final class CropManagerModule extends AbstractModule {
         String key = locKey(loc);
         CropPlacementStore.Placement p = placements.remove(key);
         if (p == null) return false;
+        indexRemove(p);
         removeVisual(key);
         if (placementStore != null) {
             placementStore.delete(key).exceptionally(t -> { log().error("Suppression plant échouée", t); return null; });
@@ -172,6 +186,61 @@ public final class CropManagerModule extends AbstractModule {
     }
 
     public Collection<CropPlacementStore.Placement> placements() { return placements.values(); }
+
+    // ---- Croissance (tick batché par chunk chargé) ----
+
+    /**
+     * Avance les étapes des plants situés dans les chunks <b>chargés</b> uniquement (via l'index
+     * {@link #byChunk}, jamais de scan global). Chaque contrôle a une probabilité {@code period/growthTicks}
+     * de faire pousser d'une étape, sous réserve des conditions (lumière, support, hydratation).
+     */
+    private void tickGrowth() {
+        if (placements.isEmpty()) return;
+        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+        for (World w : Bukkit.getWorlds()) {
+            for (Chunk ch : w.getLoadedChunks()) {
+                java.util.Set<String> keys = byChunk.get(
+                        CropPlacementStore.Placement.chunkKey(w.getName(), ch.getX(), ch.getZ()));
+                if (keys == null || keys.isEmpty()) continue;
+                for (String key : new java.util.ArrayList<>(keys)) {
+                    CropPlacementStore.Placement p = placements.get(key);
+                    if (p == null) continue;
+                    CropDef def = def(p.cropId());
+                    if (def == null || p.stage() >= def.stages() - 1) continue; // inconnue ou déjà mûre
+                    Location loc = new Location(w, p.x(), p.y(), p.z());
+                    if (!conditionsMet(def, loc)) continue;
+                    double chance = (double) GROWTH_PERIOD / def.growthTicks();
+                    if (rng.nextDouble() < chance) setStage(loc, p.stage() + 1);
+                }
+            }
+        }
+    }
+
+    /** Conditions de croissance : lumière minimale, bloc support présent, hydratation si requise. */
+    private boolean conditionsMet(CropDef def, Location loc) {
+        org.bukkit.block.Block block = loc.getBlock();
+        if (block.getLightLevel() < def.minLight()) return false;
+        org.bukkit.block.Block support = block.getRelative(org.bukkit.block.BlockFace.DOWN);
+        if (support.getType() != def.placeOn()) return false;
+        if (def.requiresWater()
+                && support.getBlockData() instanceof org.bukkit.block.data.type.Farmland farm
+                && farm.getMoisture() <= 0) {
+            return false;
+        }
+        return true;
+    }
+
+    private void indexAdd(CropPlacementStore.Placement p) {
+        byChunk.computeIfAbsent(p.chunkKey(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(p.locKey());
+    }
+
+    private void indexRemove(CropPlacementStore.Placement p) {
+        java.util.Set<String> set = byChunk.get(p.chunkKey());
+        if (set != null) {
+            set.remove(p.locKey());
+            if (set.isEmpty()) byChunk.remove(p.chunkKey());
+        }
+    }
 
     // ---- Visuels ----
 
