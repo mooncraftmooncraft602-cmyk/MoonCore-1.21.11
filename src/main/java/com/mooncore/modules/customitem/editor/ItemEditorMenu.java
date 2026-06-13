@@ -73,11 +73,24 @@ public final class ItemEditorMenu implements InventoryHolder {
         inv.setItem(29, btn(Material.ANVIL, "<gold>Stats", "<gray>" + d.stats().size() + " active(s)", "<dark_gray>clic = éditer"));
         inv.setItem(30, btn(Material.ENCHANTED_BOOK, "<gold>Capacités", "<gray>" + d.abilities().size(), "<dark_gray>clic = éditer"));
         inv.setItem(31, btn(Material.BRUSH, "<light_purple>🎨 Texture", "<dark_gray>dessiner / éditer en jeu"));
-        inv.setItem(32, btn(Material.FURNACE, "<yellow>Fonte : " + (d.canSmelt()
-                        ? "<green>→ " + d.smeltsInto().name() + " ×" + d.smeltAmount() : "<red>non fondable"),
-                "<gray>clic = définir le résultat (ex <white>IRON_INGOT</white> ou <white>GOLD_NUGGET 2</white>)",
+        inv.setItem(32, btn(Material.FURNACE, "<yellow>Fonte : " + smeltLabel(d),
+                "<gray>clic = définir le résultat : <white>Material</white> ou <white>id d'item custom</white>",
+                "<gray>format <white>résultat [quantité] [four|hautfourneau|fumoir]</white>",
+                "<dark_gray>ex : <white>lunarium_ingot</white> · <white>IRON_INGOT 2</white> · <white>lunarium_ingot 1 hautfourneau</white>",
                 "<dark_gray>clic droit = désactiver la fonte"));
+        inv.setItem(37, btn(d.hasFood() ? Material.COOKED_BEEF : Material.WHEAT_SEEDS,
+                "<gold>Nourriture native : " + onOff(d.hasFood()),
+                "<gray>composant minecraft:food (mangeable vanilla)",
+                "<dark_gray>clic = éditer"));
+        inv.setItem(38, btn(d.hasToolComponent() ? Material.IRON_PICKAXE : Material.STICK,
+                "<gold>Outil natif : " + onOff(d.hasToolComponent()),
+                "<gray>composant minecraft:tool (règles de minage)",
+                "<dark_gray>clic = éditer"));
         inv.setItem(33, btn(Material.CHEST, "<green>📦 Recevoir l'objet"));
+        inv.setItem(34, btn(Material.STONECUTTER, "<yellow>Tailleur : " + cutLabel(d),
+                "<gray>clic = définir le résultat : <white>Material</white> ou <white>id d'item custom</white>",
+                "<gray>format <white>résultat [quantité]</white> · ex <white>lunarium_ingot 4</white>",
+                "<dark_gray>clic droit = désactiver"));
         inv.setItem(49, btn(Material.BARRIER, "<red>Fermer"));
     }
 
@@ -109,6 +122,8 @@ public final class ItemEditorMenu implements InventoryHolder {
                 refresh();
             }
             case 27 -> ConsumableEditorMenu.open(module, chat, p, id);
+            case 37 -> FoodEditorMenu.open(module, chat, p, id);
+            case 38 -> ToolRulesMenu.open(module, chat, p, id);
             case 28 -> EnchantEditorMenu.open(module, chat, p, id);
             case 29 -> StatEditorMenu.open(module, chat, p, id);
             case 30 -> AbilityEditorMenu.open(module, chat, p, id);
@@ -119,24 +134,25 @@ public final class ItemEditorMenu implements InventoryHolder {
                     p.sendActionBar(Text.mm("<gray>Fonte désactivée")); refresh();
                 } else {
                     p.closeInventory();
-                    chat.request(p, "<yellow>Résultat de fonte (ex <white>IRON_INGOT</white> ou <white>GOLD_NUGGET 2</white>, ou <white>aucun</white>) :", in -> {
-                        String[] parts = in.trim().split("\\s+");
-                        if (parts.length == 0 || parts[0].equalsIgnoreCase("aucun") || parts[0].equalsIgnoreCase("none")) {
-                            d.clearSmelt();
-                        } else {
-                            Material m = Material.matchMaterial(parts[0].toUpperCase(java.util.Locale.ROOT));
-                            if (m == null || !m.isItem()) { p.sendMessage(Text.mm("<red>Matériau invalide : " + parts[0])); reopen(p); return; }
-                            int amt = 1;
-                            if (parts.length > 1) try { amt = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) { }
-                            d.setSmeltsInto(m, amt);
-                            p.sendMessage(Text.mm("<green>Fonte : <white>" + id + " <gray>→ <white>" + m.name() + " ×" + d.smeltAmount()
-                                    + " <gray>(au four)"));
-                        }
+                    chat.request(p, "<yellow>Résultat de fonte — <white>Material</white> ou <white>id custom</white>, "
+                            + "format <white>résultat [quantité] [four|hautfourneau|fumoir]</white> (ou <white>aucun</white>) :", in -> {
+                        applySmeltInput(p, d, in);
                         module.put(d); refreshRecipes(); reopen(p);
                     });
                 }
             }
             case 33 -> { module.give(p, id, 1); p.sendMessage(Text.mm("<green>Reçu : <reset>" + d.displayName())); }
+            case 34 -> {
+                if (right) { d.clearCut(); module.put(d); refreshRecipes(); p.sendActionBar(Text.mm("<gray>Tailleur désactivé")); refresh(); }
+                else {
+                    p.closeInventory();
+                    chat.request(p, "<yellow>Résultat tailleur de pierre — <white>Material</white> ou <white>id custom</white>, "
+                            + "format <white>résultat [quantité]</white> (ou <white>aucun</white>) :", in -> {
+                        applyCutInput(p, d, in);
+                        module.put(d); refreshRecipes(); reopen(p);
+                    });
+                }
+            }
             case 49 -> p.closeInventory();
             default -> { }
         }
@@ -159,6 +175,107 @@ public final class ItemEditorMenu implements InventoryHolder {
     private void refreshRecipes() {
         try { module.recipeManager().unregisterAll(); module.recipeManager().registerAll(); }
         catch (Exception ignored) { }
+    }
+
+    /** Libellé de la fonte pour le bouton (résultat custom/vanilla + type d'appareil + quantité). */
+    private static String smeltLabel(CustomItemDef d) {
+        if (!d.canSmelt()) return "<red>non fondable";
+        String out = d.smeltsIntoCustom() != null
+                ? "<light_purple>✦ " + d.smeltsIntoCustom()
+                : "<white>" + d.smeltsInto().name();
+        return "<green>(" + d.smeltType().label() + ") → " + out + " <gray>×" + d.smeltAmount();
+    }
+
+    /**
+     * Parse « résultat [quantité] [type] » et configure la fonte de {@code d}.
+     * Résultat = id d'item custom (existant, ou préfixe {@code custom:}/{@code item:}) sinon Material vanilla.
+     */
+    private void applySmeltInput(Player p, CustomItemDef d, String in) {
+        String[] parts = in.trim().split("\\s+");
+        if (parts.length == 0 || parts[0].isBlank()
+                || parts[0].equalsIgnoreCase("aucun") || parts[0].equalsIgnoreCase("none")) {
+            d.clearSmelt();
+            p.sendMessage(Text.mm("<gray>Fonte désactivée pour <white>" + id + "</white>."));
+            return;
+        }
+        String resultToken = parts[0];
+        int amount = 1;
+        CustomItemDef.SmeltType type = d.smeltType();
+        for (int i = 1; i < parts.length; i++) {
+            try { amount = Integer.parseInt(parts[i]); continue; } catch (NumberFormatException ignored) { }
+            CustomItemDef.SmeltType t = parseSmeltType(parts[i]);
+            if (t != null) type = t;
+        }
+
+        String low = resultToken.toLowerCase(java.util.Locale.ROOT);
+        String customId = null;
+        if (low.startsWith("custom:")) customId = low.substring("custom:".length());
+        else if (low.startsWith("item:")) customId = low.substring("item:".length());
+        else if (module.rawDef(low) != null) customId = low;
+
+        if (customId != null) {
+            if (module.rawDef(customId) == null) {
+                p.sendMessage(Text.mm("<red>Item custom introuvable : <white>" + customId + "</white>"));
+                return;
+            }
+            d.setSmeltsIntoCustom(customId, amount);
+            d.setSmeltType(type);
+            p.sendMessage(Text.mm("<green>Fonte : <white>" + id + " <gray>→ <light_purple>✦ " + d.smeltsIntoCustom()
+                    + " <gray>×" + d.smeltAmount() + " (" + type.label() + ")"));
+            return;
+        }
+
+        Material m = Material.matchMaterial(resultToken.toUpperCase(java.util.Locale.ROOT));
+        if (m == null || !m.isItem()) {
+            p.sendMessage(Text.mm("<red>Résultat invalide (ni Material ni item custom) : <white>" + resultToken + "</white>"));
+            return;
+        }
+        d.setSmeltsInto(m, amount);
+        d.setSmeltType(type);
+        p.sendMessage(Text.mm("<green>Fonte : <white>" + id + " <gray>→ <white>" + m.name()
+                + " <gray>×" + d.smeltAmount() + " (" + type.label() + ")"));
+    }
+
+    private static CustomItemDef.SmeltType parseSmeltType(String tok) {
+        return switch (tok.toLowerCase(java.util.Locale.ROOT)) {
+            case "four", "furnace" -> CustomItemDef.SmeltType.FURNACE;
+            case "hautfourneau", "haut-fourneau", "blast", "blasting" -> CustomItemDef.SmeltType.BLAST;
+            case "fumoir", "smoker", "smoke", "smoking" -> CustomItemDef.SmeltType.SMOKER;
+            default -> null;
+        };
+    }
+
+    /** Libellé du tailleur de pierre pour le bouton. */
+    private static String cutLabel(CustomItemDef d) {
+        if (!d.canCut()) return "<red>non coupable";
+        String out = d.cutsIntoCustom() != null ? "<light_purple>✦ " + d.cutsIntoCustom() : "<white>" + d.cutsInto().name();
+        return "<green>→ " + out + " <gray>×" + d.cutAmount();
+    }
+
+    /** Parse « résultat [quantité] » et configure la recette de tailleur de pierre (résultat custom ou Material). */
+    private void applyCutInput(Player p, CustomItemDef d, String in) {
+        String[] parts = in.trim().split("\\s+");
+        if (parts.length == 0 || parts[0].isBlank() || parts[0].equalsIgnoreCase("aucun") || parts[0].equalsIgnoreCase("none")) {
+            d.clearCut(); p.sendMessage(Text.mm("<gray>Tailleur désactivé pour <white>" + id + "</white>.")); return;
+        }
+        String resultToken = parts[0];
+        int amount = 1;
+        if (parts.length > 1) try { amount = Integer.parseInt(parts[1]); } catch (NumberFormatException ignored) { }
+        String low = resultToken.toLowerCase(java.util.Locale.ROOT);
+        String customId = null;
+        if (low.startsWith("custom:")) customId = low.substring("custom:".length());
+        else if (low.startsWith("item:")) customId = low.substring("item:".length());
+        else if (module.rawDef(low) != null) customId = low;
+        if (customId != null) {
+            if (module.rawDef(customId) == null) { p.sendMessage(Text.mm("<red>Item custom introuvable : <white>" + customId + "</white>")); return; }
+            d.setCutsIntoCustom(customId, amount);
+            p.sendMessage(Text.mm("<green>Tailleur : <white>" + id + " <gray>→ <light_purple>✦ " + d.cutsIntoCustom() + " <gray>×" + d.cutAmount()));
+            return;
+        }
+        Material m = Material.matchMaterial(resultToken.toUpperCase(java.util.Locale.ROOT));
+        if (m == null || !m.isItem()) { p.sendMessage(Text.mm("<red>Résultat invalide : <white>" + resultToken + "</white>")); return; }
+        d.setCutsInto(m, amount);
+        p.sendMessage(Text.mm("<green>Tailleur : <white>" + id + " <gray>→ <white>" + m.name() + " <gray>×" + d.cutAmount()));
     }
 
     // ---- helpers ----

@@ -13,7 +13,8 @@ public final class ItemEditorListener implements Listener {
         Object holder = e.getInventory().getHolder();
         if (!(holder instanceof ItemEditorMenu || holder instanceof StatEditorMenu
                 || holder instanceof AbilityEditorMenu || holder instanceof EnchantEditorMenu
-                || holder instanceof ConsumableEditorMenu)) return;
+                || holder instanceof ConsumableEditorMenu || holder instanceof FoodEditorMenu
+                || holder instanceof ToolRulesMenu)) return;
         e.setCancelled(true);
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (e.getClickedInventory() == null || !e.getClickedInventory().equals(e.getView().getTopInventory())) return;
@@ -23,5 +24,7 @@ public final class ItemEditorListener implements Listener {
         else if (holder instanceof AbilityEditorMenu m) m.click(p, slot, e.isRightClick());
         else if (holder instanceof EnchantEditorMenu m) m.click(p, slot, e.isRightClick());
         else if (holder instanceof ConsumableEditorMenu m) m.click(p, slot, e.isRightClick(), e.isShiftClick());
+        else if (holder instanceof FoodEditorMenu m) m.click(p, slot, e.isRightClick());
+        else if (holder instanceof ToolRulesMenu m) m.click(p, slot, e.isRightClick());
     }
 }
