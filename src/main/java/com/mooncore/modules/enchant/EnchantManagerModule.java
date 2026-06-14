@@ -35,6 +35,16 @@ import java.util.Map;
 public final class EnchantManagerModule extends AbstractModule {
 
     private final Map<String, CustomEnchant> registry = new LinkedHashMap<>();
+    // Sous-listes par type d'effet, précalculées à l'activation : évitent d'itérer les 30 enchants
+    // (et de tester e.xxx()==null) à chaque tick/coup dans les chemins chauds.
+    private final List<CustomEnchant> equipEnchants = new ArrayList<>();
+    private final List<CustomEnchant> meleeEnchants = new ArrayList<>();
+    private final List<CustomEnchant> defenseEnchants = new ArrayList<>();
+    private final List<CustomEnchant> miningEnchants = new ArrayList<>();
+    // Clés PDC précalculées (évite d'allouer un NamespacedKey par lecture dans les boucles).
+    private final Map<CustomEnchant, NamespacedKey> keyCache = new java.util.HashMap<>();
+    // Buffer réutilisé par tickEquip (main thread only) : zéro allocation par joueur par tick.
+    private final List<ItemStack> equipBuffer = new ArrayList<>(6);
     private NamespacedKey bossKey;
     private BukkitTask equipTask;
 
@@ -43,6 +53,14 @@ public final class EnchantManagerModule extends AbstractModule {
         this.bossKey = new NamespacedKey(plugin(), "boss");
         for (CustomEnchant e : EnchantRegistry.build(this)) {
             registry.put(e.id(), e);
+        }
+        // Précalcul clés PDC + sous-listes par type d'effet (chemins chauds : tick/coup).
+        for (CustomEnchant e : registry.values()) {
+            keyCache.put(e, new NamespacedKey(plugin(), "ench_" + e.id()));
+            if (e.equip() != null) equipEnchants.add(e);
+            if (e.melee() != null) meleeEnchants.add(e);
+            if (e.defense() != null) defenseEnchants.add(e);
+            if (e.mining() != null) miningEnchants.add(e);
         }
         log().info("CustomEnchantManager : " + registry.size() + " enchantement(s) enregistré(s).");
 
@@ -56,6 +74,12 @@ public final class EnchantManagerModule extends AbstractModule {
     protected void onDisable() {
         if (equipTask != null) equipTask.cancel();
         registry.clear();
+        equipEnchants.clear();
+        meleeEnchants.clear();
+        defenseEnchants.clear();
+        miningEnchants.clear();
+        keyCache.clear();
+        equipBuffer.clear();
     }
 
     // ---- Registre ----
@@ -64,14 +88,22 @@ public final class EnchantManagerModule extends AbstractModule {
     public java.util.Collection<CustomEnchant> all() { return registry.values(); }
 
     public NamespacedKey key(CustomEnchant e) {
-        return new NamespacedKey(plugin(), "ench_" + e.id());
+        NamespacedKey k = keyCache.get(e);
+        return k != null ? k : new NamespacedKey(plugin(), "ench_" + e.id());
     }
 
     // ---- Lecture / écriture sur l'objet ----
 
     public int getLevel(ItemStack item, CustomEnchant e) {
         if (item == null || !item.hasItemMeta()) return 0;
-        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+        return getLevel(item.getItemMeta().getPersistentDataContainer(), e);
+    }
+
+    /**
+     * Lit le niveau depuis un PDC déjà obtenu. À utiliser dans les boucles : {@code getItemMeta()}
+     * <b>clone</b> la meta à chaque appel, donc on l'appelle une seule fois par objet puis on boucle ici.
+     */
+    private int getLevel(PersistentDataContainer pdc, CustomEnchant e) {
         Integer lvl = pdc.get(key(e), PersistentDataType.INTEGER);
         return lvl == null ? 0 : lvl;
     }
@@ -96,8 +128,9 @@ public final class EnchantManagerModule extends AbstractModule {
     public Map<CustomEnchant, Integer> enchantsOn(ItemStack item) {
         Map<CustomEnchant, Integer> out = new LinkedHashMap<>();
         if (item == null || !item.hasItemMeta()) return out;
+        PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         for (CustomEnchant e : registry.values()) {
-            int lvl = getLevel(item, e);
+            int lvl = getLevel(pdc, e);
             if (lvl > 0) out.put(e, lvl);
         }
         return out;
@@ -120,35 +153,42 @@ public final class EnchantManagerModule extends AbstractModule {
     // ---- Dispatch des effets (appelé par le listener) ----
 
     public void dispatchMelee(Player attacker, LivingEntity victim, EntityDamageByEntityEvent event) {
+        if (meleeEnchants.isEmpty()) return;
         ItemStack hand = attacker.getInventory().getItemInMainHand();
-        for (CustomEnchant e : registry.values()) {
-            if (e.melee() == null) continue;
-            int lvl = getLevel(hand, e);
+        if (hand == null || !hand.hasItemMeta()) return;
+        PersistentDataContainer pdc = hand.getItemMeta().getPersistentDataContainer();
+        for (CustomEnchant e : meleeEnchants) {
+            int lvl = getLevel(pdc, e);
             if (lvl > 0) e.melee().onHit(attacker, victim, lvl, event);
         }
     }
 
     public void dispatchDefense(Player defender, EntityDamageEvent event) {
+        if (defenseEnchants.isEmpty()) return;
         for (ItemStack piece : defender.getInventory().getArmorContents()) {
-            if (piece == null) continue;
-            for (CustomEnchant e : registry.values()) {
-                if (e.defense() == null) continue;
-                int lvl = getLevel(piece, e);
+            if (piece == null || !piece.hasItemMeta()) continue;
+            PersistentDataContainer pdc = piece.getItemMeta().getPersistentDataContainer();
+            for (CustomEnchant e : defenseEnchants) {
+                int lvl = getLevel(pdc, e);
                 if (lvl > 0) e.defense().onDamaged(defender, lvl, event);
             }
         }
     }
 
     public void dispatchMining(Player miner, org.bukkit.block.Block block, BlockBreakEvent event) {
+        if (miningEnchants.isEmpty()) return;
         ItemStack hand = miner.getInventory().getItemInMainHand();
-        for (CustomEnchant e : registry.values()) {
-            if (e.mining() == null) continue;
-            int lvl = getLevel(hand, e);
+        if (hand == null || !hand.hasItemMeta()) return;
+        PersistentDataContainer pdc = hand.getItemMeta().getPersistentDataContainer();
+        for (CustomEnchant e : miningEnchants) {
+            int lvl = getLevel(pdc, e);
             if (lvl > 0) e.mining().onMine(miner, block, lvl, event);
         }
     }
 
     private void tickEquip() {
+        // Aucun enchant d'équipement enregistré → rien à réinitialiser ni à appliquer.
+        if (equipEnchants.isEmpty()) return;
         for (Player p : Bukkit.getOnlinePlayers()) {
             // Pré-pass : réinitialise les états gérés par enchant (retrait propre quand déséquipé).
             var kb = p.getAttribute(com.mooncore.util.Attrs.KNOCKBACK_RESISTANCE);
@@ -158,14 +198,16 @@ public final class EnchantManagerModule extends AbstractModule {
                 p.setAllowFlight(false);
             }
 
-            List<ItemStack> equipped = new ArrayList<>();
-            for (ItemStack a : p.getInventory().getArmorContents()) if (a != null) equipped.add(a);
-            equipped.add(p.getInventory().getItemInMainHand());
-            for (ItemStack item : equipped) {
-                if (item == null) continue;
-                for (CustomEnchant e : registry.values()) {
-                    if (e.equip() == null) continue;
-                    int lvl = getLevel(item, e);
+            equipBuffer.clear();
+            for (ItemStack a : p.getInventory().getArmorContents()) if (a != null) equipBuffer.add(a);
+            ItemStack hand = p.getInventory().getItemInMainHand();
+            if (hand != null) equipBuffer.add(hand);
+            for (ItemStack item : equipBuffer) {
+                if (item == null || !item.hasItemMeta()) continue;
+                // getItemMeta() clone la meta : on l'appelle une seule fois par objet.
+                PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
+                for (CustomEnchant e : equipEnchants) {
+                    int lvl = getLevel(pdc, e);
                     if (lvl > 0) e.equip().onTick(p, lvl);
                 }
             }
