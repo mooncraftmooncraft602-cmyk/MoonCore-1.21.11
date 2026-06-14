@@ -318,7 +318,8 @@ public final class AiPrompts {
                         {
                           "item": "Material en MAJUSCULES (ex DIAMOND) ou 'custom:<itemId>'",
                           "weight": entier >= 1 (poids relatif de sélection),
-                          "count": { "min": entier 0-64, "max": entier >= min }
+                          "count": { "min": entier 0-64, "max": entier >= min },
+                          "loot-table": "OPTIONNEL : id d'une AUTRE table à tirer au lieu d'un item (imbrication) ; omets sinon"
                         }
                       ]
                     }

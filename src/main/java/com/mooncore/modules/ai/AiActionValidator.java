@@ -421,8 +421,11 @@ public final class AiActionValidator {
                             cMin = intOf(c, "min", 1);
                             cMax = intOf(c, "max", cMin);
                         }
+                        // Référence vers une autre table (imbrication) ; ignorée si elle pointe sur elle-même.
+                        String ref = str(eo, "loot-table", null);
+                        if (ref != null && ref.equalsIgnoreCase(id)) ref = null;
                         pool.add(new com.mooncore.modules.loot.LootEntry(
-                                customId, mat, intOf(eo, "weight", 1), cMin, cMax));
+                                customId, mat, intOf(eo, "weight", 1), cMin, cMax, ref));
                     }
                 }
                 d.add(pool);
