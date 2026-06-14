@@ -84,8 +84,10 @@ public final class LootSubCommand implements SubCommand {
             msg(s, " <dark_gray>Pool <white>" + i + " <gray>· rolls <white>" + p.rollsMin() + "–" + p.rollsMax()
                     + " <gray>· poids total <white>" + p.totalWeight());
             for (LootEntry e : p.entries()) {
+                long pct = Math.round(p.chanceOf(e) * 100);
                 msg(s, "   <dark_gray>▸ <white>" + (e.isCustom() ? "✦ " + e.itemId() : e.material().name())
-                        + " <gray>×" + e.countMin() + "–" + e.countMax() + " <gray>poids <white>" + e.weight());
+                        + " <gray>×" + e.countMin() + "–" + e.countMax() + " <gray>poids <white>" + e.weight()
+                        + " <dark_gray>(<yellow>" + pct + "%<dark_gray>/tirage)");
             }
         }
     }

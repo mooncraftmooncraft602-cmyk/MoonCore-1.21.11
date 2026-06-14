@@ -43,6 +43,20 @@ class LootPoolTest {
     }
 
     @Test
+    void chanceOfIsWeightOverTotal() {
+        LootPool p = threeWeighted();   // poids 1 / 3 / 6 sur total 10
+        assertEquals(0.1, p.chanceOf(p.entries().get(0)), 1e-9);
+        assertEquals(0.3, p.chanceOf(p.entries().get(1)), 1e-9);
+        assertEquals(0.6, p.chanceOf(p.entries().get(2)), 1e-9);
+        // les probabilités somment à 1.
+        double sum = 0;
+        for (LootEntry e : p.entries()) sum += p.chanceOf(e);
+        assertEquals(1.0, sum, 1e-9);
+        assertEquals(0.0, p.chanceOf(null), 1e-9);
+        assertEquals(0.0, new LootPool().chanceOf(new LootEntry(null, Material.DIRT, 1, 1, 1)), 1e-9); // pool vide
+    }
+
+    @Test
     void pickWeightedRespectsCumulativeBoundaries() {
         LootPool p = threeWeighted();
         assertEquals(Material.DIRT,    p.pickWeighted(new ScriptedRandom(0)).material()); // [0,1) → A

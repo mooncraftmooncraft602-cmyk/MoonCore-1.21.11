@@ -39,6 +39,13 @@ public final class LootPool {
         return w;
     }
 
+    /** Probabilité de sélection d'une entrée à un tirage (poids / poids total), dans [0,1] ; 0 si pool vide. */
+    public double chanceOf(LootEntry entry) {
+        int total = totalWeight();
+        if (total <= 0 || entry == null) return 0.0;
+        return (double) entry.weight() / total;
+    }
+
     /**
      * Sélectionne une entrée proportionnellement à son poids, ou {@code null} si le pool est vide.
      * Robuste aux bornes : retourne la dernière entrée si le tirage dépasse la somme cumulée.
