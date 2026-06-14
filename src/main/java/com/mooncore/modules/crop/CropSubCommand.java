@@ -91,6 +91,9 @@ public final class CropSubCommand implements SubCommand {
         if (d.usesLootTable()) {
             msg(s, " <gray>Récolte : <white>table de loot " + d.lootTableId()
                     + (module.lootTableExists(d.lootTableId()) ? "" : " <yellow>⚠ inconnue")
+                    + " <gray>· repli <white>" + (d.dropItemId() != null ? "✦ " + d.dropItemId() : d.dropMaterial().name())
+                    + " <gray>×" + d.dropMin() + "–" + d.dropMax()
+                    + " <gray>· graines rendues <white>" + d.seedReturnMin() + "–" + d.seedReturnMax()
                     + " <gray>· replantable <white>" + d.replantable());
         } else {
             msg(s, " <gray>Récolte : <white>" + (d.dropItemId() != null ? "✦ " + d.dropItemId() : d.dropMaterial().name())
