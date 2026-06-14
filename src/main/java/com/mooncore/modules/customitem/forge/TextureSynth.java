@@ -259,6 +259,7 @@ public final class TextureSynth {
         disc(m, MAT_GOLD, 6.6, 5.4, 1.4);                         // socle doré (jonction manche)
         BufferedImage img = shade(m, p);
         jewel(img, 4.6, 5.8, 1.6, p);                             // joyau sur la tête
+        rivet(img, 6, 7);                                         // rivet doré près du socle
         glint(img, 2, 6, p); glint(img, 3, 4, p);
         return img;
     }
@@ -278,6 +279,7 @@ public final class TextureSynth {
         }
         BufferedImage img = shade(m, p);
         jewel(img, 8.0, 4.6, 1.5, p);                                // joyau frontal
+        rivet(img, 4, 5); rivet(img, 11, 5);                         // rivets dorés aux tempes
         glint(img, 5, 3, p); glint(img, 11, 4, p);
         return img;
     }
@@ -297,6 +299,7 @@ public final class TextureSynth {
         }
         BufferedImage img = shade(m, p);
         jewel(img, 7.5, 8.8, 1.7, p);                                // joyau au centre du torse
+        rivet(img, 4, 11); rivet(img, 11, 11);                       // rivets dorés bas du torse
         glint(img, 4, 4, p); glint(img, 11, 4, p);
         return img;
     }
@@ -357,19 +360,26 @@ public final class TextureSynth {
         return true;
     }
 
-    /** Masque matière → image : aplat thématique ombré (lumière haut-gauche) + arêtes + contour sombre. */
+    /** Paliers d'ombrage cell-shaded (bandes plates, type pixel-art Paladium). */
+    private static final double[] BANDS = {0.12, 0.30, 0.50, 0.70, 0.92};
+
+    /**
+     * Masque matière → image : ombrage <b>cell-shaded</b> (bandes de tons plates, pas un dégradé lisse),
+     * arête éclairée (haut-gauche) / ombrée (bas-droite), <b>occlusion</b> aux jointures de matières, contour 1px.
+     */
     private static BufferedImage shade(int[][] m, ThemePalette p) {
         BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
             int mat = m[x][y];
             if (mat == 0) continue;
             ThemePalette ramp = mat == MAT_WOOD ? WOOD : mat == MAT_STEEL ? STEEL : mat == MAT_GOLD ? GOLD : p;
-            double g = clampf(0.52 + 0.30 * (((7.5 - x) + (7.5 - y)) / 15.0));   // dégradé haut-gauche
-            int col;
-            if (empty(m, x - 1, y) || empty(m, x, y - 1)) col = ramp.colorAt(clampf(g + 0.34));   // arête éclairée
-            else if (empty(m, x + 1, y) || empty(m, x, y + 1)) col = ramp.colorAt(clampf(g - 0.30)); // ombre
-            else col = ramp.colorAt(g);
-            set(img, x, y, argb(255, col));
+            double g = 0.50 + 0.30 * (((7.5 - x) + (7.5 - y)) / 15.0);       // lumière diagonale haut-gauche
+            boolean up = empty(m, x - 1, y) || empty(m, x, y - 1);
+            boolean dn = empty(m, x + 1, y) || empty(m, x, y + 1);
+            double s = clampf(g + (up ? 0.30 : 0) - (dn ? 0.30 : 0));        // arêtes vives
+            int idx = clamp((int) Math.round(s * (BANDS.length - 1)), 0, BANDS.length - 1);
+            if (!up && !dn && seam(m, x, y)) idx = Math.max(0, idx - 1);     // occlusion à la jointure de matière
+            set(img, x, y, argb(255, ramp.colorAt(BANDS[idx])));
         }
         int outline = ThemePalette.darken(p.colorAt(0.16), 0.45);
         BufferedImage out = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
@@ -378,6 +388,26 @@ public final class TextureSynth {
             if (opaqueNeighbor(img, x, y)) out.setRGB(x, y, argb(255, outline));   // contour extérieur 1px
         }
         return out;
+    }
+
+    /** Vrai si un voisin orthogonal porte une matière différente (jointure → légère occlusion). */
+    private static boolean seam(int[][] m, int x, int y) {
+        int v = m[x][y];
+        for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
+            int nx = x + d[0], ny = y + d[1];
+            if (nx >= 0 && ny >= 0 && nx < 16 && ny < 16 && m[nx][ny] != 0 && m[nx][ny] != v) return true;
+        }
+        return false;
+    }
+
+    /** Rivet doré (post) : tête brillante + ombre en bas-droite, uniquement sur des pixels opaques. */
+    private static void rivet(BufferedImage img, int x, int y) {
+        if (!opaqueAt(img, x, y)) return;
+        set(img, x, y, argb(255, 0xffe8a8));
+        if (opaqueAt(img, x + 1, y + 1)) set(img, x + 1, y + 1, argb(255, 0x6b4a12));
+    }
+    private static boolean opaqueAt(BufferedImage img, int x, int y) {
+        return x >= 0 && y >= 0 && x < 16 && y < 16 && alpha(img.getRGB(x, y)) != 0;
     }
 
     private static boolean empty(int[][] m, int x, int y) {
