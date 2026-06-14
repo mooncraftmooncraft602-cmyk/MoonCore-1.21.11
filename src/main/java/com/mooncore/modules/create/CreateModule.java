@@ -52,7 +52,9 @@ public final class CreateModule extends AbstractModule {
 
         LootManagerModule loot = plugin().moduleManager().get(LootManagerModule.class);
         if (loot != null) {
-            registry.register(new LootContentHandler(loot));
+            LootContentHandler h = new LootContentHandler(loot);
+            if (ai != null) h.withAi(ai.prompts(), ai.validator());
+            registry.register(h);
         }
 
         plugin().rootCommand().register(new CreateSubCommand(registry));

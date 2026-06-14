@@ -373,6 +373,63 @@ public final class AiActionValidator {
         return d;
     }
 
+    /**
+     * Transforme une sortie IA en {@link com.mooncore.modules.loot.LootTableDef} sûre : pools pondérés,
+     * matériaux vérifiés contre le registre, comptes/poids bornés par les setters du modèle. Tout champ
+     * inconnu est ignoré ; une table sans pools valides reste une table vide cohérente.
+     */
+    public com.mooncore.modules.loot.LootTableDef validateLoot(String aiText, String forcedId) {
+        JsonObject root = parse(aiText);
+        if (root == null) return null;
+        String id = sanitizeId(forcedId != null ? forcedId
+                : str(root, "id", "ai_loot_" + Math.abs(aiText.hashCode() % 100000)));
+        com.mooncore.modules.loot.LootTableDef d = new com.mooncore.modules.loot.LootTableDef(id);
+
+        if (root.has("display-name")) d.setDisplayName(str(root, "display-name", d.displayName()));
+
+        if (root.has("pools") && root.get("pools").isJsonArray()) {
+            JsonArray pools = root.getAsJsonArray("pools");
+            for (JsonElement pe : pools) {
+                if (!pe.isJsonObject()) continue;
+                JsonObject po = pe.getAsJsonObject();
+                int rMin = 1, rMax = 1;
+                if (po.has("rolls") && po.get("rolls").isJsonObject()) {
+                    JsonObject r = po.getAsJsonObject("rolls");
+                    rMin = intOf(r, "min", 1);
+                    rMax = intOf(r, "max", rMin);
+                }
+                com.mooncore.modules.loot.LootPool pool = new com.mooncore.modules.loot.LootPool(rMin, rMax);
+                if (po.has("entries") && po.get("entries").isJsonArray()) {
+                    for (JsonElement ee : po.getAsJsonArray("entries")) {
+                        if (!ee.isJsonObject()) continue;
+                        JsonObject eo = ee.getAsJsonObject();
+                        String customId = null;
+                        Material mat = Material.AIR;
+                        String item = str(eo, "item", null);
+                        if (item != null) {
+                            if (item.toLowerCase(Locale.ROOT).startsWith("custom:")) {
+                                customId = item.substring("custom:".length());
+                            } else {
+                                Material m = Material.matchMaterial(item.toUpperCase(Locale.ROOT));
+                                if (m != null && m.isItem()) mat = m;
+                            }
+                        }
+                        int cMin = 1, cMax = 1;
+                        if (eo.has("count") && eo.get("count").isJsonObject()) {
+                            JsonObject c = eo.getAsJsonObject("count");
+                            cMin = intOf(c, "min", 1);
+                            cMax = intOf(c, "max", cMin);
+                        }
+                        pool.add(new com.mooncore.modules.loot.LootEntry(
+                                customId, mat, intOf(eo, "weight", 1), cMin, cMax));
+                    }
+                }
+                d.add(pool);
+            }
+        }
+        return d;
+    }
+
     private static String str(JsonObject o, String key, String def) {
         return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : def;
     }

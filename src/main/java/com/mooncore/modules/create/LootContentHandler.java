@@ -9,12 +9,40 @@ import java.util.Collection;
 public final class LootContentHandler implements ContentTypeHandler {
 
     private final LootManagerModule module;
+    private com.mooncore.modules.ai.AiPrompts prompts;
+    private com.mooncore.modules.ai.AiActionValidator validator;
 
     public LootContentHandler(LootManagerModule module) {
         this.module = module;
     }
 
+    /** Branche la génération IA (optionnel). */
+    public void withAi(com.mooncore.modules.ai.AiPrompts prompts, com.mooncore.modules.ai.AiActionValidator validator) {
+        this.prompts = prompts;
+        this.validator = validator;
+    }
+
     @Override public String type() { return "loot"; }
+
+    @Override public String aiSystemPrompt() { return prompts == null ? null : prompts.lootSchemaSystem(); }
+
+    @Override
+    public String createFromAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        LootTableDef d = validator.validateLoot(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        module.put(d);
+        return d.id();
+    }
+
+    @Override
+    public String validateAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        LootTableDef d = validator.validateLoot(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        int entries = d.pools().stream().mapToInt(p -> p.entries().size()).sum();
+        return d.displayName() + " (" + d.pools().size() + " pool(s), " + entries + " entrée(s))";
+    }
 
     @Override
     public boolean create(String id) {

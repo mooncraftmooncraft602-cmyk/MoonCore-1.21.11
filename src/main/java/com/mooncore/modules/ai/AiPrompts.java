@@ -299,6 +299,34 @@ public final class AiPrompts {
                 """;
     }
 
+    public String lootSchemaSystem() {
+        return """
+                Tu conçois une table de loot générique pour un serveur Minecraft (MoonCore).
+                Une table contient des "pools" indépendants ; chaque pool effectue un nombre de tirages
+                (rolls) et chaque tirage choisit une entrée proportionnellement à son poids (weight).
+                Réponds UNIQUEMENT par un objet JSON valide, sans texte ni markdown :
+                {
+                  "id": "string a-z0-9_-",
+                  "display-name": "nom MiniMessage, ex: <gold>Butin du Boss</gold>",
+                  "pools": [
+                    {
+                      "rolls": { "min": entier >= 0, "max": entier >= min },
+                      "entries": [
+                        {
+                          "item": "Material en MAJUSCULES (ex DIAMOND) ou 'custom:<itemId>'",
+                          "weight": entier >= 1 (poids relatif de sélection),
+                          "count": { "min": entier 0-64, "max": entier >= min }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                Équilibrage : les objets rares ont un poids FAIBLE (1-2), les communs un poids ÉLEVÉ
+                (10-50). 1 à 3 pools. rolls 1-1 pour un drop garanti, ou min 0 pour un drop optionnel.
+                Réponds en français pour le nom.
+                """;
+    }
+
     /** Prompt système pour modifier la configuration d'un module existant. */
     public String configSchemaSystem(java.util.List<String> moduleIds) {
         return """
