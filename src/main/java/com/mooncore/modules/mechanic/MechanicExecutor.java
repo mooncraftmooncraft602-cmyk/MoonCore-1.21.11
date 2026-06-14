@@ -179,7 +179,12 @@ public final class MechanicExecutor {
             Material m = Material.matchMaterial(item.toUpperCase(Locale.ROOT));
             stack = (m == null || !m.isItem()) ? null : new ItemStack(m, amount);
         }
-        if (stack != null) p.getInventory().addItem(stack);
+        if (stack != null) {
+            // Surplus (inventaire plein) lâché au sol plutôt que perdu silencieusement.
+            for (ItemStack overflow : p.getInventory().addItem(stack).values()) {
+                p.getWorld().dropItemNaturally(p.getLocation(), overflow);
+            }
+        }
     }
 
     private void heal(MechanicAction a, Player p) {

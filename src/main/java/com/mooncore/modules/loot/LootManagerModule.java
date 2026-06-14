@@ -140,11 +140,19 @@ public final class LootManagerModule extends AbstractModule {
         return ci != null && ci.create(id, 1) != null;
     }
 
-    /** Donne au joueur le butin tiré de la table ; retourne le nombre de piles données (0 si table inconnue). */
+    /**
+     * Donne au joueur le butin tiré de la table ; retourne le nombre de piles données (0 si table inconnue).
+     * Le surplus qui ne tient pas dans l'inventaire est <b>lâché au sol</b> (jamais perdu silencieusement).
+     */
     public int give(org.bukkit.entity.Player player, String id, RandomGenerator rng) {
         if (player == null) return 0;
         List<org.bukkit.inventory.ItemStack> items = rollItems(id, rng);
-        for (org.bukkit.inventory.ItemStack it : items) player.getInventory().addItem(it);
+        for (org.bukkit.inventory.ItemStack it : items) {
+            // addItem retourne les piles qui n'ont pas tenu : on les lâche au sol plutôt que de les perdre.
+            for (org.bukkit.inventory.ItemStack overflow : player.getInventory().addItem(it).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), overflow);
+            }
+        }
         return items.size();
     }
 
