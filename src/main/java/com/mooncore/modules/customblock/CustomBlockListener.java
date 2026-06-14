@@ -195,7 +195,7 @@ public final class CustomBlockListener implements Listener {
 
     private boolean canHarvest(CustomBlockDef def, ToolInfo info) {
         if (def.requiredTool() == ToolKind.NONE) return true;
-        return info.kind() == def.requiredTool() && info.tier().level() >= def.minToolTier().level();
+        return info.kind() == def.requiredTool() && info.tier().meets(def.minToolTier());
     }
 
     private int minePower(CustomBlockDef def, ToolInfo info) {

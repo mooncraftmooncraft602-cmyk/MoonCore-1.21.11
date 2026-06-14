@@ -28,6 +28,14 @@ public enum ToolTier {
         return level;
     }
 
+    /**
+     * True si ce palier satisfait le palier {@code required} (niveau ≥). Suit les niveaux de minage vanilla :
+     * {@code GOLD} et {@code WOOD} sont au même niveau (1), donc l'or mine comme le bois — pas mieux.
+     */
+    public boolean meets(ToolTier required) {
+        return required == null || this.level >= required.level;
+    }
+
     public String id() {
         return name().toLowerCase(Locale.ROOT);
     }
