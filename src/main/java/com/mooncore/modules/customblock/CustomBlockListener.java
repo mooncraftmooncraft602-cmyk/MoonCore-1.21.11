@@ -83,9 +83,21 @@ public final class CustomBlockListener implements Listener {
 
         e.setDropItems(false);
         Block b = e.getBlock();
-        ItemStack drop = resolveDrop(def);
-        if (drop != null && b.getWorld() != null) {
-            b.getWorld().dropItemNaturally(b.getLocation().add(0.5, 0.5, 0.5), drop);
+        if (b.getWorld() != null) {
+            org.bukkit.Location at = b.getLocation().add(0.5, 0.5, 0.5);
+            if (def.usesLootTable()) {
+                // Casse = tirage de la table de loot référencée (repli sur le drop fixe si elle ne produit rien).
+                java.util.List<ItemStack> loot = module.lootDrops(def, java.util.concurrent.ThreadLocalRandom.current());
+                if (loot.isEmpty()) {
+                    ItemStack drop = resolveDrop(def);
+                    if (drop != null) b.getWorld().dropItemNaturally(at, drop);
+                } else {
+                    for (ItemStack stack : loot) b.getWorld().dropItemNaturally(at, stack);
+                }
+            } else {
+                ItemStack drop = resolveDrop(def);
+                if (drop != null) b.getWorld().dropItemNaturally(at, drop);
+            }
         }
         if (def.dropXp() > 0) e.setExpToDrop(def.dropXp());
     }

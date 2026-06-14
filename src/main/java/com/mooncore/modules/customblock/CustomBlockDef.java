@@ -21,6 +21,7 @@ public final class CustomBlockDef {
     private String textureBottom;
     private int stateIndex = -1;        // état note-block assigné (stable, persistant)
     private String dropItemId;          // id d'item custom à drop (null = se drop lui-même)
+    private String lootTableId = null;  // si non null : casse = tirage de cette table de loot (prioritaire sur drop fixe)
     private int dropXp = 0;
     private boolean requiresPickaxe = true;
     private ToolKind requiredTool = ToolKind.PICKAXE;
@@ -59,6 +60,12 @@ public final class CustomBlockDef {
     public void setStateIndex(int i) { this.stateIndex = i; }
     public String dropItemId() { return dropItemId; }
     public void setDropItemId(String d) { this.dropItemId = d; }
+    public String lootTableId() { return lootTableId; }
+    public void setLootTableId(String id) {
+        this.lootTableId = (id == null || id.isBlank()) ? null : id.toLowerCase(java.util.Locale.ROOT).trim();
+    }
+    /** True si la casse doit tirer une table de loot plutôt que le drop fixe. */
+    public boolean usesLootTable() { return lootTableId != null; }
     public int dropXp() { return dropXp; }
     public void setDropXp(int x) { this.dropXp = x; }
     public boolean requiresPickaxe() { return requiresPickaxe; }
@@ -104,6 +111,7 @@ public final class CustomBlockDef {
         s.set("texture-bottom", textureBottom);
         s.set("state-index", stateIndex);
         s.set("drop-item", dropItemId);
+        s.set("loot-table", lootTableId);
         s.set("drop-xp", dropXp);
         s.set("requires-pickaxe", requiresPickaxe);
         s.set("required-tool", requiredTool.id());
@@ -128,6 +136,7 @@ public final class CustomBlockDef {
         d.textureBottom = s.getString("texture-bottom", null);
         d.stateIndex = s.getInt("state-index", -1);
         d.dropItemId = s.getString("drop-item", null);
+        d.setLootTableId(s.getString("loot-table", null));
         d.dropXp = s.getInt("drop-xp", 0);
         d.requiresPickaxe = s.getBoolean("requires-pickaxe", true);
         d.requiredTool = ToolKind.fromId(s.getString("required-tool", d.requiresPickaxe ? "pickaxe" : "none"));

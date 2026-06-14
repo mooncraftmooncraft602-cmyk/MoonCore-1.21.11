@@ -66,5 +66,23 @@ class CustomBlockDefTest {
         assertFalse(back.hasFaces());
         assertFalse(back.generate());
         assertTrue(back.requiresPickaxe());     // défaut
+        assertFalse(back.usesLootTable());      // aucune table par défaut
+    }
+
+    @Test
+    void lootTableReferenceRoundTrips() {
+        CustomBlockDef d = new CustomBlockDef("crystal_ore");
+        d.setLootTableId("  Crystal_Drops  ");          // normalisé (trim + lower)
+        assertTrue(d.usesLootTable());
+        assertEquals("crystal_drops", d.lootTableId());
+
+        MemoryConfiguration cfg = new MemoryConfiguration();
+        d.save(cfg);
+        CustomBlockDef back = CustomBlockDef.load("crystal_ore", cfg);
+        assertEquals("crystal_drops", back.lootTableId());
+        assertTrue(back.usesLootTable());
+
+        back.setLootTableId("");                         // vide → désactive
+        assertFalse(back.usesLootTable());
     }
 }

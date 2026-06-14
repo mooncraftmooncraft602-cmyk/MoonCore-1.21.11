@@ -426,6 +426,7 @@ public final class AiSubCommand implements SubCommand {
             if (dn != null) def.setDisplayName(dn.toString());
             def.setDropXp(mInt(f.get("drop-xp"), 0));
             def.setRequiresPickaxe(mBool(f.get("requires-pickaxe"), true));
+            if (f.get("loot-table") instanceof String lt) def.setLootTableId(lt);
             if (f.get("worldgen") instanceof java.util.Map<?, ?> g) {
                 def.setGenerate(mBool(g.get("generate"), false));
                 if (g.get("replace") instanceof String rs) {

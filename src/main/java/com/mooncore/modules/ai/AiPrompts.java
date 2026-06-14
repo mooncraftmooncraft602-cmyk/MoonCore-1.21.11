@@ -265,6 +265,7 @@ public final class AiPrompts {
                   "display-name": "nom MiniMessage, ex: <aqua>Minerai de Mithril</aqua>",
                   "drop-xp": entier (0 si aucun),
                   "requires-pickaxe": booléen,
+                  "loot-table": "id optionnel d'une table de loot ; si présent, la casse tire cette table au lieu du drop fixe",
                   "worldgen": {
                     "generate": booléen (true pour un minerai qui apparaît dans le monde),
                     "replace": "STONE" ou "DEEPSLATE" ou "NETHERRACK" ...,
