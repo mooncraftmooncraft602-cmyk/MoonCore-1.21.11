@@ -289,12 +289,14 @@ public final class LootSubCommand implements SubCommand {
         if (target == null || !(target.getState() instanceof org.bukkit.block.Container container)) {
             msg(s, "<red>Vise un conteneur (coffre, baril, shulker…) à portée."); return;
         }
-        int placed = 0;
+        int placed = 0, overflow = 0;
         for (org.bukkit.inventory.ItemStack it : module.rollItems(d.id(), ThreadLocalRandom.current())) {
             if (container.getInventory().addItem(it).isEmpty()) placed++;
+            else overflow++;   // n'a pas tenu : conteneur trop petit
         }
         container.update();
-        msg(s, "<green>Conteneur rempli avec <white>" + placed + "<green> pile(s) de la table " + d.id() + ".");
+        msg(s, "<green>Conteneur rempli avec <white>" + placed + "<green> pile(s) de la table " + d.id() + "."
+                + (overflow > 0 ? " <yellow>(" + overflow + " pile(s) non placée(s) — conteneur plein)" : ""));
     }
 
     private void validate(CommandSender s, String[] a) {
