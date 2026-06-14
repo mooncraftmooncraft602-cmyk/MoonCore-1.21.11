@@ -44,6 +44,7 @@ public final class CropSubCommand implements SubCommand {
                 case "drop" -> setDrop(s, a);
                 case "loottable", "loot" -> setLootTable(s, a);
                 case "replant" -> setReplant(s, a);
+                case "bonemeal" -> setBonemeal(s, a);
                 case "giveseed" -> giveSeed(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Cultures rechargées."); }
                 default -> help(s);
@@ -172,6 +173,13 @@ public final class CropSubCommand implements SubCommand {
                 + " <gray>×" + d.dropMin() + "–" + d.dropMax());
     }
 
+    private void setBonemeal(CommandSender s, String[] a) {
+        CropDef d = need(s, a); if (d == null) return;
+        if (a.length < 3) { msg(s, "<red>/moon crop bonemeal <id> <on|off>"); return; }
+        d.setBonemealable(on(a[2])); module.put(d);
+        msg(s, "<green>Engrais (bone meal) pour " + d.id() + " = <white>" + d.bonemealable());
+    }
+
     private void setLootTable(CommandSender s, String[] a) {
         CropDef d = need(s, a); if (d == null) return;
         if (a.length < 3) { msg(s, "<red>/moon crop loottable <id> <tableId|none>"); return; }
@@ -238,12 +246,12 @@ public final class CropSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "seed", "placeon", "stages",
-                    "growth", "light", "water", "drop", "loottable", "replant", "giveseed", "reload"), a[0]);
+                    "growth", "light", "water", "drop", "loottable", "replant", "bonemeal", "giveseed", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "seed", "placeon", "stages", "growth", "light", "water", "drop", "loottable", "replant" ->
+                case "delete", "info", "seed", "placeon", "stages", "growth", "light", "water", "drop", "loottable", "replant", "bonemeal" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
                 case "giveseed" -> filter(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();
@@ -251,7 +259,7 @@ public final class CropSubCommand implements SubCommand {
         }
         if (a.length == 3) {
             return switch (sub) {
-                case "water", "replant" -> filter(List.of("on", "off"), a[2]);
+                case "water", "replant", "bonemeal" -> filter(List.of("on", "off"), a[2]);
                 case "giveseed" -> filter(new ArrayList<>(module.ids()), a[2]);
                 default -> List.of();
             };

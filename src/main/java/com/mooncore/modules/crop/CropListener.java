@@ -53,13 +53,23 @@ public final class CropListener implements Listener {
         Location aboveLoc = above.getLocation();
         Player p = e.getPlayer();
 
-        // 1) Récolte : un plant existe au-dessus du bloc cliqué.
+        // 1) Récolte (ou engrais) : un plant existe au-dessus du bloc cliqué.
         CropPlacementStore.Placement existing = module.placementAt(aboveLoc);
         if (existing != null) {
             CropDef def = module.def(existing.cropId());
             if (def == null) return;
             e.setCancelled(true);                       // évite l'usage parasite du bloc support
-            if (existing.stage() >= def.stages() - 1) harvest(p, w, aboveLoc, def);
+            if (existing.stage() >= def.stages() - 1) {
+                harvest(p, w, aboveLoc, def);
+            } else {
+                ItemStack hand = p.getInventory().getItemInMainHand();
+                if (def.bonemealable() && hand.getType() == org.bukkit.Material.BONE_MEAL) {
+                    module.setStage(aboveLoc, existing.stage() + 1);   // l'engrais fait pousser d'une étape
+                    if (p.getGameMode() != GameMode.CREATIVE) hand.setAmount(hand.getAmount() - 1);
+                    w.spawnParticle(org.bukkit.Particle.HAPPY_VILLAGER, aboveLoc.clone().add(0.5, 0.3, 0.5), 8, 0.25, 0.25, 0.25, 0);
+                    w.playSound(aboveLoc, "minecraft:item.bone_meal.use", 1f, 1f);
+                }
+            }
             return;
         }
 

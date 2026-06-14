@@ -331,6 +331,7 @@ public final class AiPrompts {
                   "drop": { "item": "Material ou custom:<itemId>", "min": entier, "max": entier },
                   "seed-return": { "min": entier, "max": entier },
                   "replantable": booléen (repart à l'étape 0 après récolte au lieu de disparaître),
+                  "bonemealable": booléen (l'engrais bone meal fait pousser d'une étape ; défaut true),
                   "loot-table": "id optionnel d'une table de loot ; si présent, la récolte tire cette table au lieu du drop fixe"
                 }
                 Valeurs équilibrées : 4 étapes, 600-1200 ticks/étape, min-light 9, drop 1-2,

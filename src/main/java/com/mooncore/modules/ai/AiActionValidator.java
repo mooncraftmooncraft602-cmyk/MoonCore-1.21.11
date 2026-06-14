@@ -367,6 +367,7 @@ public final class AiActionValidator {
         d.setMinLight(intOf(root, "min-light", 9));
         d.setRequiresWater(bool(root, "requires-water", true));
         d.setReplantable(bool(root, "replantable", true));
+        d.setBonemealable(bool(root, "bonemealable", true));
 
         if (root.has("drop") && root.get("drop").isJsonObject()) {
             JsonObject dr = root.getAsJsonObject("drop");

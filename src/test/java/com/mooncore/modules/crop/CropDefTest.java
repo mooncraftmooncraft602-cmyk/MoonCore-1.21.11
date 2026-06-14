@@ -23,6 +23,7 @@ class CropDefTest {
         d.setDropRange(2, 5);
         d.setSeedReturnRange(1, 3);
         d.setReplantable(false);
+        d.setBonemealable(false);
         d.setDropItemId("lunar_grain");
 
         MemoryConfiguration cfg = new MemoryConfiguration();
@@ -39,6 +40,7 @@ class CropDefTest {
         assertEquals(1, back.seedReturnMin());
         assertEquals(3, back.seedReturnMax());
         assertFalse(back.replantable());
+        assertFalse(back.bonemealable());
         assertEquals("lunar_grain", back.dropItemId());
     }
 
