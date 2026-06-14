@@ -146,6 +146,13 @@ public final class LootSubCommand implements SubCommand {
         String label = tableRef != null ? "↪ table " + tableRef : (customId != null ? "✦ " + customId : mat.name());
         msg(s, "<green>Entrée ajoutée au pool " + idx + " de " + d.id() + " : <white>"
                 + label + " <gray>×" + cMin + "–" + cMax + " poids " + weight);
+        // Avertit (sans bloquer) si la référence ne résout pas — typo fréquente.
+        if (customId != null && !module.customItemExists(customId)) {
+            msg(s, "<yellow>⚠ Item custom inconnu : <white>" + customId + "<yellow> (rien ne sortira pour cette entrée).");
+        }
+        if (tableRef != null && module.def(tableRef) == null) {
+            msg(s, "<yellow>⚠ Table imbriquée inconnue : <white>" + tableRef + "<yellow> (crée-la ou corrige l'id).");
+        }
     }
 
     private void removePool(CommandSender s, String[] a) {

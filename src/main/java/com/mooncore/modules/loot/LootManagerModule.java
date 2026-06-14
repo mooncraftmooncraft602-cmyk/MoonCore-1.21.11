@@ -133,6 +133,13 @@ public final class LootManagerModule extends AbstractModule {
         return out;
     }
 
+    /** True si un item custom MoonCore de cet id existe (pour avertir des références d'entrée erronées). */
+    public boolean customItemExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+        return ci != null && ci.create(id, 1) != null;
+    }
+
     /** Donne au joueur le butin tiré de la table ; retourne le nombre de piles données (0 si table inconnue). */
     public int give(org.bukkit.entity.Player player, String id, RandomGenerator rng) {
         if (player == null) return 0;
