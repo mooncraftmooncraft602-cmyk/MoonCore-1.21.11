@@ -84,6 +84,15 @@ public final class MechanicDef {
         return out;
     }
 
+    /** Tables de loot utilisées (actions {@code LOOT}) que {@code exists} déclare inexistantes. Pur (prédicat injecté). */
+    public java.util.Set<String> danglingLootTables(java.util.function.Predicate<String> exists) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (String t : lootTablesUsed()) {
+            if (exists == null || !exists.test(t)) out.add(t);
+        }
+        return out;
+    }
+
     /** True si la mécanique est exécutable (active, déclencheur reconnu, au moins une action valide). */
     public boolean isRunnable() {
         if (!enabled || trigger == TriggerType.NONE) return false;

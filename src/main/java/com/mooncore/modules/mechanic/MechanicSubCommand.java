@@ -76,8 +76,10 @@ public final class MechanicSubCommand implements SubCommand {
         if (defs.isEmpty()) { msg(s, "<gray>Aucune mécanique. <white>/moon mechanic create <id>"); return; }
         msg(s, "<gradient:#8a2be2:#c77dff>Mécaniques custom</gradient> <dark_gray>(" + defs.size() + ")");
         for (MechanicDef d : defs) {
+            boolean dangling = !d.danglingLootTables(module::lootTableExists).isEmpty();
             msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.trigger().name().toLowerCase(Locale.ROOT)
-                    + ", " + d.actions().size() + " action(s)" + (d.isRunnable() ? "" : ", <red>inactive<gray>") + ")");
+                    + ", " + d.actions().size() + " action(s)" + (d.isRunnable() ? "" : ", <red>inactive<gray>") + ")"
+                    + (dangling ? " <red>⚠ table loot pendante" : ""));
         }
     }
 
@@ -200,8 +202,8 @@ public final class MechanicSubCommand implements SubCommand {
         java.util.List<String> issues = new ArrayList<>();
         if (d.trigger() == TriggerType.NONE) issues.add("déclencheur non défini");
         if (d.actions().stream().noneMatch(MechanicAction::isValid)) issues.add("aucune action valide");
-        for (String table : d.lootTablesUsed()) {
-            if (!module.lootTableExists(table)) issues.add("action loot → table inconnue : " + table);
+        for (String table : d.danglingLootTables(module::lootTableExists)) {
+            issues.add("action loot → table inconnue : " + table);
         }
         if (issues.isEmpty()) {
             msg(s, "<green>✔ " + d.id() + " : valide" + (d.isRunnable() ? " et active." : " mais inactive (enabled=off)."));

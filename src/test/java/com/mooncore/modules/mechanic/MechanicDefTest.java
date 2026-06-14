@@ -81,6 +81,17 @@ class MechanicDefTest {
     }
 
     @Test
+    void danglingLootTablesUsesInjectedPredicate() {
+        MechanicDef d = new MechanicDef("rewarder");
+        d.addAction(new MechanicAction(ActionType.LOOT, Map.of("table", "common")));
+        d.addAction(new MechanicAction(ActionType.LOOT, Map.of("table", "missing")));
+        d.addAction(new MechanicAction(ActionType.MESSAGE, Map.of("text", "hi")));   // pas une action loot
+        assertEquals(java.util.Set.of("missing"), d.danglingLootTables(java.util.Set.of("common")::contains));
+        assertEquals(java.util.Set.of("common", "missing"), d.danglingLootTables(null));  // null → tout pendant
+        assertTrue(new MechanicDef("x").danglingLootTables(t -> false).isEmpty());        // aucune action loot
+    }
+
+    @Test
     void clampsCooldownAndInterval() {
         MechanicDef d = new MechanicDef("x");
         d.setCooldownTicks(-5);
