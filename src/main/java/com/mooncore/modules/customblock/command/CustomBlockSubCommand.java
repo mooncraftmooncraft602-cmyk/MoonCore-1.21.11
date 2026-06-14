@@ -99,7 +99,9 @@ public final class CustomBlockSubCommand implements SubCommand {
         msg(s, "<gradient:#8a2be2:#c77dff>" + d.id() + "</gradient>");
         msg(s, " <gray>Nom : <reset>" + d.displayName());
         msg(s, " <gray>État note-block : <white>" + d.stateIndex() + " <gray>Modèle : <white>" + d.modelKey());
-        msg(s, " <gray>Drop : <white>" + (d.dropItemId() == null ? "lui-meme" : d.dropItemId())
+        msg(s, " <gray>Drop : <white>" + (d.usesLootTable()
+                        ? "table de loot " + d.lootTableId() + (module.lootTableExists(d.lootTableId()) ? "" : " <yellow>⚠ inconnue")
+                        : (d.dropItemId() == null ? "lui-meme" : d.dropItemId()))
                 + " <gray>XP : <white>" + d.dropXp());
         msg(s, " <gray>Outil : <white>" + (d.requiredTool() == ToolKind.NONE ? "aucun" : d.requiredTool().label() + " " + d.minToolTier().label() + "+")
                 + " <gray>Durabilite : <white>" + d.breakDurability()
