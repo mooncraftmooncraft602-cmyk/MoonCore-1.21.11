@@ -87,16 +87,48 @@ public final class PaletteResolver {
     );
 
     /**
-     * Palette pour un nom donné. Le 1er thème reconnu (par mot entier) gagne ; sinon repli par hash de
-     * teinte. Garantit toujours une palette non nulle, pour TOUT nom.
+     * Palette pour un nom donné. Si le nom évoque <b>plusieurs</b> thèmes (ex. « lune ténèbres et lumière »),
+     * ils sont <b>mélangés</b> en un dégradé multi-couleurs riche ; un seul thème → sa rampe ; aucun → repli
+     * par hash de teinte. Garantit toujours une palette non nulle, pour TOUT nom.
      */
     public static ThemePalette fromName(String name) {
         String s = normalize(name);
         if (has(s, "arc-en-ciel", "rainbow", "prisme", "spectre", "chromatique")) return rainbow();
+        java.util.List<Theme> found = themesIn(s, 4);
+        if (found.isEmpty()) return fromHash(s.isBlank() ? "item" : s);
+        if (found.size() == 1) return rampOf(found.get(0));
+        return blend(found);
+    }
+
+    /** Tous les thèmes évoqués par le nom (mot entier), dans l'ordre, plafonnés à {@code cap}. */
+    private static java.util.List<Theme> themesIn(String s, int cap) {
+        java.util.List<Theme> out = new java.util.ArrayList<>();
         for (Theme th : THEMES) {
-            if (has(s, th.keys())) return rampOf(th);
+            if (has(s, th.keys())) {
+                out.add(th);
+                if (out.size() >= cap) break;
+            }
         }
-        return fromHash(s.isBlank() ? "item" : s);
+        return out;
+    }
+
+    /** Dégradé qui MÉLANGE plusieurs thèmes : sombre → teinte de chaque thème (vif) → clair. */
+    private static ThemePalette blend(java.util.List<Theme> ts) {
+        int n = ts.size();
+        java.util.List<ThemePalette.Stop> stops = new java.util.ArrayList<>();
+        Theme first = ts.get(0);
+        stops.add(new ThemePalette.Stop(0.0, hsl(first.hue(), Math.min(1.0, first.sat() + 0.05), 0.13)));
+        for (int i = 0; i < n; i++) {
+            Theme th = ts.get(i);
+            double pos = 0.18 + 0.64 * (n == 1 ? 0.5 : (double) i / (n - 1));
+            stops.add(new ThemePalette.Stop(pos, hsl(th.hue(), Math.min(1.0, th.sat() + 0.05), 0.52)));
+        }
+        Theme last = ts.get(n - 1);
+        double hl = last.hl() >= 0 ? last.hl() : last.hue();
+        stops.add(new ThemePalette.Stop(1.0, hsl(hl, last.sat() * 0.4, 0.90)));
+        StringBuilder nm = new StringBuilder("mix");
+        for (Theme th : ts) nm.append(':').append(th.name());
+        return new ThemePalette(nm.toString(), stops);
     }
 
     /** Rampe sombre→clair d'un thème (HSL), reflet désaturé/éclairci — cohérent avec le dataset du modèle. */

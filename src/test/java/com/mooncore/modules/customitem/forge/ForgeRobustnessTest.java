@@ -65,6 +65,18 @@ class ForgeRobustnessTest {
     }
 
     @Test
+    void multipleThemesBlendIntoRichGradient() {
+        // « lune + ténèbres + lumière » -> dégradé MÉLANGÉ (pas un seul violet plat).
+        ThemePalette p = PaletteResolver.fromName("Plastron de Lune, Ténèbres et Lumière");
+        assertTrue(p.name().startsWith("mix:"), "nom: " + p.name());
+        assertTrue(p.name().contains("ombre") && p.name().contains("or") && p.name().contains("lune"));
+        assertTrue(p.hexStops().size() >= 4);                 // vrai dégradé multi-couleurs
+        // un seul thème -> pas de mélange (rampe simple).
+        assertFalse(PaletteResolver.fromName("Épée du Vent").name().startsWith("mix"));
+        assertEquals("feu", PaletteResolver.fromName("Lame de Feu").name());
+    }
+
+    @Test
     void anyUnknownNameStillGivesDeterministicPalette() {
         // Pas de thème -> repli par hash, mais TOUJOURS une palette (déterministe).
         ThemePalette a = PaletteResolver.fromName("Zorglub Machin 77");
