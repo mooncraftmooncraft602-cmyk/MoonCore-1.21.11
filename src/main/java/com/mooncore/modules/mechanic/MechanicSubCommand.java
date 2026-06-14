@@ -115,6 +115,12 @@ public final class MechanicSubCommand implements SubCommand {
         String v = a[2].equalsIgnoreCase("none") ? null : a[2];
         d.setMatchKey(v); module.put(d);
         msg(s, "<green>Filtre de " + d.id() + " = <white>" + (d.matchKey() == null ? "(tout)" : d.matchKey()));
+        // Avertit si le filtre cible un item custom inexistant.
+        if (d.matchKey() != null && d.matchKey().startsWith("custom:")
+                && !module.customItemExists(d.matchKey().substring("custom:".length()))) {
+            msg(s, "<yellow>⚠ Item custom inconnu : <white>" + d.matchKey().substring("custom:".length())
+                    + "<yellow> (le filtre ne correspondra à rien).");
+        }
     }
 
     private void setCooldown(CommandSender s, String[] a) {
