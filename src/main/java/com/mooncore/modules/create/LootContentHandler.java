@@ -52,6 +52,16 @@ public final class LootContentHandler implements ContentTypeHandler {
         return true;
     }
 
+    /** Donne au joueur le butin tiré de la table (la table est tirée {@code amount} fois). */
+    @Override
+    public boolean give(org.bukkit.entity.Player player, String id, int amount) {
+        String n = ContentIds.norm(id);
+        if (module.def(n) == null) return false;
+        int times = Math.max(1, amount);
+        for (int i = 0; i < times; i++) module.give(player, n, java.util.concurrent.ThreadLocalRandom.current());
+        return true;
+    }
+
     @Override public boolean exists(String id) { return module.def(ContentIds.norm(id)) != null; }
     @Override public boolean delete(String id) { return module.removeDef(ContentIds.norm(id)); }
     @Override public Collection<String> ids() { return module.ids(); }
