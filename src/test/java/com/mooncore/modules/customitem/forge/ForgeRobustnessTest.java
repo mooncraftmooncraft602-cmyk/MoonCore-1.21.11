@@ -77,6 +77,15 @@ class ForgeRobustnessTest {
     }
 
     @Test
+    void longThemedSentenceStillResolvesToTheme() {
+        // BUG corrigé : « Épée du dieu du feu avec des particules de feu » donnait du VIOLET (modèle GPT
+        // hors-distribution sur une longue phrase). La priorité mot-clé garantit désormais FEU.
+        assertTrue(PaletteResolver.hasKnownTheme("Épée du dieu du feu avec des particules de feu"));
+        assertEquals("feu", PaletteResolver.fromName("Épée du dieu du feu avec des particules de feu").name());
+        assertFalse(PaletteResolver.hasKnownTheme("Zorglub Machin 77"));   // nom sans thème -> modèle/repli
+    }
+
+    @Test
     void anyUnknownNameStillGivesDeterministicPalette() {
         // Pas de thème -> repli par hash, mais TOUJOURS une palette (déterministe).
         ThemePalette a = PaletteResolver.fromName("Zorglub Machin 77");

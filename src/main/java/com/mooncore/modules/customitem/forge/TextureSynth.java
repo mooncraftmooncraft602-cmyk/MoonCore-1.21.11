@@ -187,6 +187,146 @@ public final class TextureSynth {
         return out;
     }
 
+    // ------------------- ARMES / OUTILS / ARMURES DESSINÉS (pixel-art from scratch) -------------------
+
+    /** Sous-type d'objet déduit du nom de base, pour choisir le dessin approprié. */
+    public enum Kind { SWORD, PICKAXE, AXE, HELMET, CHESTPLATE, GENERIC }
+
+    public static Kind itemKind(String baseName) {
+        String n = baseName == null ? "" : baseName.toLowerCase(Locale.ROOT);
+        if (n.contains("pickaxe") || n.contains("pioche")) return Kind.PICKAXE;       // avant "axe"
+        if (n.contains("axe") || n.contains("hache") || n.contains("hatchet")) return Kind.AXE;
+        if (n.contains("sword") || n.contains("blade") || n.contains("dagger") || n.contains("katana")
+                || n.contains("sabre") || n.contains("epee") || n.contains("lame")) return Kind.SWORD;
+        if (n.contains("helmet") || n.contains("cap") || n.contains("hood") || n.contains("crown")
+                || n.contains("casque") || n.contains("heaume")) return Kind.HELMET;
+        if (n.contains("chestplate") || n.contains("tunic") || n.contains("plastron")
+                || n.contains("chest") || n.contains("plate")) return Kind.CHESTPLATE;
+        return Kind.GENERIC;
+    }
+
+    /** Dessine un objet (arme/outil/armure) depuis zéro selon son sous-type ; repli recolorage sinon. */
+    public static BufferedImage drawTool(String baseName, BufferedImage base, ThemePalette p, long seed) {
+        return switch (itemKind(baseName)) {
+            case SWORD -> drawSword(p, seed);
+            case PICKAXE -> drawPickaxe(p, seed);
+            case AXE -> drawAxe(p, seed);
+            case HELMET -> drawHelmet(p, seed);
+            case CHESTPLATE -> drawChestplate(p, seed);
+            case GENERIC -> base != null ? detailFromMask(base, p, seed) : gem(p, seed, 16);
+        };
+    }
+
+    private static final ThemePalette WOOD = ThemePalette.ramp("wood", 0x2c1d10, 0x5a4026, 0x8a6a3e);
+    private static final ThemePalette STEEL = ThemePalette.ramp("steel", 0x3a3d44, 0x80858f, 0xccd0d8);
+    private static final int MAT_METAL = 1, MAT_WOOD = 2, MAT_STEEL = 3;
+
+    public static BufferedImage drawSword(ThemePalette p, long seed) {
+        int[][] m = new int[16][16];
+        capsule(m, MAT_WOOD, 4.2, 11.0, 2.6, 13.8, 1.0, false);   // poignée
+        disc(m, MAT_STEEL, 2.2, 13.8, 1.4);                       // pommeau
+        capsule(m, MAT_STEEL, 2.9, 7.9, 7.1, 12.1, 1.0, false);   // garde
+        capsule(m, MAT_METAL, 5.0, 10.2, 13.6, 1.8, 1.7, true);   // lame (s'affine vers la pointe)
+        return shade(m, p);
+    }
+
+    public static BufferedImage drawPickaxe(ThemePalette p, long seed) {
+        int[][] m = new int[16][16];
+        capsule(m, MAT_WOOD, 10.6, 14.2, 8.0, 5.8, 1.0, false);   // manche
+        capsule(m, MAT_METAL, 2.4, 6.2, 13.6, 3.4, 1.45, true);   // tête en arc (pointes effilées)
+        return shade(m, p);
+    }
+
+    public static BufferedImage drawAxe(ThemePalette p, long seed) {
+        int[][] m = new int[16][16];
+        capsule(m, MAT_WOOD, 12.6, 14.6, 5.4, 2.8, 1.0, false);   // manche
+        disc(m, MAT_METAL, 4.4, 5.8, 3.0);                        // corps de tête
+        capsule(m, MAT_METAL, 6.0, 2.6, 2.4, 5.0, 1.7, false);    // dos haut
+        capsule(m, MAT_METAL, 2.4, 5.0, 4.6, 9.4, 1.9, false);    // tranchant (gauche)
+        return shade(m, p);
+    }
+
+    public static BufferedImage drawHelmet(ThemePalette p, long seed) {
+        int[][] m = new int[16][16];
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            double dx = (x - 8.0) / 6.2, dy = (y - 7.5) / 6.0;
+            boolean dome = dx * dx + dy * dy <= 1.0 && y >= 2 && y <= 13;
+            boolean slit = y >= 7 && y <= 8 && x >= 4 && x <= 11;     // fente des yeux (vide)
+            if (dome && !slit) m[x][y] = MAT_METAL;
+        }
+        return shade(m, p);
+    }
+
+    public static BufferedImage drawChestplate(ThemePalette p, long seed) {
+        int[][] m = new int[16][16];
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            boolean torso = x >= 3 && x <= 12 && y >= 3 && y <= 14
+                    && !(y <= 4 && x >= 6 && x <= 9);                 // encoche du col
+            boolean pauldron = y >= 2 && y <= 5 && ((x >= 2 && x <= 4) || (x >= 11 && x <= 13));
+            if (torso || pauldron) m[x][y] = MAT_METAL;
+        }
+        return shade(m, p);
+    }
+
+    // -- moteur de dessin partagé : masque matière -> couleur (lumière haut-gauche) + contour 1px --
+
+    private static void capsule(int[][] m, int val, double ax, double ay, double bx, double by, double hw, boolean taper) {
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            double[] c = segCoord(x + 0.5, y + 0.5, ax, ay, bx, by);
+            double t = c[0], sd = Math.abs(c[1]);
+            if (t < -0.05 || t > 1.05) continue;
+            double w = taper ? hw * (1.0 - 0.75 * Math.max(0, t)) : hw;   // effilage vers b
+            if (sd <= w) m[x][y] = val;
+        }
+    }
+
+    private static void disc(int[][] m, int val, double cx, double cy, double r) {
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++)
+            if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r) m[x][y] = val;
+    }
+
+    /** Masque matière → image : aplat thématique ombré (lumière haut-gauche) + arêtes + contour sombre. */
+    private static BufferedImage shade(int[][] m, ThemePalette p) {
+        BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            int mat = m[x][y];
+            if (mat == 0) continue;
+            ThemePalette ramp = mat == MAT_WOOD ? WOOD : mat == MAT_STEEL ? STEEL : p;
+            double g = clampf(0.52 + 0.30 * (((7.5 - x) + (7.5 - y)) / 15.0));   // dégradé haut-gauche
+            int col;
+            if (empty(m, x - 1, y) || empty(m, x, y - 1)) col = ramp.colorAt(clampf(g + 0.34));   // arête éclairée
+            else if (empty(m, x + 1, y) || empty(m, x, y + 1)) col = ramp.colorAt(clampf(g - 0.30)); // ombre
+            else col = ramp.colorAt(g);
+            set(img, x, y, argb(255, col));
+        }
+        int outline = ThemePalette.darken(p.colorAt(0.16), 0.45);
+        BufferedImage out = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            if (alpha(img.getRGB(x, y)) != 0) { out.setRGB(x, y, img.getRGB(x, y)); continue; }
+            if (opaqueNeighbor(img, x, y)) out.setRGB(x, y, argb(255, outline));   // contour extérieur 1px
+        }
+        return out;
+    }
+
+    private static boolean empty(int[][] m, int x, int y) {
+        return x < 0 || y < 0 || x >= 16 || y >= 16 || m[x][y] == 0;
+    }
+    private static boolean opaqueNeighbor(BufferedImage img, int x, int y) {
+        int w = img.getWidth(), h = img.getHeight();
+        for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
+            int nx = x + d[0], ny = y + d[1];
+            if (nx >= 0 && ny >= 0 && nx < w && ny < h && alpha(img.getRGB(nx, ny)) != 0) return true;
+        }
+        return false;
+    }
+    private static double[] segCoord(double px, double py, double ax, double ay, double bx, double by) {
+        double vx = bx - ax, vy = by - ay, L = Math.hypot(vx, vy);
+        if (L < 1e-9) return new double[]{0, Math.hypot(px - ax, py - ay)};
+        double t = ((px - ax) * vx + (py - ay) * vy) / (L * L);
+        double sd = ((px - ax) * vy - (py - ay) * vx) / L;
+        return new double[]{t, sd};
+    }
+
     // ----------------------------- helpers -----------------------------
 
     private static float[][] valueNoise(int size, int cell, Random rng) {

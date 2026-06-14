@@ -78,7 +78,11 @@ public final class ForgeService {
         TextureSynth.Archetype arch = TextureSynth.archetypeOf(baseTexture);
         int size = Math.max(16, Math.min(64, Math.max(base.getWidth(), base.getHeight())));
         long seed = (displayName + "|" + pal.name()).hashCode() & 0xffffffffL;
-        BufferedImage themed = TextureSynth.synthesize(arch, base, pal, seed, size);
+        // outils/armes/armures = DESSINÉS depuis zéro (épée, pioche, hache, casque, plastron) ;
+        // minerai/gemme/lingot = pixel-art procédural. Plus jamais un simple recolorage plat.
+        BufferedImage themed = arch == TextureSynth.Archetype.ITEM
+                ? TextureSynth.drawTool(baseTexture, base, pal, seed)
+                : TextureSynth.synthesize(arch, base, pal, seed, size);
 
         // 3) item custom : id depuis le nom, matériau déduit de la base
         String id = slug(displayName);

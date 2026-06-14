@@ -23,8 +23,12 @@ public final class GptPaletteSource {
 
     /** Palette par le modèle (async), repli déterministe garanti. */
     public CompletableFuture<ThemePalette> resolve(String name) {
-        if (model == null) return CompletableFuture.completedFuture(PaletteResolver.fromName(name));
         final String nm = name == null ? "" : name;
+        // PRIORITÉ MOT-CLÉ : si le nom nomme clairement un thème connu (« épée du dieu du FEU »), la palette
+        // du lexique est CERTAINE et doit primer. Le modèle GPT n'est fiable que sur des noms courts ; une
+        // longue phrase est hors-distribution et produirait des couleurs incohérentes (ex. feu → violet).
+        if (PaletteResolver.hasKnownTheme(nm)) return CompletableFuture.completedFuture(PaletteResolver.fromName(nm));
+        if (model == null) return CompletableFuture.completedFuture(PaletteResolver.fromName(nm));
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String gen = model.generate(nm + " => ", 64, '\n');

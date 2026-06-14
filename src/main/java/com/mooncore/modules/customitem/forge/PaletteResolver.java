@@ -100,6 +100,13 @@ public final class PaletteResolver {
         return blend(found);
     }
 
+    /** Vrai si le nom évoque un thème connu (mot-clé) → la palette par lexique est fiable et doit primer. */
+    public static boolean hasKnownTheme(String name) {
+        String s = normalize(name);
+        if (has(s, "arc-en-ciel", "rainbow", "prisme", "spectre", "chromatique")) return true;
+        return !themesIn(s, 1).isEmpty();
+    }
+
     /** Tous les thèmes évoqués par le nom (mot entier), dans l'ordre, plafonnés à {@code cap}. */
     private static java.util.List<Theme> themesIn(String s, int cap) {
         java.util.List<Theme> out = new java.util.ArrayList<>();

@@ -52,6 +52,30 @@ class TextureSynthTest {
     }
 
     @Test
+    void itemKindClassification() {
+        assertEquals(TextureSynth.Kind.SWORD, TextureSynth.itemKind("diamond_sword"));
+        assertEquals(TextureSynth.Kind.PICKAXE, TextureSynth.itemKind("netherite_pickaxe"));  // avant "axe"
+        assertEquals(TextureSynth.Kind.AXE, TextureSynth.itemKind("golden_axe"));
+        assertEquals(TextureSynth.Kind.HELMET, TextureSynth.itemKind("iron_helmet"));
+        assertEquals(TextureSynth.Kind.CHESTPLATE, TextureSynth.itemKind("diamond_chestplate"));
+        assertEquals(TextureSynth.Kind.GENERIC, TextureSynth.itemKind("stick"));
+    }
+
+    @Test
+    void drawnItemsAreThemedTransparentAndDeterministic() {
+        assertImagesEqual(TextureSynth.drawSword(VENT, 1L), TextureSynth.drawSword(VENT, 1L));
+        for (BufferedImage im : new BufferedImage[]{
+                TextureSynth.drawSword(VENT, 1L), TextureSynth.drawPickaxe(VENT, 1L),
+                TextureSynth.drawAxe(VENT, 1L), TextureSynth.drawHelmet(VENT, 1L),
+                TextureSynth.drawChestplate(VENT, 1L)}) {
+            assertEquals(0, im.getRGB(0, 0) >>> 24, "fond transparent (coin haut-gauche)");
+            int op = opaqueCount(im);
+            assertTrue(op > 20 && op < 16 * 16, "silhouette dessinée (ni vide ni plein) : " + op);
+            assertTrue(greenishPixels(im) >= 4, "teinte du thème présente : " + greenishPixels(im));
+        }
+    }
+
+    @Test
     void detailFromMaskPreservesSilhouette() {
         // base : moitié gauche opaque (forme), moitié droite transparente.
         BufferedImage base = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
@@ -83,6 +107,14 @@ class TextureSynthTest {
             save(dir, "ore_" + t.n(), TextureSynth.ore(t.p(), t.n().hashCode(), 16));
             save(dir, "gem_" + t.n(), TextureSynth.gem(t.p(), t.n().hashCode(), 16));
             save(dir, "ingot_" + t.n(), TextureSynth.ingot(t.p(), t.n().hashCode(), 16));
+        }
+        // objets dessinés (armes/outils/armures) — un thème représentatif chacun
+        for (Th t : themes) {
+            save(dir, "sword_" + t.n(), TextureSynth.drawSword(t.p(), 1));
+            save(dir, "pickaxe_" + t.n(), TextureSynth.drawPickaxe(t.p(), 1));
+            save(dir, "axe_" + t.n(), TextureSynth.drawAxe(t.p(), 1));
+            save(dir, "helmet_" + t.n(), TextureSynth.drawHelmet(t.p(), 1));
+            save(dir, "chestplate_" + t.n(), TextureSynth.drawChestplate(t.p(), 1));
         }
         assertTrue(new java.io.File(dir, "ore_vent.png").isFile());
     }
