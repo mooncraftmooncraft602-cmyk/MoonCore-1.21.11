@@ -44,6 +44,7 @@ public final class CustomBlockSubCommand implements SubCommand {
                 case "give" -> give(s, a);
                 case "get" -> get(s, a);
                 case "drop" -> setDrop(s, a);
+                case "loottable", "loot" -> setLootTable(s, a);
                 case "tool" -> setTool(s, a);
                 case "hardness", "durability", "resistance" -> setHardness(s, a);
                 case "face" -> setFace(s, a);
@@ -136,6 +137,23 @@ public final class CustomBlockSubCommand implements SubCommand {
         if (a.length >= 4) d.setDropXp(Integer.parseInt(a[3]));
         module.put(d);
         msg(s, "<green>Drop de " + d.id() + " = " + (d.dropItemId() == null ? "lui-même" : d.dropItemId()) + " (xp " + d.dropXp() + ")");
+    }
+
+    private void setLootTable(CommandSender s, String[] a) {
+        // /moon block loottable <id> <tableId|none>
+        if (a.length < 3) { msg(s, "<red>/moon block loottable <id> <tableId|none>"); return; }
+        CustomBlockDef d = module.rawDef(a[1]);
+        if (d == null) { msg(s, "<red>Id inconnu."); return; }
+        d.setLootTableId(a[2].equalsIgnoreCase("none") ? null : a[2]);
+        module.put(d);
+        if (d.usesLootTable()) {
+            msg(s, "<green>Casse de " + d.id() + " = table de loot <white>" + d.lootTableId());
+            if (!module.lootTableExists(d.lootTableId())) {
+                msg(s, "<yellow>⚠ Table de loot inconnue : <white>" + d.lootTableId() + "<yellow> (crée-la, sinon repli sur le drop fixe).");
+            }
+        } else {
+            msg(s, "<green>Casse de " + d.id() + " = drop fixe (table de loot retirée).");
+        }
     }
 
     private void setTool(CommandSender s, String[] a) {
@@ -265,12 +283,12 @@ public final class CustomBlockSubCommand implements SubCommand {
     @Override
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
-            return filter(List.of("create", "paint", "importvanilla", "delete", "list", "info", "give", "get", "drop", "tool", "hardness", "durability", "resistance", "face", "worldgen", "pack", "reload"), a[0]);
+            return filter(List.of("create", "paint", "importvanilla", "delete", "list", "info", "give", "get", "drop", "loottable", "tool", "hardness", "durability", "resistance", "face", "worldgen", "pack", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "get", "drop", "tool", "hardness", "durability", "resistance", "worldgen", "paint", "face" -> filter(new ArrayList<>(module.ids()), a[1]);
+                case "delete", "info", "get", "drop", "loottable", "tool", "hardness", "durability", "resistance", "worldgen", "paint", "face" -> filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();
             };

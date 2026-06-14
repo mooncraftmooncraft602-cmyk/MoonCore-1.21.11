@@ -216,5 +216,11 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
         return loot == null ? java.util.List.of() : loot.rollItems(def.lootTableId(), rng);  // matérialisation centralisée
     }
 
+    /** True si une table de loot de cet id existe (pour avertir d'une référence erronée). */
+    public boolean lootTableExists(String id) {
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        return loot != null && loot.def(id) != null;
+    }
+
     public org.bukkit.Server server() { return Bukkit.getServer(); }
 }
