@@ -202,6 +202,14 @@ public final class MechanicSubCommand implements SubCommand {
         if (missing != null) {
             msg(s, "<yellow>⚠ Paramètre requis manquant : <white>" + missing + "<yellow> (l'action ne fera rien).");
         }
+        // Avertit si une action spawn_mob invoque un boss custom inexistant.
+        if (type == ActionType.SPAWN_MOB) {
+            String entity = params.getOrDefault("entity", "").trim();
+            if (entity.toLowerCase(Locale.ROOT).startsWith("boss:")
+                    && !module.bossExists(entity.substring("boss:".length()))) {
+                msg(s, "<yellow>⚠ Boss inconnu : <white>" + entity.substring("boss:".length()) + "<yellow> (rien ne sera invoqué).");
+            }
+        }
         // Avertit si une action loot référence une table présente mais inexistante.
         if (type == ActionType.LOOT) {
             String table = params.getOrDefault("table", "").trim();
@@ -285,6 +293,9 @@ public final class MechanicSubCommand implements SubCommand {
         }
         for (String table : d.danglingLootTables(module::lootTableExists)) {
             issues.add("action loot → table inconnue : " + table);
+        }
+        for (String bossId : d.danglingBosses(module::bossExists)) {
+            issues.add("action spawn_mob → boss inconnu : " + bossId);
         }
         for (String item : d.danglingCustomItems(module::customItemExists)) {
             issues.add("action give_item → item custom inconnu : " + item);

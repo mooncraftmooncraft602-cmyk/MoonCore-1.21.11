@@ -150,6 +150,13 @@ public final class MechanicModule extends AbstractModule {
         return cb != null && cb.ids().contains(id.toLowerCase(Locale.ROOT));
     }
 
+    /** True si un boss MoonCore de cet id existe (pour valider une action {@code spawn_mob entity=boss:<id>}). */
+    public boolean bossExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var boss = plugin().moduleManager().get(com.mooncore.modules.boss.BossManagerModule.class);
+        return boss != null && boss.exists(id);
+    }
+
     /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
     public String blockContextKey(org.bukkit.block.Block block) {
         if (block == null) return null;

@@ -131,6 +131,29 @@ public final class MechanicDef {
         return out;
     }
 
+    /** Ids de boss MoonCore invoqués par les actions {@code SPAWN_MOB} (param {@code entity=boss:<id>}). Pur. */
+    public java.util.Set<String> bossesUsed() {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (MechanicAction a : actions) {
+            if (a.type() != ActionType.SPAWN_MOB) continue;
+            String entity = a.param("entity", "").trim();
+            if (entity.toLowerCase(Locale.ROOT).startsWith("boss:")) {
+                String id = entity.substring("boss:".length()).trim().toLowerCase(Locale.ROOT);
+                if (!id.isEmpty()) out.add(id);
+            }
+        }
+        return out;
+    }
+
+    /** Boss invoqués (actions {@code SPAWN_MOB}) que {@code exists} déclare inexistants. Pur (prédicat injecté). */
+    public java.util.Set<String> danglingBosses(java.util.function.Predicate<String> exists) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (String id : bossesUsed()) {
+            if (exists == null || !exists.test(id)) out.add(id);
+        }
+        return out;
+    }
+
     /** True si la mécanique est exécutable (active, déclencheur reconnu, au moins une action valide). */
     public boolean isRunnable() {
         if (!enabled || trigger == TriggerType.NONE) return false;

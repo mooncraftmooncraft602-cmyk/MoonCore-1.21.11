@@ -128,6 +128,28 @@ class MechanicDefTest {
     }
 
     @Test
+    void bossesUsedCollectsOnlySpawnMobBossRefs() {
+        MechanicDef d = new MechanicDef("autel");
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of("entity", "boss:Dragon_Noir")));  // normalisé minuscule
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of("entity", "boss:dragon_noir")));  // doublon
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of("entity", "ZOMBIE")));            // vanilla → ignoré
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of()));                              // sans entity → ignoré
+        d.addAction(new MechanicAction(ActionType.MESSAGE, Map.of("text", "hi")));                    // autre type → ignoré
+        assertEquals(java.util.Set.of("dragon_noir"), d.bossesUsed());
+        assertTrue(new MechanicDef("x").bossesUsed().isEmpty());
+    }
+
+    @Test
+    void danglingBossesUsesInjectedPredicate() {
+        MechanicDef d = new MechanicDef("autel");
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of("entity", "boss:connu")));
+        d.addAction(new MechanicAction(ActionType.SPAWN_MOB, Map.of("entity", "boss:absent")));
+        assertEquals(java.util.Set.of("absent"), d.danglingBosses(java.util.Set.of("connu")::contains));
+        assertEquals(java.util.Set.of("connu", "absent"), d.danglingBosses(null));   // null → tout pendant
+        assertTrue(new MechanicDef("x").danglingBosses(t -> false).isEmpty());        // aucune action spawn_mob
+    }
+
+    @Test
     void danglingCustomItemsUsesInjectedPredicate() {
         MechanicDef d = new MechanicDef("rewarder");
         d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:known")));
