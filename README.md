@@ -35,4 +35,4 @@ Jar final : `target/MoonCore-2.0.0-mc1.21.11.jar` (dépendances embarquées + re
 
 ## État
 
-Build **vert**, 290 tests. Plugin de saison complet (progression, events, boss, zones, anti-farm, économie, enchants, endgame) + studio de contenu (items/blocs/mobs/boss/armures custom) + **systèmes data-driven loot/mécaniques/cultures + recettes complètes (dont forge)** générables par IA + suite QoL de type Essentials.
+Build **vert**, 319 tests. Plugin de saison complet (progression, events, boss, zones, anti-farm, économie, enchants, endgame) + studio de contenu (items/blocs/mobs/boss/armures custom) + **systèmes data-driven loot/mécaniques/cultures + recettes complètes (dont forge)** générables par IA + suite QoL de type Essentials.
