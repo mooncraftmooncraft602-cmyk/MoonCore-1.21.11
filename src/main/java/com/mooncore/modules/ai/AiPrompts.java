@@ -361,6 +361,7 @@ public final class AiPrompts {
                 - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
                 - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
                 - launch { power, up }  (propulse le joueur)  ·  particle { particle, count }
+                - broadcast { text }  (message a TOUT le serveur ; vs message = joueur declencheur seul)
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }

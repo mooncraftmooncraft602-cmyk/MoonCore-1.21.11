@@ -47,6 +47,8 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.LOOT, ActionType.fromText("loot_table"));
         assertEquals(ActionType.LAUNCH, ActionType.fromText("propulse"));
         assertEquals(ActionType.PARTICLE, ActionType.fromText("particule"));
+        assertEquals(ActionType.BROADCAST, ActionType.fromText("annonce"));
+        assertEquals(ActionType.BROADCAST, ActionType.fromText("bc"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }

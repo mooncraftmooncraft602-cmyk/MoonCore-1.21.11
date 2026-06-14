@@ -95,6 +95,10 @@ public final class MechanicExecutor {
                 p.setVelocity(dir);
             }
             case PARTICLE -> spawnParticle(a, p);
+            case BROADCAST -> {
+                String text = placeholders(a.param("text", ""), p);
+                if (!text.isBlank()) Bukkit.broadcast(Text.mm(text));
+            }
             case NONE -> { /* ignoré */ }
         }
     }

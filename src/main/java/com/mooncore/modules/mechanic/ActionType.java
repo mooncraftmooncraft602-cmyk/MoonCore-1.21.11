@@ -26,6 +26,7 @@ public enum ActionType {
     LOOT,       // params: table (id d'une table de loot) — tire la table et donne le butin au joueur
     LAUNCH,     // params: power [, up] — propulse le joueur dans la direction du regard
     PARTICLE,   // params: particle, count — affiche des particules sur le joueur
+    BROADCAST,  // params: text — message diffusé à TOUT le serveur (vs message = joueur seul)
     NONE;       // inerte (non reconnu)
 
     /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
@@ -51,6 +52,7 @@ public enum ActionType {
             case "loot", "loot_table", "table_loot", "butin", "loottable" -> LOOT;
             case "launch", "propulse", "boost", "velocity", "knockback" -> LAUNCH;
             case "particle", "particule", "particles" -> PARTICLE;
+            case "broadcast", "announce", "annonce", "diffuse", "bc" -> BROADCAST;
             default -> NONE;
         };
     }
