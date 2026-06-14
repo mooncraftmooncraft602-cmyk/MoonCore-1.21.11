@@ -39,6 +39,7 @@ public final class LootSubCommand implements SubCommand {
                 case "clearpools" -> clearPools(s, a);
                 case "test", "roll" -> test(s, a);
                 case "give" -> give(s, a);
+                case "fill" -> fill(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Tables de loot rechargées."); }
                 default -> help(s);
             }
@@ -153,6 +154,23 @@ public final class LootSubCommand implements SubCommand {
         msg(s, "<green>Donné <white>" + n + "<green> pile(s) de la table " + d.id() + " à " + t.getName() + ".");
     }
 
+    private void fill(CommandSender s, String[] a) {
+        if (!(s instanceof org.bukkit.entity.Player p)) { msg(s, "<red>Réservé aux joueurs (vise un conteneur)."); return; }
+        if (a.length < 2) { msg(s, "<red>/moon loot fill <id>  (vise un coffre/baril)"); return; }
+        LootTableDef d = module.def(a[1]);
+        if (d == null) { msg(s, "<red>Id inconnu : " + a[1]); return; }
+        org.bukkit.block.Block target = p.getTargetBlockExact(6);
+        if (target == null || !(target.getState() instanceof org.bukkit.block.Container container)) {
+            msg(s, "<red>Vise un conteneur (coffre, baril, shulker…) à portée."); return;
+        }
+        int placed = 0;
+        for (org.bukkit.inventory.ItemStack it : module.rollItems(d.id(), ThreadLocalRandom.current())) {
+            if (container.getInventory().addItem(it).isEmpty()) placed++;
+        }
+        container.update();
+        msg(s, "<green>Conteneur rempli avec <white>" + placed + "<green> pile(s) de la table " + d.id() + ".");
+    }
+
     private LootTableDef need(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>Id manquant."); return null; }
         LootTableDef d = module.def(a[1]);
@@ -167,7 +185,8 @@ public final class LootSubCommand implements SubCommand {
                 "addpool <id> [rollsMin] [rollsMax]  (ajoute un pool de tirages)",
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
                 "clearpools <id>  (retire tous les pools)",
-                "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)"
+                "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)",
+                "fill <id>  (remplit le conteneur visé avec le butin tiré — design de donjons)"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, "<gray>Référence une table sur une culture/bloc/boss via leur champ <white>loot-table<gray>.");
@@ -179,12 +198,12 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "clearpools", "test", "give", "reload"), a[0]);
+                    "clearpools", "test", "give", "fill", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "addpool", "addentry", "clearpools", "test" ->
+                case "delete", "info", "addpool", "addentry", "clearpools", "test", "fill" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(org.bukkit.Bukkit.getOnlinePlayers().stream()
                         .map(org.bukkit.entity.Player::getName).collect(Collectors.toList()), a[1]);
