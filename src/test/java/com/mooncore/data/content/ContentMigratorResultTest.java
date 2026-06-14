@@ -12,9 +12,10 @@ class ContentMigratorResultTest {
 
     @Test
     void totalSumsAllTypesExcludingErrors() {
-        ContentMigrator.Result r = new ContentMigrator.Result(3, 2, 1, 4, 5, 7);
-        assertEquals(15, r.total());   // 3+2+1+4+5, pas les 7 erreurs
+        ContentMigrator.Result r = new ContentMigrator.Result(3, 2, 1, 4, 5, 6, 7);
+        assertEquals(21, r.total());   // 3+2+1+4+5+6, pas les 7 erreurs
         assertEquals(5, r.loot());
+        assertEquals(6, r.mechanics());
         assertEquals(7, r.errors());
     }
 }
