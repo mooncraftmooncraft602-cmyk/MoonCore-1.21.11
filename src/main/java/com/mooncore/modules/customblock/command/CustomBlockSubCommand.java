@@ -101,6 +101,7 @@ public final class CustomBlockSubCommand implements SubCommand {
         msg(s, " <gray>État note-block : <white>" + d.stateIndex() + " <gray>Modèle : <white>" + d.modelKey());
         msg(s, " <gray>Drop : <white>" + (d.usesLootTable()
                         ? "table de loot " + d.lootTableId() + (module.lootTableExists(d.lootTableId()) ? "" : " <yellow>⚠ inconnue")
+                          + " <gray>· repli <white>" + (d.dropItemId() == null ? "lui-meme" : d.dropItemId())
                         : (d.dropItemId() == null ? "lui-meme" : d.dropItemId()))
                 + " <gray>XP : <white>" + d.dropXp());
         msg(s, " <gray>Outil : <white>" + (d.requiredTool() == ToolKind.NONE ? "aucun" : d.requiredTool().label() + " " + d.minToolTier().label() + "+")
