@@ -103,11 +103,12 @@ public final class LootSubCommand implements SubCommand {
             LootPool p = d.pools().get(i);
             msg(s, " <dark_gray>Pool <white>" + i + " <gray>· rolls <white>" + p.rollsMin() + "–" + p.rollsMax()
                     + " <gray>· poids total <white>" + p.totalWeight());
-            for (LootEntry e : p.entries()) {
+            for (int j = 0; j < p.entries().size(); j++) {
+                LootEntry e = p.entries().get(j);
                 long pct = Math.round(p.chanceOf(e) * 100);
                 String label = e.isReference() ? "↪ table " + e.tableRef()
                         : (e.isCustom() ? "✦ " + e.itemId() : e.material().name());
-                msg(s, "   <dark_gray>▸ <white>" + label
+                msg(s, "   <dark_gray>[" + j + "] ▸ <white>" + label
                         + " <gray>×" + e.countMin() + "–" + e.countMax() + " <gray>poids <white>" + e.weight()
                         + " <dark_gray>(<yellow>" + pct + "%<dark_gray>/tirage)");
             }
