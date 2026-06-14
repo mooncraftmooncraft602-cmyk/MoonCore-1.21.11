@@ -404,7 +404,7 @@ public final class AiPrompts {
                 - player_command { command }  (executee EN TANT QUE joueur, ses permissions ; vs command = console)
                 - actionbar { text }  (message dans la barre d'action, au-dessus de la hotbar)
                 Placeholders disponibles dans text/title/subtitle/command/broadcast/actionbar :
-                  %player% %world% %x% %y% %z% %online%  (substitues a l'execution ; clés inconnues laissees telles quelles).
+                  %player% %world% %x% %y% %z% %online% %health% %food% %level%  (substitues a l'execution ; clés inconnues laissees telles quelles).
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }

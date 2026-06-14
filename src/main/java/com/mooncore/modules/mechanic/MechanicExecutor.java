@@ -225,6 +225,9 @@ public final class MechanicExecutor {
         vars.put("y", String.valueOf(loc.getBlockY()));
         vars.put("z", String.valueOf(loc.getBlockZ()));
         vars.put("online", String.valueOf(Bukkit.getOnlinePlayers().size()));
+        vars.put("health", String.valueOf((int) Math.ceil(p.getHealth())));
+        vars.put("food", String.valueOf(p.getFoodLevel()));
+        vars.put("level", String.valueOf(p.getLevel()));
         return fillPlaceholders(s, vars);
     }
 
