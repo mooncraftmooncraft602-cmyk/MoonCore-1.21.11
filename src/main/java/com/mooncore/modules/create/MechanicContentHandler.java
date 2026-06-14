@@ -9,12 +9,40 @@ import java.util.Collection;
 public final class MechanicContentHandler implements ContentTypeHandler {
 
     private final MechanicModule module;
+    private com.mooncore.modules.ai.AiPrompts prompts;
+    private com.mooncore.modules.ai.AiActionValidator validator;
 
     public MechanicContentHandler(MechanicModule module) {
         this.module = module;
     }
 
+    /** Branche la génération IA (optionnel). */
+    public void withAi(com.mooncore.modules.ai.AiPrompts prompts, com.mooncore.modules.ai.AiActionValidator validator) {
+        this.prompts = prompts;
+        this.validator = validator;
+    }
+
     @Override public String type() { return "mechanic"; }
+
+    @Override public String aiSystemPrompt() { return prompts == null ? null : prompts.mechanicSchemaSystem(); }
+
+    @Override
+    public String createFromAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        MechanicDef d = validator.validateMechanic(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        module.put(d);
+        return d.id();
+    }
+
+    @Override
+    public String validateAi(String aiText, String forcedId) {
+        if (validator == null) return null;
+        MechanicDef d = validator.validateMechanic(aiText, ContentIds.norm(forcedId));
+        if (d == null) return null;
+        return d.displayName() + " (" + d.trigger().name().toLowerCase(java.util.Locale.ROOT)
+                + ", " + d.actions().size() + " action(s)" + (d.isRunnable() ? "" : ", inactive") + ")";
+    }
 
     @Override
     public boolean create(String id) {

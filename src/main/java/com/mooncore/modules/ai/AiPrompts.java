@@ -330,6 +330,35 @@ public final class AiPrompts {
                 """;
     }
 
+    public String mechanicSchemaSystem() {
+        return """
+                Tu conçois une mécanique générique « trigger→action » pour un serveur Minecraft (MoonCore) :
+                un événement de jeu déclenche une séquence d'actions. Réponds UNIQUEMENT par un objet JSON
+                valide, sans texte ni markdown :
+                {
+                  "id": "string a-z0-9_-",
+                  "display-name": "nom MiniMessage, ex: <gold>Baguette de Soin</gold>",
+                  "trigger": un de [INTERACT_BLOCK, BREAK_BLOCK, USE_ITEM, KILL_ENTITY, PLAYER_JOIN, PLAYER_QUIT, INTERVAL],
+                  "match": "objet ciblé : Material (ex DIAMOND) ou custom:<id> ou un EntityType ; omets pour 'tout'",
+                  "cooldown-ticks": entier (anti-spam par joueur ; 20 = 1 s ; 0 = aucun),
+                  "interval-ticks": entier (si trigger INTERVAL : période d'exécution par joueur),
+                  "enabled": booléen,
+                  "actions": [
+                    { "type": "<TYPE>", "params": { "<clé>": "<valeur>" } }
+                  ]
+                }
+                Types d'action et paramètres :
+                - message  { text }                      (MiniMessage, %player% autorisé)
+                - command  { command }                   (exécutée en console ; %player% autorisé)
+                - sound    { sound, volume, pitch }
+                - potion   { effect, duration, amplifier }  (effect = nom vanilla, duration en ticks)
+                - give_item{ item, amount }              (item = Material ou custom:<id>)
+                - money    { amount }   ·  xp { amount }  ·  damage { amount }  ·  heal { amount }
+                - teleport { x, y, z, world }  OU  { target: "spawn" }
+                Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
+                """;
+    }
+
     /** Prompt système pour modifier la configuration d'un module existant. */
     public String configSchemaSystem(java.util.List<String> moduleIds) {
         return """

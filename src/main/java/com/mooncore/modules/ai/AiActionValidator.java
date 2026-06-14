@@ -431,6 +431,43 @@ public final class AiActionValidator {
         return d;
     }
 
+    /**
+     * Transforme une sortie IA en {@link com.mooncore.modules.mechanic.MechanicDef} sûre : déclencheur et
+     * types d'action parsés tolérants (inconnus → ignorés), bornes via les setters du modèle, paramètres
+     * d'action conservés tels quels (chaînes). Une mécanique sans action valide reste cohérente (inactive).
+     */
+    public com.mooncore.modules.mechanic.MechanicDef validateMechanic(String aiText, String forcedId) {
+        JsonObject root = parse(aiText);
+        if (root == null) return null;
+        String id = sanitizeId(forcedId != null ? forcedId
+                : str(root, "id", "ai_mechanic_" + Math.abs(aiText.hashCode() % 100000)));
+        com.mooncore.modules.mechanic.MechanicDef d = new com.mooncore.modules.mechanic.MechanicDef(id);
+
+        if (root.has("display-name")) d.setDisplayName(str(root, "display-name", d.displayName()));
+        d.setTrigger(com.mooncore.modules.mechanic.TriggerType.fromText(str(root, "trigger", "none")));
+        d.setMatchKey(str(root, "match", null));
+        d.setCooldownTicks(intOf(root, "cooldown-ticks", 0));
+        d.setIntervalTicks(intOf(root, "interval-ticks", 100));
+        d.setEnabled(bool(root, "enabled", true));
+
+        if (root.has("actions") && root.get("actions").isJsonArray()) {
+            for (JsonElement ae : root.getAsJsonArray("actions")) {
+                if (!ae.isJsonObject()) continue;
+                JsonObject ao = ae.getAsJsonObject();
+                com.mooncore.modules.mechanic.ActionType type =
+                        com.mooncore.modules.mechanic.ActionType.fromText(str(ao, "type", "none"));
+                java.util.Map<String, String> params = new java.util.LinkedHashMap<>();
+                if (ao.has("params") && ao.get("params").isJsonObject()) {
+                    for (var entry : ao.getAsJsonObject("params").entrySet()) {
+                        if (entry.getValue().isJsonPrimitive()) params.put(entry.getKey(), entry.getValue().getAsString());
+                    }
+                }
+                d.addAction(new com.mooncore.modules.mechanic.MechanicAction(type, params));
+            }
+        }
+        return d;
+    }
+
     private static String str(JsonObject o, String key, String def) {
         return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : def;
     }

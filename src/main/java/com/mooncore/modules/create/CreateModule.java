@@ -60,7 +60,9 @@ public final class CreateModule extends AbstractModule {
 
         MechanicModule mechanic = plugin().moduleManager().get(MechanicModule.class);
         if (mechanic != null) {
-            registry.register(new MechanicContentHandler(mechanic));
+            MechanicContentHandler h = new MechanicContentHandler(mechanic);
+            if (ai != null) h.withAi(ai.prompts(), ai.validator());
+            registry.register(h);
         }
 
         plugin().rootCommand().register(new CreateSubCommand(registry));
