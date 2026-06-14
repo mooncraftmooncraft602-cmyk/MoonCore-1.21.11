@@ -201,11 +201,24 @@ public final class LootSubCommand implements SubCommand {
     }
 
     private void give(CommandSender s, String[] a) {
-        if (a.length < 3) { msg(s, "<red>/moon loot give <joueur> <id>"); return; }
-        org.bukkit.entity.Player t = org.bukkit.Bukkit.getPlayerExact(a[1]);
-        if (t == null) { msg(s, "<red>Joueur hors-ligne."); return; }
+        if (a.length < 3) { msg(s, "<red>/moon loot give <joueur|@a> <id>"); return; }
         LootTableDef d = module.def(a[2]);
         if (d == null) { msg(s, "<red>Id inconnu : " + a[2]); return; }
+        String sel = a[1].toLowerCase(java.util.Locale.ROOT);
+        if (sel.equals("@a") || sel.equals("all") || sel.equals("*")) {
+            var online = org.bukkit.Bukkit.getOnlinePlayers();
+            if (online.isEmpty()) { msg(s, "<yellow>Aucun joueur en ligne."); return; }
+            int totalStacks = 0, players = 0;
+            for (org.bukkit.entity.Player p : online) {
+                totalStacks += module.give(p, d.id(), ThreadLocalRandom.current());  // tirage indépendant par joueur
+                players++;
+            }
+            msg(s, "<green>Donné la table " + d.id() + " à <white>" + players
+                    + "<green> joueur(s) <gray>(" + totalStacks + " pile(s) au total).");
+            return;
+        }
+        org.bukkit.entity.Player t = org.bukkit.Bukkit.getPlayerExact(a[1]);
+        if (t == null) { msg(s, "<red>Joueur hors-ligne."); return; }
         int n = module.give(t, d.id(), ThreadLocalRandom.current());
         msg(s, "<green>Donné <white>" + n + "<green> pile(s) de la table " + d.id() + " à " + t.getName() + ".");
     }
@@ -274,8 +287,12 @@ public final class LootSubCommand implements SubCommand {
             return switch (sub) {
                 case "delete", "info", "addpool", "addentry", "removepool", "removeentry",
                      "clearpools", "test", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
-                case "give" -> filter(org.bukkit.Bukkit.getOnlinePlayers().stream()
-                        .map(org.bukkit.entity.Player::getName).collect(Collectors.toList()), a[1]);
+                case "give" -> {
+                    List<String> names = org.bukkit.Bukkit.getOnlinePlayers().stream()
+                            .map(org.bukkit.entity.Player::getName).collect(Collectors.toList());
+                    names.add(0, "@a");  // récompense de tous les joueurs en ligne (événements)
+                    yield filter(names, a[1]);
+                }
                 default -> List.of();
             };
         }
