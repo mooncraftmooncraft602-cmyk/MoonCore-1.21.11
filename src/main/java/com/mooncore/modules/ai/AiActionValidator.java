@@ -440,6 +440,11 @@ public final class AiActionValidator {
                         // Référence vers une autre table (imbrication) ; ignorée si elle pointe sur elle-même.
                         String ref = str(eo, "loot-table", null);
                         if (ref != null && ref.equalsIgnoreCase(id)) ref = null;
+                        // Entrée vide (Material non reconnu, ni custom, ni table) : ignorée — sinon elle occuperait
+                        // du poids dans le pool sans rien produire, faussant silencieusement les taux de drop.
+                        if (customId == null && (mat == null || mat == Material.AIR) && (ref == null || ref.isBlank())) {
+                            continue;
+                        }
                         pool.add(new com.mooncore.modules.loot.LootEntry(
                                 customId, mat, intOf(eo, "weight", 1), cMin, cMax, ref));
                     }
