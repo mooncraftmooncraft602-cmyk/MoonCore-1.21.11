@@ -92,6 +92,30 @@ class MechanicDefTest {
     }
 
     @Test
+    void matchesContextRespectsMatchKeyAndTrigger() {
+        MechanicDef d = new MechanicDef("m");
+        d.setTrigger(TriggerType.BREAK_BLOCK);   // utilise matchKey
+        // Sans matchKey : accepte tout (y compris null).
+        assertTrue(d.matchesContext("stone"));
+        assertTrue(d.matchesContext(null));
+        // Avec matchKey (stocké en minuscule) : égalité insensible à la casse.
+        d.setMatchKey("custom:Ruby_Ore");
+        assertTrue(d.matchesContext("custom:ruby_ore"));
+        assertTrue(d.matchesContext("CUSTOM:RUBY_ORE"));
+        assertFalse(d.matchesContext("stone"));
+        assertFalse(d.matchesContext(null));     // matchKey précis ne matche pas un contexte absent
+    }
+
+    @Test
+    void matchesContextIgnoresMatchKeyForTriggersWithoutOne() {
+        MechanicDef d = new MechanicDef("m");
+        d.setTrigger(TriggerType.PLAYER_JOIN);   // n'utilise pas de matchKey
+        d.setMatchKey("ignored");
+        assertTrue(d.matchesContext(null));      // matchKey ignoré → accepte tout
+        assertTrue(d.matchesContext("whatever"));
+    }
+
+    @Test
     void customItemsUsedCollectsOnlyCustomGiveItemRefs() {
         MechanicDef d = new MechanicDef("rewarder");
         d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:Magic_Wand")));  // normalisé minuscule

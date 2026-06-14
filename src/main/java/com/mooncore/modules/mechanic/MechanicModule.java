@@ -82,8 +82,7 @@ public final class MechanicModule extends AbstractModule {
         if (player == null) return;
         long now = currentTick();
         for (MechanicDef d : byTrigger(trigger)) {
-            if (trigger.usesMatchKey() && d.matchKey() != null
-                    && !d.matchKey().equalsIgnoreCase(contextKey)) continue;
+            if (!d.matchesContext(contextKey)) continue;
             if (!d.isPublic() && !player.hasPermission(d.permission())) continue;
             if (!d.passes(java.util.concurrent.ThreadLocalRandom.current().nextDouble())) continue;
             // Solvabilité AVANT le cooldown : un joueur qui ne peut pas payer n'est pas mis en cooldown.

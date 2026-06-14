@@ -48,6 +48,16 @@ public final class MechanicDef {
         this.matchKey = (k == null || k.isBlank()) ? null : k.toLowerCase(Locale.ROOT).trim();
     }
 
+    /**
+     * True si cette mécanique accepte le contexte {@code contextKey} (clé du bloc/item/cause déclencheur).
+     * {@code matchKey} nul, ou déclencheur qui n'utilise pas de matchKey, ⇒ accepte tout. Sinon égalité
+     * insensible à la casse. Pur → testable sans serveur (extrait de la boucle de tir LIVE).
+     */
+    public boolean matchesContext(String contextKey) {
+        if (matchKey == null || !trigger.usesMatchKey()) return true;
+        return matchKey.equalsIgnoreCase(contextKey);
+    }
+
     public int cooldownTicks() { return cooldownTicks; }
     public void setCooldownTicks(int t) { this.cooldownTicks = Math.max(0, Math.min(72_000, t)); }
 
