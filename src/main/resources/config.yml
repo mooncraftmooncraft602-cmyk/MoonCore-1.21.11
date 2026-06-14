@@ -88,6 +88,7 @@ modules:
   custom-block: true    # blocs/minerais custom (note-block + resource pack)
   crop: true            # cultures/plantes custom à cycle de ticks (ItemDisplay)
   loot: true            # tables de loot génériques data-driven (pools pondérés)
+  mechanic: true        # mécaniques génériques trigger→action data-driven
   create: true          # commande de création/gestion de contenu unifiée (/moon content)
   ai-assistant: true    # assistant IA admin (nécessite une clé API dans modules/ai-assistant.yml)
   resource-pack: true   # resource pack forcé (HTTP embarqué + sons + textures)

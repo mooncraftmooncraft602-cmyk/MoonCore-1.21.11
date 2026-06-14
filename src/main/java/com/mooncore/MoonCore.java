@@ -112,6 +112,7 @@ public final class MoonCore extends JavaPlugin {
         moduleManager.register(new com.mooncore.modules.customblock.CustomBlockManagerModule());
         moduleManager.register(new com.mooncore.modules.crop.CropManagerModule());
         moduleManager.register(new com.mooncore.modules.loot.LootManagerModule());
+        moduleManager.register(new com.mooncore.modules.mechanic.MechanicModule());
         moduleManager.register(new com.mooncore.modules.create.CreateModule());
         moduleManager.register(new com.mooncore.modules.ai.AiAdminModule());
         moduleManager.register(new com.mooncore.modules.resourcepack.ResourcePackModule());
