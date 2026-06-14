@@ -31,6 +31,17 @@ public final class MechanicExecutor {
     /** Exécute en séquence toutes les actions valides de la mécanique pour ce joueur. */
     public void run(MechanicDef def, Player player) {
         if (def == null || player == null) return;
+
+        // Pré-vérification atomique : si un prérequis manque (monde de TELEPORT inexistant, solde
+        // insuffisant pour les TAKE_MONEY), on n'applique AUCUNE action — pas d'état incohérent
+        // type « argent débité puis téléport raté ».
+        MechanicPrecheck.Result pre = MechanicPrecheck.check(
+                def.actions(), name -> Bukkit.getWorld(name) != null, availableBalance(def, player));
+        if (!pre.ok()) {
+            plugin.logger().warn("Mécanique '" + def.id() + "' annulée (prérequis) : " + pre.reason());
+            return;
+        }
+
         for (MechanicAction a : def.actions()) {
             if (!a.isValid()) continue;
             try {
@@ -39,6 +50,20 @@ public final class MechanicExecutor {
                 plugin.logger().warn("Action de mécanique '" + def.id() + "' (" + a.type() + ") échouée : " + e.getMessage());
             }
         }
+    }
+
+    /** Solde du joueur si la mécanique débite réellement de l'argent, sinon {@code +∞} (non pertinent). */
+    private double availableBalance(MechanicDef def, Player player) {
+        boolean debits = false;
+        for (MechanicAction a : def.actions()) {
+            if (a.isValid() && a.type() == ActionType.TAKE_MONEY && a.doubleParam("amount", 0) > 0) {
+                debits = true;
+                break;
+            }
+        }
+        if (!debits) return Double.MAX_VALUE;
+        return plugin.services().get(com.mooncore.api.economy.EconomyService.class)
+                .map(eco -> eco.balance(player.getUniqueId())).orElse(0.0);
     }
 
     private void dispatch(MechanicAction a, Player p) {
