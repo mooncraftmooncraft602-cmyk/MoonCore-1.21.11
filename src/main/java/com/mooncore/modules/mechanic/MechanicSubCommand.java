@@ -169,6 +169,15 @@ public final class MechanicSubCommand implements SubCommand {
         d.addAction(new MechanicAction(type, params)); module.put(d);
         msg(s, "<green>Action <white>" + type.name().toLowerCase(Locale.ROOT) + "<green> ajoutée à " + d.id()
                 + " <gray>(" + d.actions().size() + " au total). <white>" + params);
+        // Avertit (sans bloquer) si une action loot référence une table inexistante.
+        if (type == ActionType.LOOT) {
+            String table = params.getOrDefault("table", "").trim();
+            if (table.isEmpty()) {
+                msg(s, "<yellow>⚠ Action loot sans paramètre <white>table=<id><yellow>.");
+            } else if (!module.lootTableExists(table)) {
+                msg(s, "<yellow>⚠ Table de loot inconnue : <white>" + table + "<yellow> (crée-la ou corrige l'id).");
+            }
+        }
     }
 
     private void removeAction(CommandSender s, String[] a) {
