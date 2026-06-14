@@ -42,6 +42,7 @@ public final class LootSubCommand implements SubCommand {
                 case "test", "roll" -> test(s, a);
                 case "give" -> give(s, a);
                 case "fill" -> fill(s, a);
+                case "validate" -> validate(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Tables de loot rechargées."); }
                 default -> help(s);
             }
@@ -207,6 +208,19 @@ public final class LootSubCommand implements SubCommand {
         msg(s, "<green>Conteneur rempli avec <white>" + placed + "<green> pile(s) de la table " + d.id() + ".");
     }
 
+    private void validate(CommandSender s, String[] a) {
+        LootTableDef d = need(s, a); if (d == null) return;
+        java.util.Set<String> refs = d.referencedTables();
+        if (refs.isEmpty()) { msg(s, "<green>✔ " + d.id() + " : aucune table imbriquée référencée."); return; }
+        java.util.List<String> dangling = new ArrayList<>();
+        for (String ref : refs) if (module.def(ref) == null) dangling.add(ref);
+        if (dangling.isEmpty()) {
+            msg(s, "<green>✔ " + d.id() + " : " + refs.size() + " référence(s) imbriquée(s), toutes valides.");
+        } else {
+            msg(s, "<red>✖ " + d.id() + " : référence(s) pendante(s) (table inconnue) : <white>" + String.join(", ", dangling));
+        }
+    }
+
     private LootTableDef need(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>Id manquant."); return null; }
         LootTableDef d = module.def(a[1]);
@@ -222,7 +236,8 @@ public final class LootSubCommand implements SubCommand {
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
                 "removepool <id> <poolIndex>  ·  removeentry <id> <poolIndex> <entryIndex>  ·  clearpools <id>",
                 "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)",
-                "fill <id>  (remplit le conteneur visé avec le butin tiré — design de donjons)"
+                "fill <id>  (remplit le conteneur visé avec le butin tiré — design de donjons)",
+                "validate <id>  (vérifie que les références imbriquées table:<id> existent)"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, "<gray>Référence une table sur une culture/bloc/boss via leur champ <white>loot-table<gray>.");
@@ -234,13 +249,13 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "removepool", "removeentry", "clearpools", "test", "give", "fill", "reload"), a[0]);
+                    "removepool", "removeentry", "clearpools", "test", "give", "fill", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "addpool", "addentry", "removepool", "removeentry",
-                     "clearpools", "test", "fill" -> filter(new ArrayList<>(module.ids()), a[1]);
+                     "clearpools", "test", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(org.bukkit.Bukkit.getOnlinePlayers().stream()
                         .map(org.bukkit.entity.Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();

@@ -87,6 +87,19 @@ class LootTableDefTest {
     }
 
     @Test
+    void referencedTablesCollectsRefsWithoutDuplicates() {
+        LootTableDef t = new LootTableDef("dungeon");
+        t.add(new LootPool(1, 1)
+                .add(new LootEntry(null, Material.DIAMOND, 1, 1, 1))         // item normal : pas une ref
+                .add(new LootEntry(null, Material.AIR, 1, 1, 1, "common"))
+                .add(new LootEntry(null, Material.AIR, 1, 1, 1, "rare")));
+        t.add(new LootPool(1, 1)
+                .add(new LootEntry(null, Material.AIR, 1, 1, 1, "common")));  // doublon → dédupliqué
+        assertEquals(java.util.Set.of("common", "rare"), t.referencedTables());
+        assertTrue(new LootTableDef("x").referencedTables().isEmpty());        // aucune ref
+    }
+
+    @Test
     void countRangeIsClampedConsistently() {
         // min > max fourni → max relevé au min ; valeurs négatives clampées à 0.
         LootEntry e = new LootEntry(null, Material.STONE, 1, 9, 2);

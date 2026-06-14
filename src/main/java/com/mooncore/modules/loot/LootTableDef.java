@@ -41,6 +41,17 @@ public final class LootTableDef {
         return out;
     }
 
+    /** Ids des tables référencées par les entrées de cette table (imbrication), sans doublon. Pur. */
+    public java.util.Set<String> referencedTables() {
+        java.util.LinkedHashSet<String> refs = new java.util.LinkedHashSet<>();
+        for (LootPool p : pools) {
+            for (LootEntry e : p.entries()) {
+                if (e.isReference()) refs.add(e.tableRef());
+            }
+        }
+        return refs;
+    }
+
     public void save(ConfigurationSection s) {
         s.set("display-name", displayName);
         for (int pi = 0; pi < pools.size(); pi++) {
