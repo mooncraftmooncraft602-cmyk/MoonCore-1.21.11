@@ -32,8 +32,10 @@ public final class GptProgramSource {
             return CompletableFuture.completedFuture(TextureComposer.compose(nm));
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String prog = afterArrow(model.generate(nm + " => ", 240, '\n'));
-                if (isValidFor(prog, nm)) return prog;            // l'IA a écrit un programme correct
+                String tag = afterArrow(model.generate(nm + " => ", 24, '\n'));   // l'IA émet « KIND b s o »
+                long seed = nm.toLowerCase(java.util.Locale.ROOT).hashCode();
+                String prog = TextureComposer.fromTag(tag, seed);                  // le serveur l'étend en DSL
+                if (isValidFor(prog, nm)) return prog;            // type cohérent avec le nom
             } catch (Exception ignored) { }
             return TextureComposer.compose(nm);                    // filet
         });

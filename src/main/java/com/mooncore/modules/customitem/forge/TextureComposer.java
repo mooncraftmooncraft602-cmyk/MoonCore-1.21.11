@@ -20,27 +20,63 @@ public final class TextureComposer {
 
     private TextureComposer() {}
 
-    /** Programme pour {@code name}, variation déterministe seedée par le nom. */
+    private static final String[] BIG = {"grand", "grande", "large", "lourd", "lourde", "colossal", "massif",
+            "massive", "geant", "titan", "brute", "enorme", "gigantesque"};
+    private static final String[] SMALL = {"petit", "petite", "dague", "poignard", "court", "courte", "fin",
+            "fine", "leger", "mini", "eclat"};
+    private static final String[] ORNATE = {"royal", "royale", "runique", "sacre", "sacree", "divin", "divine",
+            "legendaire", "ancien", "ancienne", "mythique", "ender", "dragon", "arcane", "enchante", "celeste",
+            "relique", "imperial", "imperiale"};
+
+    /** Spécification compacte d'un item : type + 3 styles. C'est le « gène » que l'IA apprend à émettre. */
+    public record Spec(TextureSynth.Kind kind, boolean big, boolean small, boolean ornate) {}
+
+    /** Déduit la spec d'un nom (type + modificateurs). GENERIC -> épée par défaut. */
+    public static Spec specOf(String name) {
+        TextureSynth.Kind k = TextureSynth.itemKind(name);
+        return new Spec(k == TextureSynth.Kind.GENERIC ? TextureSynth.Kind.SWORD : k,
+                has(name, BIG), has(name, SMALL), has(name, ORNATE));
+    }
+
+    /**
+     * Le <b>gène compact</b> {@code "KIND big small ornate"} — la cible COURTE que l'IA génère depuis le nom.
+     * Court = le type d'objet domine le signal d'apprentissage, donc l'IA l'apprend vite et juste (au lieu de
+     * se noyer dans ~190 caractères de programme).
+     */
+    public static String tagOf(String name) {
+        Spec s = specOf(name);
+        return s.kind() + " " + (s.big() ? 1 : 0) + " " + (s.small() ? 1 : 0) + " " + (s.ornate() ? 1 : 0);
+    }
+
+    /** Programme DSL complet pour {@code name}, variation déterministe seedée par le nom. */
     public static String compose(String name) {
         return compose(name, name == null ? 0L : name.toLowerCase(Locale.ROOT).hashCode());
     }
 
-    /** Programme pour {@code name} avec graine de variation explicite. */
+    /** Programme DSL complet pour {@code name} avec graine de variation explicite. */
     public static String compose(String name, long seed) {
-        Random r = new Random(seed);
-        boolean big = has(name, "grand", "grande", "large", "lourd", "lourde", "colossal", "massif", "massive",
-                "geant", "titan", "roi", "royal", "royale", "brute");
-        boolean small = has(name, "petit", "petite", "dague", "poignard", "court", "courte", "fin", "fine",
-                "leger", "mini", "eclat", "lame courte");
-        boolean ornate = has(name, "royal", "royale", "runique", "sacre", "sacree", "divin", "divine",
-                "legendaire", "ancien", "ancienne", "mythique", "ender", "dragon", "arcane", "enchante",
-                "celeste", "relique", "imperial", "imperiale");
-        return switch (TextureSynth.itemKind(name)) {
-            case SWORD, GENERIC -> sword(r, big, small, ornate);
-            case PICKAXE -> pickaxe(r, big, small, ornate);
-            case AXE -> axe(r, big, ornate);
-            case HELMET -> helmet(r, ornate);
-            case CHESTPLATE -> chestplate(r, ornate);
+        return build(specOf(name), new Random(seed));
+    }
+
+    /** IA → DSL : parse un gène {@code "KIND b s o"} et construit le programme complet (le serveur dessine). */
+    public static String fromTag(String tag, long seed) {
+        String[] t = tag == null ? new String[0] : tag.trim().split("[\\s,]+");
+        TextureSynth.Kind k = TextureSynth.Kind.SWORD;
+        if (t.length > 0) try { k = TextureSynth.Kind.valueOf(t[0].toUpperCase(Locale.ROOT)); } catch (Exception ignored) { }
+        if (k == TextureSynth.Kind.GENERIC) k = TextureSynth.Kind.SWORD;
+        boolean big = t.length > 1 && t[1].startsWith("1");
+        boolean small = t.length > 2 && t[2].startsWith("1");
+        boolean ornate = t.length > 3 && t[3].startsWith("1");
+        return build(new Spec(k, big, small, ornate), new Random(seed));
+    }
+
+    private static String build(Spec s, Random r) {
+        return switch (s.kind()) {
+            case SWORD, GENERIC -> sword(r, s.big(), s.small(), s.ornate());
+            case PICKAXE -> pickaxe(r, s.big(), s.small(), s.ornate());
+            case AXE -> axe(r, s.big(), s.ornate());
+            case HELMET -> helmet(r, s.ornate());
+            case CHESTPLATE -> chestplate(r, s.ornate());
         };
     }
 
@@ -113,8 +149,9 @@ public final class TextureComposer {
     /** Vrai si l'un des mots-clés apparaît comme mot entier dans le nom (insensible casse/accents partiels). */
     private static boolean has(String name, String... kw) {
         if (name == null) return false;
-        String s = " " + name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim() + " ";
-        for (String k : kw) if (s.contains(" " + k.replaceAll("[^a-z0-9]+", " ") + " ")) return true;
+        String norm = java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        String s = " " + norm.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim() + " ";
+        for (String k : kw) if (s.contains(" " + k + " ")) return true;
         return false;
     }
 

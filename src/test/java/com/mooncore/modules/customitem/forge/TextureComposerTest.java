@@ -32,6 +32,22 @@ class TextureComposerTest {
     }
 
     @Test
+    void compactTagEncodesKindAndStyle() {
+        assertEquals("SWORD 0 0 0", TextureComposer.tagOf("Épée du Feu"));
+        assertEquals("SWORD 1 0 1", TextureComposer.tagOf("Grande Épée Royale"));
+        assertEquals("SWORD 0 1 0", TextureComposer.tagOf("Dague de l'Ombre"));
+        assertEquals("CHESTPLATE 0 0 1", TextureComposer.tagOf("Armure Royale"));
+        assertEquals("HELMET 0 0 1", TextureComposer.tagOf("Casque du Dragon"));   // dragon = orné
+        assertEquals("PICKAXE 0 0 0", TextureComposer.tagOf("Foreuse de Glace"));
+        // accents pris en compte (« Sacrée » -> orné)
+        assertEquals("AXE 0 0 1", TextureComposer.tagOf("Hachette Sacrée"));
+        // fromTag reconstruit un programme du bon type (filet IA -> DSL)
+        assertTrue(GptProgramSource.isValidFor(TextureComposer.fromTag("HELMET 0 0 0", 1L), "Casque"));
+        assertTrue(GptProgramSource.isValidFor(TextureComposer.fromTag("PICKAXE 0 0 0", 1L), "Pioche"));
+        assertTrue(GptProgramSource.isValidFor(TextureComposer.fromTag("CHESTPLATE 0 0 1", 1L), "Armure"));
+    }
+
+    @Test
     void variationDiffersAcrossNames() {
         // deux noms différents -> programmes différents (variété), mais chacun reste stable
         assertNotEquals(TextureComposer.compose("Épée du Feu"), TextureComposer.compose("Grande Épée du Feu"));
@@ -57,19 +73,18 @@ class TextureComposerTest {
         dir.mkdirs();
         File out = new File(dir, "dsl_data.txt");
         long lines = 0;
+        // Cible COMPACTE : « nom => KIND b s o » (le gène). Court -> le type domine le signal -> l'IA l'apprend.
         try (java.io.BufferedWriter w = new java.io.BufferedWriter(new java.io.FileWriter(out, java.nio.charset.StandardCharsets.UTF_8))) {
             for (String k : kinds)
                 for (String a : adj)
-                    for (String th : themes)
-                        for (int s = 0; s < 3; s++) {                 // 3 variantes par nom
-                            String liaison = th.matches("(?i)(feu|vent|sang|nether|chaos|givre)") ? " du " : " de ";
-                            String name = (a + k + liaison + th).trim();
-                            String prog = TextureComposer.compose(name, (name + "#" + s).hashCode());
-                            w.write(name + " => " + prog + "\n");
-                            lines++;
-                        }
+                    for (String th : themes) {
+                        String liaison = th.matches("(?i)(feu|vent|sang|nether|chaos|givre)") ? " du " : " de ";
+                        String name = (a + k + liaison + th).trim();
+                        w.write(name + " => " + TextureComposer.tagOf(name) + "\n");
+                        lines++;
+                    }
         }
-        assertTrue(lines > 10_000, "corpus conséquent : " + lines + " lignes");
+        assertTrue(lines > 5_000, "corpus conséquent : " + lines + " lignes");
 
         // aperçus ×10 pour vérifier visuellement la qualité du corpus
         File sdir = new File("tools/forge-model/samples");
