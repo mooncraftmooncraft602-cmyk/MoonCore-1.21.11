@@ -78,6 +78,24 @@ class LootStatsTest {
     }
 
     @Test
+    void emptyRateCountsIterationsWithNoUsableItem() {
+        List<List<LootResult>> samples = List.of(
+                List.of(mat(Material.DIAMOND, 1)),          // produit
+                List.of(),                                  // vide
+                List.of(ref("nested")),                     // que des références → bredouille
+                List.of(mat(Material.STONE, 0))             // quantité 0 → bredouille
+        );
+        assertEquals(0.75, LootStats.emptyRate(samples), 1e-9);   // 3 bredouilles / 4
+    }
+
+    @Test
+    void emptyRateZeroWhenAllProduceAndOnEmptySample() {
+        assertEquals(0.0, LootStats.emptyRate(List.of(List.of(mat(Material.GOLD_INGOT, 2)))), 1e-9);
+        assertEquals(0.0, LootStats.emptyRate(List.of()), 1e-9);
+        assertEquals(0.0, LootStats.emptyRate(null), 1e-9);
+    }
+
+    @Test
     void sortedByFrequencyThenTotalThenKey() {
         // a et b même fréquence (2/2) mais b a plus de total → b avant a ; c moins fréquent → dernier.
         List<List<LootResult>> samples = List.of(

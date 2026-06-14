@@ -234,7 +234,9 @@ public final class LootSubCommand implements SubCommand {
         List<List<LootResult>> samples = new ArrayList<>(n);
         for (int i = 0; i < n; i++) samples.add(module.rollFlat(d.id(), ThreadLocalRandom.current()));
         List<LootStats.Entry> agg = LootStats.aggregate(samples);
-        msg(s, "<gradient:#8a2be2:#c77dff>Balance</gradient> <gray>" + d.id() + " <dark_gray>sur " + n + " tirages");
+        double empty = LootStats.emptyRate(samples);
+        msg(s, "<gradient:#8a2be2:#c77dff>Balance</gradient> <gray>" + d.id() + " <dark_gray>sur " + n + " tirages"
+                + String.format(Locale.ROOT, " <gray>· bredouille <yellow>%.1f%%", empty * 100.0));
         if (agg.isEmpty()) { msg(s, " <gray>(aucun drop — table vide ou pools sans entrée)"); return; }
         int shown = 0;
         for (LootStats.Entry e : agg) {

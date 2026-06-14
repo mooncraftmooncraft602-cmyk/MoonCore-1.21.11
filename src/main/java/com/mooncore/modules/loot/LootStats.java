@@ -26,6 +26,27 @@ public final class LootStats {
         public double avgPerIteration() { return iterations <= 0 ? 0.0 : (double) totalCount / iterations; }
     }
 
+    /**
+     * Part des itérations qui ne produisent <b>aucun</b> item exploitable (que des références non développées,
+     * des nuls ou des quantités ≤ 0), dans [0,1]. Métrique d'équilibrage : taux de tirage « bredouille ».
+     */
+    public static double emptyRate(List<List<LootResult>> samples) {
+        if (samples == null || samples.isEmpty()) return 0.0;
+        int empty = 0;
+        for (List<LootResult> sample : samples) {
+            if (!producesAnything(sample)) empty++;
+        }
+        return (double) empty / samples.size();
+    }
+
+    private static boolean producesAnything(List<LootResult> sample) {
+        if (sample == null) return false;
+        for (LootResult r : sample) {
+            if (keyOf(r) != null && r.count() > 0) return true;
+        }
+        return false;
+    }
+
     /** Clé d'agrégation stable d'un résultat : {@code ✦<id>} pour un item custom, le nom du Material sinon. */
     public static String keyOf(LootResult r) {
         if (r == null || r.isReference()) return null;
