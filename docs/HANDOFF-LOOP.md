@@ -3,7 +3,10 @@
 > Instance Claude en **mode boucle** ayant exécuté **tout le plan d'action de la section 4** du
 > `PROJECT_MOON_MASTER_BRAIN.md` (Étapes A→E), une sous-tâche atomique par passe, build + tests verts
 > à chaque commit. Puis **backlog vision §2** : 2 nouveaux types data-driven complets (loot + mécaniques).
-> **237 tests verts** au dernier point. Branche : `loop/master-brain` (non encore mergée sur `main`).
+> Depuis : anti-perte d'items, audit de références croisées (consommateurs de tables de loot), robustesse
+> des validateurs IA (tests headless), `/moon loot stats` (balance), placeholders enrichis + HUD (actionbar),
+> trigger `DEATH`, édition en place (`/moon loot rolls`, `/moon mechanic setparam`). **14 triggers × 22 actions.**
+> **322 tests verts**, jar shadé buildable. Branche : `loop/master-brain` (non encore mergée sur `main`).
 > Build : voir mémoire `mooncore-build-command` (JDK 21 + wrapper, le `mvnw` direct est cassé).
 
 ## Ce qui a été livré (par étape)
