@@ -57,12 +57,27 @@ public final class ZoneIndex {
         List<Region> candidates = world.get(chunkKey(loc.getBlockX() >> 4, loc.getBlockZ() >> 4));
         if (candidates == null || candidates.isEmpty()) return List.of();
 
-        List<Region> result = new ArrayList<>(2);
+        // Cas courant (0 ou 1 région contenant la position) : zéro allocation, zéro tri.
+        // On ne matérialise la liste + le tri que si au moins 2 régions se chevauchent ici.
+        Region first = null;
+        List<Region> result = null;
         for (Region r : candidates) {
-            if (r.contains(loc)) result.add(r);
+            if (!r.contains(loc)) continue;
+            if (first == null) {
+                first = r;
+            } else {
+                if (result == null) {
+                    result = new ArrayList<>(4);
+                    result.add(first);
+                }
+                result.add(r);
+            }
         }
-        result.sort(Comparator.comparingInt(Region::priority).reversed());
-        return result;
+        if (result != null) {
+            result.sort(Comparator.comparingInt(Region::priority).reversed());
+            return result;
+        }
+        return first == null ? List.of() : List.of(first);
     }
 
     public Region byName(String name) {
