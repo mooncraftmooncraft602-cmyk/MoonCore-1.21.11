@@ -86,10 +86,15 @@ public final class LootManagerModule extends AbstractModule {
         return mem || disk;
     }
 
-    /** Évalue une table par id (drops concrets), ou liste vide si la table est introuvable. */
+    /** Évalue une table par id (résultats <b>bruts</b>, références non développées), ou liste vide si introuvable. */
     public List<LootResult> roll(String id, RandomGenerator rng) {
         LootTableDef d = def(id);
         return d == null ? List.of() : d.roll(rng);
+    }
+
+    /** Évalue une table en résultats <b>concrets</b> : références imbriquées développées (anti-cycle). */
+    public List<LootResult> rollFlat(String id, RandomGenerator rng) {
+        return LootResolver.flatten(id, t -> roll(t, rng));
     }
 
     /** Matérialise un résultat de loot en ItemStack (item custom prioritaire, sinon Material), ou null. */
@@ -110,8 +115,7 @@ public final class LootManagerModule extends AbstractModule {
      */
     public List<org.bukkit.inventory.ItemStack> rollItems(String id, RandomGenerator rng) {
         List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
-        // Aplatit les tables imbriquées (anti-cycle pur via LootResolver), puis matérialise.
-        for (LootResult r : LootResolver.flatten(id, t -> roll(t, rng))) {
+        for (LootResult r : rollFlat(id, rng)) {   // références imbriquées déjà développées
             org.bukkit.inventory.ItemStack stack = materialize(r);
             if (stack != null) out.add(stack);
         }

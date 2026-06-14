@@ -171,7 +171,7 @@ public final class LootSubCommand implements SubCommand {
         int n = a.length >= 3 ? Math.max(1, Math.min(20, Integer.parseInt(a[2]))) : 1;
         msg(s, "<gradient:#8a2be2:#c77dff>Test de tirage</gradient> <gray>" + d.id() + " <dark_gray>×" + n);
         for (int i = 0; i < n; i++) {
-            List<LootResult> roll = d.roll(ThreadLocalRandom.current());
+            List<LootResult> roll = module.rollFlat(d.id(), ThreadLocalRandom.current());  // tables imbriquées développées
             if (roll.isEmpty()) { msg(s, " <dark_gray>#" + (i + 1) + " <gray>(rien)"); continue; }
             String line = roll.stream()
                     .map(r -> (r.isCustom() ? "✦" + r.itemId() : r.material().name().toLowerCase(Locale.ROOT)) + "×" + r.count())
