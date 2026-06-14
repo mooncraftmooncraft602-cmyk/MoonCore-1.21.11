@@ -7,10 +7,14 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -47,6 +51,27 @@ public final class MechanicListener implements Listener {
     public void onBreak(BlockBreakEvent e) {
         Block b = e.getBlock();
         module.fire(TriggerType.BREAK_BLOCK, e.getPlayer(), module.blockContextKey(b));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlace(BlockPlaceEvent e) {
+        module.fire(TriggerType.PLACE_BLOCK, e.getPlayer(), module.blockContextKey(e.getBlockPlaced()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDamage(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player p)) return;
+        module.fire(TriggerType.DAMAGE_TAKEN, p, e.getCause().name().toLowerCase(Locale.ROOT));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onSneak(PlayerToggleSneakEvent e) {
+        if (e.isSneaking()) module.fire(TriggerType.SNEAK, e.getPlayer(), null);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawn(PlayerRespawnEvent e) {
+        module.fire(TriggerType.RESPAWN, e.getPlayer(), null);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

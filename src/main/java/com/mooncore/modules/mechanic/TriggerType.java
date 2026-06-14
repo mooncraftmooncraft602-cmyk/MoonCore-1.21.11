@@ -10,8 +10,12 @@ import java.util.Locale;
 public enum TriggerType {
     INTERACT_BLOCK,   // clic droit sur un bloc (custom via matchKey, sinon Material)
     BREAK_BLOCK,      // casse d'un bloc
+    PLACE_BLOCK,      // pose d'un bloc (custom via matchKey, sinon Material)
     USE_ITEM,         // clic droit en tenant un item (custom via matchKey, sinon Material)
     KILL_ENTITY,      // mort d'une entité tuée par le joueur
+    DAMAGE_TAKEN,     // le joueur subit des dégâts (matchKey = cause, ex FALL/FIRE/ENTITY_ATTACK)
+    SNEAK,            // le joueur commence à s'accroupir
+    RESPAWN,          // réapparition après la mort
     PLAYER_JOIN,      // connexion
     PLAYER_QUIT,      // déconnexion
     INTERVAL,         // tick périodique (matchKey ignoré ; période portée par la mécanique)
@@ -24,8 +28,12 @@ public enum TriggerType {
         return switch (t) {
             case "interact_block", "interact", "rightclick_block", "clic_bloc", "interaction_bloc" -> INTERACT_BLOCK;
             case "break_block", "break", "casse", "casse_bloc", "mine_block" -> BREAK_BLOCK;
+            case "place_block", "place", "pose", "pose_bloc", "put_block" -> PLACE_BLOCK;
             case "use_item", "use", "rightclick_item", "clic_item", "utilise_item" -> USE_ITEM;
             case "kill_entity", "kill", "kill_mob", "tue", "tue_entite" -> KILL_ENTITY;
+            case "damage_taken", "damage", "hurt", "degats", "subit_degats", "on_damage" -> DAMAGE_TAKEN;
+            case "sneak", "shift", "accroupi", "sneak_toggle" -> SNEAK;
+            case "respawn", "reapparition", "renait" -> RESPAWN;
             case "player_join", "join", "connexion", "arrivee" -> PLAYER_JOIN;
             case "player_quit", "quit", "leave", "deconnexion", "depart" -> PLAYER_QUIT;
             case "interval", "tick", "timer", "periodique", "periode" -> INTERVAL;
@@ -33,8 +41,9 @@ public enum TriggerType {
         };
     }
 
-    /** True si ce déclencheur cible un objet identifié (bloc/item) via {@code matchKey}. */
+    /** True si ce déclencheur cible un objet identifié (bloc/item/cause) via {@code matchKey}. */
     public boolean usesMatchKey() {
-        return this == INTERACT_BLOCK || this == BREAK_BLOCK || this == USE_ITEM || this == KILL_ENTITY;
+        return this == INTERACT_BLOCK || this == BREAK_BLOCK || this == PLACE_BLOCK
+                || this == USE_ITEM || this == KILL_ENTITY || this == DAMAGE_TAKEN;
     }
 }
