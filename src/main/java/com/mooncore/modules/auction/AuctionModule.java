@@ -130,7 +130,9 @@ public final class AuctionModule extends AbstractModule implements Listener {
     private void saveOfflineRefund(UUID playerId, ItemStack item) {
         File expFile = new File(plugin().getDataFolder(), "auction_refunds.yml");
         YamlConfiguration y = YamlConfiguration.loadConfiguration(expFile);
-        List<ItemStack> items = (List<ItemStack>) y.getList(playerId.toString(), new ArrayList<>());
+        List<Object> items = new ArrayList<>();
+        List<?> existing = y.getList(playerId.toString());
+        if (existing != null) items.addAll(existing);
         items.add(item);
         y.set(playerId.toString(), items);
         try { y.save(expFile); } catch (Exception ignored) {}

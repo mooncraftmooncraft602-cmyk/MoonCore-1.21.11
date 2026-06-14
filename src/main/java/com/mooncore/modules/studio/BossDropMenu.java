@@ -150,7 +150,7 @@ public final class BossDropMenu implements StudioMenu {
         if (hand == null || hand.getType().isAir()) { p.sendMessage(Text.mm("<red>Tiens un objet en main.")); return; }
         CustomItemManagerModule ci = items();
         String customId = ci == null ? null : ci.factory().idOf(hand);
-        if (customId != null && ci.rawDef(customId) != null) {
+        if (ci != null && customId != null && ci.rawDef(customId) != null) {
             setRule(ci, ci.rawDef(customId), 0.25, hand.getAmount()); // active le drop de l'objet custom
             p.sendMessage(Text.mm("<green>Objet custom <white>" + customId + "</white> ajouté aux drops (25% ×" + hand.getAmount() + ")."));
         } else {

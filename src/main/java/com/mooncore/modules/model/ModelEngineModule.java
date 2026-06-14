@@ -27,20 +27,28 @@ public final class ModelEngineModule extends AbstractModule {
     private static final int PERIOD = 2;
 
     /** Rigs actifs, indexés par UUID du propriétaire (joueur pour la démo, entité pour un boss). */
-    private final Map<UUID, RigInstance> rigs = new HashMap<>();
+    private final Map<UUID, RigInstance> rigs = new java.util.LinkedHashMap<>(); // ordre d'insertion → éviction du plus ancien au cap
     /** Entité « hôte » suivie par un rig (le mob/boss rendu invisible que le rig remplace). */
     private final Map<UUID, org.bukkit.entity.Entity> hosts = new HashMap<>();
     /** Association persistée bossId → nom de rig (golem ou fichier .bbmodel). */
     private final Map<String, String> bossRig = new HashMap<>();
     private java.io.File bossRigFile;
     private BukkitTask ticker;
+    /** Cap de rigs concurrents (anti-runaway) ; 0 = illimité ; éviction du plus ancien au-delà. */
+    private int maxRigs = 64;
+    /** Distance² (blocs²) au-delà de laquelle un rig n'est plus animé (0 = jamais culler). */
+    private double cullDistanceSq = 48 * 48;
 
     @Override
     protected void onEnable() {
         this.ticker = schedulers().syncTimer(this::tickAll, PERIOD, PERIOD);
         this.bossRigFile = new java.io.File(new java.io.File(plugin().getDataFolder(), "models"), "boss-rigs.yml");
         loadBossRigs();
-        log().info("ModelEngine prêt (moteur de modèles/animations maison) — " + bossRig.size() + " boss riggé(s).");
+        this.maxRigs = Math.max(0, moduleConfig().getInt("max-rigs", 64));
+        double cull = moduleConfig().getDouble("cull-distance", 48.0);
+        this.cullDistanceSq = cull <= 0 ? 0 : cull * cull;
+        log().info("ModelEngine prêt (moteur maison) — " + bossRig.size() + " boss riggé(s) ; cap="
+                + (maxRigs == 0 ? "∞" : maxRigs) + ", cull=" + (cullDistanceSq == 0 ? "off" : (int) Math.sqrt(cullDistanceSq) + "b") + ".");
     }
 
     @Override
@@ -60,15 +68,37 @@ public final class ModelEngineModule extends AbstractModule {
                 r.reanchor(host.getLocation(), PERIOD); // suit le mob/boss invisible
             }
             if (!r.alive()) { clear(owner); continue; }
+            if (cullDistanceSq > 0 && !hasNearbyPlayer(r, host)) continue; // culling : pas d'anim si aucun joueur proche
             r.tick(dt, PERIOD);
         }
+    }
+
+    /** Applique le cap : retire les rigs les plus anciens tant qu'on est au plafond (anti-runaway). */
+    private void enforceCap() {
+        while (maxRigs > 0 && rigs.size() >= maxRigs && !rigs.isEmpty()) {
+            UUID oldest = rigs.keySet().iterator().next();
+            log().warn("[ModelEngine] Cap de " + maxRigs + " rigs atteint — retrait du plus ancien.");
+            clear(oldest);
+        }
+    }
+
+    /** Vrai si un joueur est assez proche du rig pour justifier son animation (culling par distance). */
+    private boolean hasNearbyPlayer(RigInstance r, org.bukkit.entity.Entity host) {
+        Location at = host != null ? host.getLocation() : r.anchor();
+        if (at == null || at.getWorld() == null) return true; // position inconnue → on anime par sûreté
+        for (Player p : plugin().getServer().getOnlinePlayers()) {
+            if (p.getWorld() != at.getWorld()) continue;
+            if (p.getLocation().distanceSquared(at) <= cullDistanceSq) return true;
+        }
+        return false;
     }
 
     /** Fait apparaître (ou remplace) un rig pour un propriétaire ; lance {@code animation} si non null. */
     public RigInstance spawn(UUID owner, RigModel model, Location at, String animation) {
         RigInstance prev = rigs.remove(owner);
         if (prev != null) prev.remove();
-        RigInstance r = new RigInstance(plugin(), model);
+        enforceCap();
+        RigInstance r = new RigInstance(model);
         r.spawn(at);
         if (animation != null) r.play(animation);
         rigs.put(owner, r);
@@ -85,7 +115,8 @@ public final class ModelEngineModule extends AbstractModule {
     /** Fait SUIVRE un rig à une entité hôte (que l'appelant a rendue invisible). */
     public RigInstance spawnFollowing(UUID owner, org.bukkit.entity.Entity host, RigModel model, String anim) {
         clear(owner);
-        RigInstance r = new RigInstance(plugin(), model);
+        enforceCap();
+        RigInstance r = new RigInstance(model);
         r.spawn(host.getLocation());
         if (anim != null) r.play(anim);
         rigs.put(owner, r);

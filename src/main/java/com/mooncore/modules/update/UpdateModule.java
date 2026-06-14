@@ -176,7 +176,7 @@ public final class UpdateModule extends AbstractModule implements Listener {
     }
 
     /** Rechargement à chaud best-effort (PlugMan-like). False si non supporté → appliqué au redémarrage. */
-    @SuppressWarnings({"unchecked", "removal", "deprecation"})
+    @SuppressWarnings({"unchecked", "removal"})
     private boolean tryHotReload(java.io.File staged) {
         org.bukkit.plugin.PluginManager pm = plugin().getServer().getPluginManager();
         if (!(pm instanceof org.bukkit.plugin.SimplePluginManager spm) || staged == null || !staged.isFile()) return false;

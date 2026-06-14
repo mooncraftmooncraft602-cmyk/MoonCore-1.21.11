@@ -1,6 +1,5 @@
 package com.mooncore.modules.model;
 
-import com.mooncore.MoonCore;
 import org.bukkit.Location;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
@@ -26,7 +25,6 @@ import java.util.Map;
  */
 public final class RigInstance {
 
-    private final MoonCore plugin;
     private final RigModel model;
     private final Map<String, BlockDisplay> displays = new LinkedHashMap<>();
 
@@ -36,13 +34,20 @@ public final class RigInstance {
     private double overrideClock;
     private boolean overriding;
 
-    public RigInstance(MoonCore plugin, RigModel model) {
-        this.plugin = plugin;
+    public RigInstance(RigModel model) {
         this.model = model;
     }
 
     public RigModel model() { return model; }
     public boolean alive() { return displays.values().stream().anyMatch(d -> d != null && d.isValid()); }
+
+    /** Position de référence du rig (1er display valide), ou null si aucun. Sert au culling par distance. */
+    public Location anchor() {
+        for (BlockDisplay d : displays.values()) {
+            if (d != null && d.isValid()) return d.getLocation();
+        }
+        return null;
+    }
 
     /** Fait apparaître un BlockDisplay par os à {@code base} et applique la pose de repos. */
     public void spawn(Location base) {

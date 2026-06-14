@@ -26,12 +26,13 @@ public final class AiConfig {
     private final int textureSize;
     private final int texturePalette;
     private final boolean textureDither;
+    private final String imageEndpointOverride;   // endpoint image indépendant (service SD local)
 
     private AiConfig(String provider, String model, String apiKey, String endpointOverride,
                      double temperature, int timeoutSeconds, int maxRequestsPerMinute,
                      int maxOutputTokens, List<String> availableModels,
                      boolean generateTextures, String imageModel, int textureSize,
-                     int texturePalette, boolean textureDither) {
+                     int texturePalette, boolean textureDither, String imageEndpointOverride) {
         this.provider = provider;
         this.model = model;
         this.apiKey = apiKey;
@@ -46,6 +47,7 @@ public final class AiConfig {
         this.textureSize = textureSize;
         this.texturePalette = texturePalette;
         this.textureDither = textureDither;
+        this.imageEndpointOverride = imageEndpointOverride;
     }
 
     public static AiConfig from(FileConfiguration cfg) {
@@ -68,8 +70,9 @@ public final class AiConfig {
         int texSize = cfg.getInt("texture-size", 64);
         int texPalette = cfg.getInt("texture-palette", 0); // 0 = pas de quantization
         boolean texDither = cfg.getBoolean("texture-dither", false);
+        String imgEndpoint = cfg.getString("image-endpoint", "");
         return new AiConfig(provider, model, apiKey, endpoint, temp, timeout, rate, maxTokens, models,
-                genTex, imageModel, texSize, texPalette, texDither);
+                genTex, imageModel, texSize, texPalette, texDither, imgEndpoint);
     }
 
     public String provider() { return provider; }
@@ -91,6 +94,8 @@ public final class AiConfig {
 
     /** Endpoint de génération d'image dérivé de l'endpoint de chat (même base API). */
     public String imageEndpoint() {
+        // Endpoint image dédié (ex. service Stable Diffusion local) — prioritaire.
+        if (imageEndpointOverride != null && !imageEndpointOverride.isBlank()) return imageEndpointOverride;
         String base = endpointOverride;
         if (base == null || base.isBlank()) {
             return provider.equals("openai")
@@ -105,6 +110,6 @@ public final class AiConfig {
     public AiConfig withModel(String newModel) {
         return new AiConfig(provider, newModel, apiKey, endpointOverride, temperature,
                 timeoutSeconds, maxRequestsPerMinute, maxOutputTokens, availableModels,
-                generateTextures, imageModel, textureSize, texturePalette, textureDither);
+                generateTextures, imageModel, textureSize, texturePalette, textureDither, imageEndpointOverride);
     }
 }

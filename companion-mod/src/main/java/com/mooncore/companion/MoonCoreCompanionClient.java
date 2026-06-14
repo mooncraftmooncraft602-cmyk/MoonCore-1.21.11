@@ -34,7 +34,8 @@ public final class MoonCoreCompanionClient implements ClientModInitializer {
         PayloadTypeRegistry.playS2C().register(CompanionPayload.ID, CompanionPayload.CODEC);
         ClientRigRenderer.register();
 
-        studioKey = KeyBindingHelper.registerKeyBinding(createStudioKey());
+        KeyBinding key = createStudioKey();
+        studioKey = (key != null) ? KeyBindingHelper.registerKeyBinding(key) : null;
 
         ClientPlayNetworking.registerGlobalReceiver(CompanionPayload.ID, (payload, context) -> {
             byte[] data = payload.data();
@@ -81,23 +82,23 @@ public final class MoonCoreCompanionClient implements ClientModInitializer {
         CompanionProtocol.clear();
     }
 
+    /**
+     * Crée la touche du Studio. En 1.21.6+ la catégorie est un {@link KeyBinding.Category}
+     * (et non plus une {@code String}) — on appelle l'API <b>directement</b> (remappée à la
+     * compilation), jamais par réflexion sur des noms Yarn (qui n'existent pas au runtime
+     * intermediary → {@code ClassNotFoundException}/{@code NoSuchMethodException}).
+     *
+     * <p>Non-fatal : si l'API diffère sur la version cible, on log et on retourne {@code null}
+     * — le rendu des rigs fonctionne sans la touche (cf. garde {@code studioKey != null}).
+     */
     private static KeyBinding createStudioKey() {
-        String id = "key.mooncore-companion.studio";
         try {
-            Class<?> categoryClass = Class.forName("net.minecraft.client.option.KeyBinding$Category");
-            Object category = categoryClass.getMethod("create", Identifier.class)
-                    .invoke(null, Identifier.of("mooncore", "companion"));
-            return KeyBinding.class
-                    .getConstructor(String.class, InputUtil.Type.class, int.class, categoryClass)
-                    .newInstance(id, InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, category);
-        } catch (Throwable ignored) {
-            try {
-                return KeyBinding.class
-                        .getConstructor(String.class, InputUtil.Type.class, int.class, String.class)
-                        .newInstance(id, InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, "key.categories.mooncore-companion");
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Cannot create MoonCore key binding", e);
-            }
+            KeyBinding.Category category = KeyBinding.Category.create(Identifier.of("mooncore", "companion"));
+            return new KeyBinding("key.mooncore-companion.studio",
+                    InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_M, category);
+        } catch (Throwable t) {
+            System.err.println("[MoonCore Companion] Touche Studio indisponible sur cette version, ignorée : " + t);
+            return null;
         }
     }
 }
