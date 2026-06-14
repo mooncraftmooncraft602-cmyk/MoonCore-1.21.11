@@ -65,7 +65,9 @@ public final class CropContentHandler implements ContentTypeHandler {
         if (d == null) return false;
         ItemStack seed = module.seedItem(d, Math.max(1, amount));
         if (seed == null) return false;
-        player.getInventory().addItem(seed);
+        for (ItemStack overflow : player.getInventory().addItem(seed).values()) {
+            player.getWorld().dropItemNaturally(player.getLocation(), overflow);  // inventaire plein → au sol
+        }
         return true;
     }
 

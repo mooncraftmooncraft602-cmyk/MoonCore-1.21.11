@@ -213,7 +213,9 @@ public final class CropSubCommand implements SubCommand {
         int n = a.length >= 4 ? Math.max(1, Integer.parseInt(a[3])) : 1;
         var seed = module.seedItem(d, n);
         if (seed == null) { msg(s, "<red>Graine introuvable (item custom manquant ?)."); return; }
-        t.getInventory().addItem(seed);
+        for (var overflow : t.getInventory().addItem(seed).values()) {
+            t.getWorld().dropItemNaturally(t.getLocation(), overflow);  // inventaire plein → au sol
+        }
         msg(s, "<green>Donné " + n + "× graine de " + d.id() + " à " + t.getName());
     }
 
