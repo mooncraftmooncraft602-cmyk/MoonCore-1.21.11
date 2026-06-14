@@ -120,4 +120,48 @@ public final class ForgeService {
                 + " généré, thème <white>" + pal.name() + "<gray>, cmd " + def.customModelData()
                 + "). Pack mis à jour — récupère ton item !");
     }
+
+    /**
+     * Forge un item dont la texture est produite par un <b>programme DSL</b> (le langage de texture du serveur,
+     * cf. {@link TextureSynth#renderProgram}). C'est la voie qu'empruntent les IA : elles écrivent les « mots »,
+     * le serveur les exécute en pixel-art déterministe. {@code palette} null = déduite du nom.
+     */
+    public Result forgeProgram(Player player, String displayName, String dsl, ThemePalette palette) {
+        if (displayName == null || displayName.isBlank()) return new Result(false, null, "<red>Nom manquant.");
+        if (dsl == null || dsl.isBlank()) return new Result(false, null, "<red>Programme DSL manquant.");
+        ThemePalette pal = palette != null ? palette : PaletteResolver.fromName(displayName);
+        long seed = (displayName + "|" + pal.name()).hashCode() & 0xffffffffL;
+        BufferedImage themed = TextureSynth.renderProgram(dsl, pal, seed);
+        if (themed == null || isBlank(themed))
+            return new Result(false, null, "<red>Programme DSL vide ou invalide (aucun pixel dessiné).");
+
+        String id = slug(displayName);
+        CustomItemDef def = module.rawDef(id);
+        if (def == null) def = new CustomItemDef(id);
+        def.setMaterial(Material.PAPER);
+        def.setDisplayName(displayName);
+        def.setModelKey(id);
+        if (def.customModelData() <= 0) def.setCustomModelData(module.nextCustomModelData());
+
+        File out = new File(module.texturesFolder(), id + ".png");
+        try {
+            if (out.getParentFile() != null) out.getParentFile().mkdirs();
+            ImageIO.write(themed, "png", out);
+        } catch (Exception e) {
+            return new Result(false, null, "<red>Écriture de la texture échouée : " + e.getMessage());
+        }
+        module.put(def);
+        plugin.services().get(ResourcePackService.class).ifPresent(rp -> { rp.rebuild(); rp.resendAll(); });
+        ItemStack stack = module.create(id, 1);
+        if (stack != null) for (ItemStack overflow : player.getInventory().addItem(stack).values())
+            player.getWorld().dropItemNaturally(player.getLocation(), overflow);
+        return new Result(true, id, "<green>✦ Forgé (DSL) <white>" + displayName + "<green> <gray>(thème <white>"
+                + pal.name() + "<gray>, cmd " + def.customModelData() + "). Pack mis à jour — récupère ton item !");
+    }
+
+    private static boolean isBlank(BufferedImage img) {
+        for (int y = 0; y < img.getHeight(); y++) for (int x = 0; x < img.getWidth(); x++)
+            if ((img.getRGB(x, y) >>> 24) != 0) return false;
+        return true;
+    }
 }

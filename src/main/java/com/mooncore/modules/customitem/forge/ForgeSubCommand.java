@@ -57,6 +57,12 @@ public final class ForgeSubCommand implements SubCommand {
             return;
         }
 
+        // /moon forge dsl <nom…> :: <programme DSL>  -> texture écrite dans le LANGAGE du serveur
+        if (a.length >= 1 && a[0].equalsIgnoreCase("dsl")) {
+            forgeDsl(plugin, p, java.util.Arrays.copyOfRange(a, 1, a.length));
+            return;
+        }
+
         int i = 0;
         boolean ai = a.length > 0 && a[0].equalsIgnoreCase("ai");
         boolean model = a.length > 0 && (a[0].equalsIgnoreCase("model") || a[0].equalsIgnoreCase("local"));
@@ -115,6 +121,26 @@ public final class ForgeSubCommand implements SubCommand {
         msg(p, svc.forge(p, base, name, null, STRENGTH).message());
     }
 
+    /**
+     * {@code /moon forge dsl <nom…> :: <programme>} — forge un item dont la texture est écrite directement
+     * dans le LANGAGE DSL du serveur (la voie qu'utilisent les IA). Le {@code ::} sépare le nom du programme.
+     */
+    private void forgeDsl(MoonCore plugin, Player p, String[] rest) {
+        int sep = -1;
+        for (int k = 0; k < rest.length; k++) if (rest[k].equals("::")) { sep = k; break; }
+        if (sep < 1 || sep > rest.length - 2) {
+            msg(p, "<gray>/moon forge dsl <nom…> :: <programme DSL>");
+            msg(p, "<dark_gray>ex : /moon forge dsl Lame du Vent :: MCAP 5 10 13 2 1.7 1  JEWEL 5 10 1.6  GLINT 12 3");
+            msg(p, "<dark_gray>formes : MCAP/GCAP/WCAP/SCAP x0 y0 x1 y1 w taper · MDISC/GDISC/… cx cy r · MRECT/GRECT · MELL cx cy rx ry · CLEAR · GTR");
+            msg(p, "<dark_gray>décor : JEWEL cx cy r · FULLER x0 y0 x1 y1 · RIVET x y · GLINT x y   <gray>(M=métal thème, G=or, W=bois, S=acier)");
+            return;
+        }
+        String name = String.join(" ", java.util.Arrays.copyOfRange(rest, 0, sep)).trim();
+        String dsl = String.join(" ", java.util.Arrays.copyOfRange(rest, sep + 1, rest.length)).trim();
+        if (name.isBlank() || dsl.isBlank()) { msg(p, "<red>Nom ou programme manquant."); return; }
+        msg(p, new ForgeService(plugin, module).forgeProgram(p, name, dsl, null).message());
+    }
+
     /** Conseille des couleurs pour un nom (moteur déterministe + modèle si dispo), sans forger. */
     private void suggest(MoonCore plugin, Player p, String name) {
         if (name.isBlank()) { msg(p, "<red>/moon forge suggest <nom…>"); return; }
@@ -139,6 +165,7 @@ public final class ForgeSubCommand implements SubCommand {
         if (a.length == 1) {
             List<String> opts = new ArrayList<>(COMMON_BASES);
             opts.add(0, "suggest");
+            opts.add(0, "dsl");
             opts.add(0, "model");
             opts.add(0, "ai");
             return filter(opts, a[0]);

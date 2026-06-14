@@ -222,87 +222,36 @@ public final class TextureSynth {
     private static final ThemePalette GOLD = ThemePalette.ramp("gold", 0x5a3c0e, 0xc9971f, 0xffe8a8);
     private static final int MAT_METAL = 1, MAT_WOOD = 2, MAT_STEEL = 3, MAT_GOLD = 4;
 
-    public static BufferedImage drawSword(ThemePalette p, long seed) {
-        int[][] m = new int[16][16];
-        capsule(m, MAT_WOOD, 4.2, 11.0, 2.6, 13.8, 1.0, false);   // poignée
-        capsule(m, MAT_GOLD, 3.5, 11.4, 4.3, 12.6, 0.9, false);   // virole dorée
-        disc(m, MAT_GOLD, 2.2, 13.8, 1.5);                        // pommeau doré
-        capsule(m, MAT_GOLD, 2.7, 7.7, 7.3, 12.3, 1.1, false);    // garde dorée (s'étend)
-        capsule(m, MAT_METAL, 5.0, 10.2, 13.7, 1.6, 1.7, true);   // lame (s'affine vers la pointe)
-        BufferedImage img = shade(m, p);
-        fuller(img, 6.0, 9.4, 12.8, 2.6);                         // rainure centrale de la lame
-        jewel(img, 5.0, 10.0, 1.6, p);                            // joyau serti dans la garde
-        glint(img, 12, 3, p); glint(img, 10, 5, p);              // éclats sur la lame
-        return img;
-    }
+    /**
+     * Programmes DSL des objets standard : chaque objet est une <b>suite de « mots »</b> (verbe + nombres)
+     * dans le langage de texture du serveur (voir {@link #renderProgram}). C'est exactement ce qu'une IA
+     * émettra pour reconstruire/inventer une texture, au lieu de peindre des pixels.
+     */
+    public static final String PROG_SWORD =
+        "WCAP 4.2 11.0 2.6 13.8 1.0 0  GCAP 3.5 11.4 4.3 12.6 0.9 0  GDISC 2.2 13.8 1.5 "
+        + "GCAP 2.7 7.7 7.3 12.3 1.1 0  MCAP 5.0 10.2 13.7 1.6 1.7 1 "
+        + "FULLER 6.0 9.4 12.8 2.6  JEWEL 5.0 10.0 1.6  GLINT 12 3  GLINT 10 5";
+    public static final String PROG_PICKAXE =
+        "WCAP 10.8 14.4 8.2 6.4 1.0 0  GCAP 8.9 7.4 9.7 8.8 0.9 0 "
+        + "MCAP 8.0 4.6 2.2 6.6 1.7 1  MCAP 8.0 4.6 13.8 3.0 1.7 1  GDISC 8.0 5.6 1.8 "
+        + "JEWEL 8.0 5.4 1.6  GLINT 4 5  GLINT 12 4";
+    public static final String PROG_AXE =
+        "WCAP 12.6 14.6 5.6 3.0 1.0 0  MDISC 4.7 5.9 3.1  MCAP 6.4 2.6 2.4 5.0 1.7 0 "
+        + "MCAP 2.4 5.0 5.0 9.6 1.9 0  GCAP 6.6 3.2 6.0 8.6 0.7 0  GDISC 6.6 5.4 1.4 "
+        + "JEWEL 4.6 5.8 1.6  RIVET 6 7  GLINT 2 6  GLINT 3 4";
+    public static final String PROG_HELMET =
+        "MELL 8 7.5 6.2 6.0  CLEAR 4 7 11 8  GTR 2 11 13 13  GTR 4 6 11 6  GTR 4 9 11 9 "
+        + "JEWEL 8.0 4.6 1.5  RIVET 4 5  RIVET 11 5  GLINT 5 3  GLINT 11 4";
+    public static final String PROG_CHESTPLATE =
+        "MRECT 3 3 12 14  CLEAR 6 3 9 4  MRECT 2 2 4 5  MRECT 11 2 13 5 "
+        + "GTR 2 5 5 5  GTR 10 5 13 5  GTR 5 5 5 6  GTR 10 5 10 6 "
+        + "JEWEL 7.5 8.8 1.7  RIVET 4 11  RIVET 11 11  GLINT 4 4  GLINT 11 4";
 
-    public static BufferedImage drawPickaxe(ThemePalette p, long seed) {
-        int[][] m = new int[16][16];
-        capsule(m, MAT_WOOD, 10.8, 14.4, 8.2, 6.4, 1.0, false);   // manche
-        capsule(m, MAT_GOLD, 8.9, 7.4, 9.7, 8.8, 0.9, false);     // virole dorée
-        capsule(m, MAT_METAL, 8.0, 4.6, 2.2, 6.6, 1.7, true);     // tête : moitié gauche (pointe)
-        capsule(m, MAT_METAL, 8.0, 4.6, 13.8, 3.0, 1.7, true);    // tête : moitié droite (pointe)
-        disc(m, MAT_GOLD, 8.0, 5.6, 1.8);                         // socle doré (jonction)
-        BufferedImage img = shade(m, p);
-        jewel(img, 8.0, 5.4, 1.6, p);                             // joyau central
-        glint(img, 4, 5, p); glint(img, 12, 4, p);
-        return img;
-    }
-
-    public static BufferedImage drawAxe(ThemePalette p, long seed) {
-        int[][] m = new int[16][16];
-        capsule(m, MAT_WOOD, 12.6, 14.6, 5.6, 3.0, 1.0, false);   // manche
-        disc(m, MAT_METAL, 4.7, 5.9, 3.1);                        // corps de tête
-        capsule(m, MAT_METAL, 6.4, 2.6, 2.4, 5.0, 1.7, false);    // dos haut
-        capsule(m, MAT_METAL, 2.4, 5.0, 5.0, 9.6, 1.9, false);    // tranchant (gauche)
-        capsule(m, MAT_GOLD, 6.6, 3.2, 6.0, 8.6, 0.7, false);     // liseré doré (dos)
-        disc(m, MAT_GOLD, 6.6, 5.4, 1.4);                         // socle doré (jonction manche)
-        BufferedImage img = shade(m, p);
-        jewel(img, 4.6, 5.8, 1.6, p);                             // joyau sur la tête
-        rivet(img, 6, 7);                                         // rivet doré près du socle
-        glint(img, 2, 6, p); glint(img, 3, 4, p);
-        return img;
-    }
-
-    public static BufferedImage drawHelmet(ThemePalette p, long seed) {
-        int[][] m = new int[16][16];
-        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
-            double dx = (x - 8.0) / 6.2, dy = (y - 7.5) / 6.0;
-            boolean dome = dx * dx + dy * dy <= 1.0 && y >= 2 && y <= 13;
-            boolean slit = y >= 7 && y <= 8 && x >= 4 && x <= 11;     // fente des yeux (vide)
-            if (dome && !slit) m[x][y] = MAT_METAL;
-        }
-        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {   // liserés dorés
-            if (m[x][y] != MAT_METAL) continue;
-            if (y >= 11) m[x][y] = MAT_GOLD;                          // bandeau du bas
-            else if ((y == 6 || y == 9) && x >= 4 && x <= 11) m[x][y] = MAT_GOLD;  // cadre de la fente
-        }
-        BufferedImage img = shade(m, p);
-        jewel(img, 8.0, 4.6, 1.5, p);                                // joyau frontal
-        rivet(img, 4, 5); rivet(img, 11, 5);                         // rivets dorés aux tempes
-        glint(img, 5, 3, p); glint(img, 11, 4, p);
-        return img;
-    }
-
-    public static BufferedImage drawChestplate(ThemePalette p, long seed) {
-        int[][] m = new int[16][16];
-        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
-            boolean torso = x >= 3 && x <= 12 && y >= 3 && y <= 14
-                    && !(y <= 4 && x >= 6 && x <= 9);                 // encoche du col
-            boolean pauldron = y >= 2 && y <= 5 && ((x >= 2 && x <= 4) || (x >= 11 && x <= 13));
-            if (torso || pauldron) m[x][y] = MAT_METAL;
-        }
-        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {   // liserés dorés (col + épaules)
-            if (m[x][y] != MAT_METAL) continue;
-            if (y == 5 && (x <= 5 || x >= 10)) m[x][y] = MAT_GOLD;    // bandeau des épaules
-            else if ((x == 5 || x == 10) && y >= 5 && y <= 6) m[x][y] = MAT_GOLD;
-        }
-        BufferedImage img = shade(m, p);
-        jewel(img, 7.5, 8.8, 1.7, p);                                // joyau au centre du torse
-        rivet(img, 4, 11); rivet(img, 11, 11);                       // rivets dorés bas du torse
-        glint(img, 4, 4, p); glint(img, 11, 4, p);
-        return img;
-    }
+    public static BufferedImage drawSword(ThemePalette p, long seed) { return renderProgram(PROG_SWORD, p, seed); }
+    public static BufferedImage drawPickaxe(ThemePalette p, long seed) { return renderProgram(PROG_PICKAXE, p, seed); }
+    public static BufferedImage drawAxe(ThemePalette p, long seed) { return renderProgram(PROG_AXE, p, seed); }
+    public static BufferedImage drawHelmet(ThemePalette p, long seed) { return renderProgram(PROG_HELMET, p, seed); }
+    public static BufferedImage drawChestplate(ThemePalette p, long seed) { return renderProgram(PROG_CHESTPLATE, p, seed); }
 
     // -- moteur de dessin partagé : masque matière -> couleur (lumière haut-gauche) + contour 1px --
 
@@ -427,6 +376,126 @@ public final class TextureSynth {
         double t = ((px - ax) * vx + (py - ay) * vy) / (L * L);
         double sd = ((px - ax) * vy - (py - ay) * vx) / L;
         return new double[]{t, sd};
+    }
+
+    // ===================== LANGAGE DSL DE TEXTURE (le « langage des IA » du serveur) =====================
+    //
+    // Une texture = une SUITE DE MOTS. Chaque mot est un verbe suivi de nombres. Le serveur exécute le
+    // programme de façon 100% déterministe (jamais de pixels au hasard) → une IA n'a qu'à écrire ces mots.
+    //
+    //   Formes (remplissent le masque de matière, M=métal du thème, G=or, W=bois, S=acier) :
+    //     MCAP/GCAP/WCAP/SCAP  x0 y0 x1 y1 w taper   capsule (segment épais ; taper=1 effile vers x1,y1)
+    //     MDISC/GDISC/WDISC/SDISC  cx cy r           disque
+    //     MRECT/GRECT  x0 y0 x1 y1                   rectangle plein
+    //     MELL  cx cy rx ry                          ellipse pleine
+    //     CLEAR  x0 y0 x1 y1                         évide une zone (ex. fente d'yeux)
+    //     GTR  x0 y0 x1 y1                           liseré doré, peint UNIQUEMENT sur la matière existante
+    //   Décor (après l'ombrage cell-shaded + contour) :
+    //     JEWEL  cx cy r        joyau facetté serti (couleur du thème)
+    //     FULLER x0 y0 x1 y1    rainure centrale (assombrit une bande)
+    //     RIVET  x y           rivet doré        GLINT x y   éclat spéculaire
+    //
+    /** Table d'arité (nombre d'arguments) de chaque verbe du DSL. */
+    private static final java.util.Map<String, Integer> DSL_ARITY = java.util.Map.ofEntries(
+        java.util.Map.entry("MCAP", 6), java.util.Map.entry("GCAP", 6), java.util.Map.entry("WCAP", 6), java.util.Map.entry("SCAP", 6),
+        java.util.Map.entry("MDISC", 3), java.util.Map.entry("GDISC", 3), java.util.Map.entry("WDISC", 3), java.util.Map.entry("SDISC", 3),
+        java.util.Map.entry("MRECT", 4), java.util.Map.entry("GRECT", 4), java.util.Map.entry("MELL", 4),
+        java.util.Map.entry("CLEAR", 4), java.util.Map.entry("GTR", 4),
+        java.util.Map.entry("JEWEL", 3), java.util.Map.entry("FULLER", 4), java.util.Map.entry("RIVET", 2), java.util.Map.entry("GLINT", 2));
+
+    /**
+     * Exécute un programme DSL et renvoie la texture 16×16. Robuste : un mot inconnu ou des arguments
+     * incomplets sont ignorés (l'IA peut produire du bruit sans tout casser). Formes d'abord (masque) →
+     * ombrage cell-shaded + contour → décor (joyau/rivet/éclat) dans l'ordre du programme.
+     */
+    public static BufferedImage renderProgram(String dsl, ThemePalette p, long seed) {
+        List<String[]> ops = parseProgram(dsl);
+        int[][] mask = new int[16][16];
+        for (String[] op : ops) applyShape(mask, op);
+        BufferedImage img = shade(mask, p);
+        for (String[] op : ops) applyPost(img, op, p);
+        return img;
+    }
+
+    /** Découpe le programme en opérations [verbe, arg1, …], en respectant l'arité ; tolère espaces et virgules. */
+    private static List<String[]> parseProgram(String dsl) {
+        List<String[]> out = new ArrayList<>();
+        if (dsl == null || dsl.isBlank()) return out;
+        String[] t = dsl.trim().split("[\\s,]+");
+        int i = 0;
+        while (i < t.length) {
+            String v = t[i].toUpperCase(Locale.ROOT);
+            Integer ar = DSL_ARITY.get(v);
+            if (ar == null) { i++; continue; }            // mot inconnu → ignoré
+            if (i + ar >= t.length) break;                // arguments incomplets → on s'arrête
+            String[] op = new String[ar + 1];
+            op[0] = v;
+            for (int k = 1; k <= ar; k++) op[k] = t[i + k];
+            out.add(op);
+            i += ar + 1;
+        }
+        return out;
+    }
+
+    private static boolean isPostVerb(String v) {
+        return v.equals("JEWEL") || v.equals("FULLER") || v.equals("RIVET") || v.equals("GLINT");
+    }
+
+    private static void applyShape(int[][] m, String[] op) {
+        String v = op[0];
+        if (isPostVerb(v)) return;
+        switch (v) {
+            case "MCAP" -> capsule(m, MAT_METAL, n(op, 1), n(op, 2), n(op, 3), n(op, 4), n(op, 5), n(op, 6) > 0.5);
+            case "GCAP" -> capsule(m, MAT_GOLD, n(op, 1), n(op, 2), n(op, 3), n(op, 4), n(op, 5), n(op, 6) > 0.5);
+            case "WCAP" -> capsule(m, MAT_WOOD, n(op, 1), n(op, 2), n(op, 3), n(op, 4), n(op, 5), n(op, 6) > 0.5);
+            case "SCAP" -> capsule(m, MAT_STEEL, n(op, 1), n(op, 2), n(op, 3), n(op, 4), n(op, 5), n(op, 6) > 0.5);
+            case "MDISC" -> disc(m, MAT_METAL, n(op, 1), n(op, 2), n(op, 3));
+            case "GDISC" -> disc(m, MAT_GOLD, n(op, 1), n(op, 2), n(op, 3));
+            case "WDISC" -> disc(m, MAT_WOOD, n(op, 1), n(op, 2), n(op, 3));
+            case "SDISC" -> disc(m, MAT_STEEL, n(op, 1), n(op, 2), n(op, 3));
+            case "MRECT" -> rect(m, MAT_METAL, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            case "GRECT" -> rect(m, MAT_GOLD, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            case "MELL" -> ellipse(m, MAT_METAL, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            case "CLEAR" -> rect(m, 0, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            case "GTR" -> trimRect(m, MAT_GOLD, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            default -> { }
+        }
+    }
+
+    private static void applyPost(BufferedImage img, String[] op, ThemePalette p) {
+        switch (op[0]) {
+            case "JEWEL" -> jewel(img, n(op, 1), n(op, 2), n(op, 3), p);
+            case "FULLER" -> fuller(img, n(op, 1), n(op, 2), n(op, 3), n(op, 4));
+            case "RIVET" -> rivet(img, (int) Math.round(n(op, 1)), (int) Math.round(n(op, 2)));
+            case "GLINT" -> glint(img, (int) Math.round(n(op, 1)), (int) Math.round(n(op, 2)), p);
+            default -> { }
+        }
+    }
+
+    private static double n(String[] op, int i) {
+        try { return Double.parseDouble(op[i]); } catch (Exception e) { return 0; }
+    }
+
+    private static void rect(int[][] m, int val, double x0, double y0, double x1, double y1) {
+        int ax = (int) Math.round(Math.min(x0, x1)), bx = (int) Math.round(Math.max(x0, x1));
+        int ay = (int) Math.round(Math.min(y0, y1)), by = (int) Math.round(Math.max(y0, y1));
+        for (int y = ay; y <= by; y++) for (int x = ax; x <= bx; x++)
+            if (x >= 0 && y >= 0 && x < 16 && y < 16) m[x][y] = val;
+    }
+
+    /** Rectangle peint uniquement là où il y a déjà de la matière (liseré qui suit la silhouette). */
+    private static void trimRect(int[][] m, int val, double x0, double y0, double x1, double y1) {
+        int ax = (int) Math.round(Math.min(x0, x1)), bx = (int) Math.round(Math.max(x0, x1));
+        int ay = (int) Math.round(Math.min(y0, y1)), by = (int) Math.round(Math.max(y0, y1));
+        for (int y = ay; y <= by; y++) for (int x = ax; x <= bx; x++)
+            if (x >= 0 && y >= 0 && x < 16 && y < 16 && m[x][y] != 0) m[x][y] = val;
+    }
+
+    private static void ellipse(int[][] m, int val, double cx, double cy, double rx, double ry) {
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            double dx = (x - cx) / rx, dy = (y - cy) / ry;
+            if (dx * dx + dy * dy <= 1.0) m[x][y] = val;
+        }
     }
 
     // ----------------------------- helpers -----------------------------

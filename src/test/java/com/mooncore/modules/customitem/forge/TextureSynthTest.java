@@ -76,6 +76,22 @@ class TextureSynthTest {
     }
 
     @Test
+    void dslProgramRendersThemedDeterministicAndRobust() {
+        // un programme minimal dessine un disque du thème sur fond transparent
+        BufferedImage a = TextureSynth.renderProgram("MDISC 8 8 5", VENT, 1L);
+        assertEquals(0, a.getRGB(0, 0) >>> 24, "coin transparent");
+        assertTrue(opaqueCount(a) > 40, "disque dessiné : " + opaqueCount(a));
+        assertTrue(greenishPixels(a) >= 6, "teinte du thème : " + greenishPixels(a));
+        assertImagesEqual(a, TextureSynth.renderProgram("MDISC 8 8 5", VENT, 1L));   // déterministe
+        // robustesse : mots inconnus et arguments parasites ignorés -> même rendu
+        assertImagesEqual(a, TextureSynth.renderProgram("BLAH 1 2  MDISC 8 8 5  ZZZ", VENT, 1L));
+        // programme vide -> image vide (transparente)
+        assertEquals(0, opaqueCount(TextureSynth.renderProgram("", VENT, 1L)));
+        // les objets standard SONT des programmes DSL (l'épée passe par PROG_SWORD)
+        assertImagesEqual(TextureSynth.drawSword(VENT, 1L), TextureSynth.renderProgram(TextureSynth.PROG_SWORD, VENT, 1L));
+    }
+
+    @Test
     void detailFromMaskPreservesSilhouette() {
         // base : moitié gauche opaque (forme), moitié droite transparente.
         BufferedImage base = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
