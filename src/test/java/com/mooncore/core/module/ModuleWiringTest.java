@@ -45,7 +45,20 @@ class ModuleWiringTest {
                 new EnchantManagerModule(), new EndgameItemsModule(), new EventManagerModule(),
                 new ZoneModule(), new AntiAfkModule(), new EconomyBalancerModule(),
                 new AntiFarmModule(), new AudioManagerModule(), new HomeManagerModule(),
-                new PlaceholderModule(), new AdminToolsModule());
+                new PlaceholderModule(), new AdminToolsModule(),
+                new com.mooncore.modules.crop.CropManagerModule(),
+                new com.mooncore.modules.loot.LootManagerModule(),
+                new com.mooncore.modules.mechanic.MechanicModule(),
+                new com.mooncore.modules.create.CreateModule());
+    }
+
+    @Test
+    void moduleIdsAreUnique() {
+        List<MoonModule> modules = registeredModules();
+        Set<String> seen = new LinkedHashSet<>();
+        for (MoonModule m : modules) {
+            assertTrue(seen.add(m.id()), "Id de module en double : '" + m.id() + "'");
+        }
     }
 
     @Test
