@@ -47,6 +47,23 @@ public final class LootStats {
         return false;
     }
 
+    /**
+     * Quantité totale d'items moyenne par évaluation (somme de toutes les quantités produites / nombre
+     * d'itérations) — un seul chiffre résumant la « générosité » de la table. Références non développées
+     * et quantités ≤ 0 ignorées. Pur → testable.
+     */
+    public static double expectedItemsPerIteration(List<List<LootResult>> samples) {
+        if (samples == null || samples.isEmpty()) return 0.0;
+        long total = 0;
+        for (List<LootResult> sample : samples) {
+            if (sample == null) continue;
+            for (LootResult r : sample) {
+                if (keyOf(r) != null && r.count() > 0) total += r.count();
+            }
+        }
+        return (double) total / samples.size();
+    }
+
     /** Clé d'agrégation stable d'un résultat : {@code ✦<id>} pour un item custom, le nom du Material sinon. */
     public static String keyOf(LootResult r) {
         if (r == null || r.isReference()) return null;

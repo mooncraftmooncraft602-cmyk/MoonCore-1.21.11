@@ -89,6 +89,18 @@ class LootStatsTest {
     }
 
     @Test
+    void expectedItemsPerIterationAveragesTotalCounts() {
+        List<List<LootResult>> samples = List.of(
+                List.of(mat(Material.DIAMOND, 2), mat(Material.GOLD_INGOT, 3)),  // 5
+                List.of(mat(Material.STONE, 0), ref("x")),                       // 0 (count 0 + ref ignorés)
+                List.of(custom("ruby", 1))                                       // 1
+        );
+        assertEquals(2.0, LootStats.expectedItemsPerIteration(samples), 1e-9);   // (5+0+1)/3
+        assertEquals(0.0, LootStats.expectedItemsPerIteration(List.of()), 1e-9);
+        assertEquals(0.0, LootStats.expectedItemsPerIteration(null), 1e-9);
+    }
+
+    @Test
     void emptyRateZeroWhenAllProduceAndOnEmptySample() {
         assertEquals(0.0, LootStats.emptyRate(List.of(List.of(mat(Material.GOLD_INGOT, 2)))), 1e-9);
         assertEquals(0.0, LootStats.emptyRate(List.of()), 1e-9);
