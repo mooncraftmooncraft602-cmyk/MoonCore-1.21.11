@@ -85,7 +85,9 @@ public final class LootSubCommand implements SubCommand {
                     + " <gray>· poids total <white>" + p.totalWeight());
             for (LootEntry e : p.entries()) {
                 long pct = Math.round(p.chanceOf(e) * 100);
-                msg(s, "   <dark_gray>▸ <white>" + (e.isCustom() ? "✦ " + e.itemId() : e.material().name())
+                String label = e.isReference() ? "↪ table " + e.tableRef()
+                        : (e.isCustom() ? "✦ " + e.itemId() : e.material().name());
+                msg(s, "   <dark_gray>▸ <white>" + label
                         + " <gray>×" + e.countMin() + "–" + e.countMax() + " <gray>poids <white>" + e.weight()
                         + " <dark_gray>(<yellow>" + pct + "%<dark_gray>/tirage)");
             }
@@ -105,14 +107,19 @@ public final class LootSubCommand implements SubCommand {
 
     private void addEntry(CommandSender s, String[] a) {
         LootTableDef d = need(s, a); if (d == null) return;
-        if (a.length < 4) { msg(s, "<red>/moon loot addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]"); return; }
+        if (a.length < 4) { msg(s, "<red>/moon loot addentry <id> <poolIndex> <Material|custom:itemId|table:tableId> [poids] [min] [max]"); return; }
         int idx = Integer.parseInt(a[2]);
         if (idx < 0 || idx >= d.pools().size()) { msg(s, "<red>Pool inexistant : " + idx + " (0–" + (d.pools().size() - 1) + ")"); return; }
         String v = a[3];
         String customId = null;
+        String tableRef = null;
         Material mat = Material.AIR;
-        if (v.toLowerCase(Locale.ROOT).startsWith("custom:")) {
+        String lv = v.toLowerCase(Locale.ROOT);
+        if (lv.startsWith("custom:")) {
             customId = v.substring("custom:".length());
+        } else if (lv.startsWith("table:")) {
+            tableRef = v.substring("table:".length());
+            if (tableRef.equalsIgnoreCase(d.id())) { msg(s, "<red>Une table ne peut pas se référencer elle-même."); return; }
         } else {
             Material m = Material.matchMaterial(v.toUpperCase(Locale.ROOT));
             if (m == null || !m.isItem()) { msg(s, "<red>Matériau invalide : " + v); return; }
@@ -121,10 +128,11 @@ public final class LootSubCommand implements SubCommand {
         int weight = a.length >= 5 ? Integer.parseInt(a[4]) : 1;
         int cMin = a.length >= 6 ? Integer.parseInt(a[5]) : 1;
         int cMax = a.length >= 7 ? Integer.parseInt(a[6]) : cMin;
-        d.pools().get(idx).add(new LootEntry(customId, mat, weight, cMin, cMax));
+        d.pools().get(idx).add(new LootEntry(customId, mat, weight, cMin, cMax, tableRef));
         module.put(d);
+        String label = tableRef != null ? "↪ table " + tableRef : (customId != null ? "✦ " + customId : mat.name());
         msg(s, "<green>Entrée ajoutée au pool " + idx + " de " + d.id() + " : <white>"
-                + (customId != null ? "✦ " + customId : mat.name()) + " <gray>×" + cMin + "–" + cMax + " poids " + weight);
+                + label + " <gray>×" + cMin + "–" + cMax + " poids " + weight);
     }
 
     private void removePool(CommandSender s, String[] a) {

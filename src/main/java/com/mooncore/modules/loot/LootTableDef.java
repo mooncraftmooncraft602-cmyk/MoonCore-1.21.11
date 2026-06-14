@@ -57,6 +57,7 @@ public final class LootTableDef {
                 ess.set("weight", e.weight());
                 ess.set("count.min", e.countMin());
                 ess.set("count.max", e.countMax());
+                ess.set("loot-table", e.tableRef());
             }
         }
     }
@@ -86,7 +87,8 @@ public final class LootTableDef {
                                 mat == null ? Material.AIR : mat,
                                 es.getInt("weight", 1),
                                 es.getInt("count.min", 1),
-                                es.getInt("count.max", 1)));
+                                es.getInt("count.max", 1),
+                                es.getString("loot-table", null)));
                     }
                 }
                 d.pools.add(pool);

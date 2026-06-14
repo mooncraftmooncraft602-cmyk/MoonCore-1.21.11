@@ -92,9 +92,12 @@ public final class LootManagerModule extends AbstractModule {
         return d == null ? List.of() : d.roll(rng);
     }
 
+    /** Profondeur max de résolution des tables imbriquées (garde anti-cycle). */
+    private static final int MAX_NEST_DEPTH = 8;
+
     /** Matérialise un résultat de loot en ItemStack (item custom prioritaire, sinon Material), ou null. */
     public org.bukkit.inventory.ItemStack materialize(LootResult r) {
-        if (r == null || r.count() <= 0) return null;
+        if (r == null || r.count() <= 0 || r.isReference()) return null;
         if (r.isCustom()) {
             var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
             return ci == null ? null : ci.create(r.itemId(), r.count());
@@ -103,14 +106,30 @@ public final class LootManagerModule extends AbstractModule {
                 ? null : new org.bukkit.inventory.ItemStack(r.material(), r.count());
     }
 
-    /** Tire une table et matérialise les résultats en ItemStacks (centralise la conversion des consommateurs). */
+    /**
+     * Tire une table et matérialise les résultats en ItemStacks. Résout récursivement les entrées qui
+     * <b>référencent</b> une autre table ({@link LootEntry#tableRef}), avec une garde de profondeur contre
+     * les cycles. Centralise la conversion utilisée par tous les consommateurs.
+     */
     public List<org.bukkit.inventory.ItemStack> rollItems(String id, RandomGenerator rng) {
         List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
-        for (LootResult r : roll(id, rng)) {
-            org.bukkit.inventory.ItemStack stack = materialize(r);
-            if (stack != null) out.add(stack);
-        }
+        rollInto(id, rng, out, 0);
         return out;
+    }
+
+    private void rollInto(String id, RandomGenerator rng, List<org.bukkit.inventory.ItemStack> out, int depth) {
+        if (depth >= MAX_NEST_DEPTH) {
+            log().warn("Table de loot imbriquée trop profonde (>= " + MAX_NEST_DEPTH + ") à '" + id + "' : cycle probable, ignorée.");
+            return;
+        }
+        for (LootResult r : roll(id, rng)) {
+            if (r.isReference()) {
+                for (int i = 0; i < r.count(); i++) rollInto(r.tableRef(), rng, out, depth + 1);
+            } else {
+                org.bukkit.inventory.ItemStack stack = materialize(r);
+                if (stack != null) out.add(stack);
+            }
+        }
     }
 
     /** Donne au joueur le butin tiré de la table ; retourne le nombre de piles données (0 si table inconnue). */

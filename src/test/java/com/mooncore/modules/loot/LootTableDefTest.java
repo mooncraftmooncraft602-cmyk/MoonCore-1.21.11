@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -57,6 +58,32 @@ class LootTableDefTest {
         assertEquals(Material.GOLD_INGOT, p1.entries().get(0).material());
         assertEquals(3, p1.entries().get(0).countMin());
         assertEquals(5, p1.entries().get(0).countMax());
+    }
+
+    @Test
+    void nestedTableReferenceRoundTrips() {
+        LootTableDef t = new LootTableDef("dungeon");
+        t.add(new LootPool(1, 1)
+                .add(new LootEntry(null, Material.AIR, 3, 1, 1, "common_drops"))   // référence imbriquée
+                .add(new LootEntry(null, Material.DIAMOND, 1, 1, 1)));
+
+        LootEntry ref = t.pools().get(0).entries().get(0);
+        assertTrue(ref.isReference());
+        assertEquals("common_drops", ref.tableRef());
+
+        org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
+        t.save(cfg.createSection("t"));
+        LootTableDef back = LootTableDef.load("dungeon", cfg.getConfigurationSection("t"));
+        LootEntry backRef = back.pools().get(0).entries().get(0);
+        assertTrue(backRef.isReference());
+        assertEquals("common_drops", backRef.tableRef());
+        assertFalse(back.pools().get(0).entries().get(1).isReference());
+
+        // LootResult propage la référence ; un tel résultat n'est pas un item custom.
+        LootResult r = LootResult.of(ref, 2);
+        assertTrue(r.isReference());
+        assertFalse(r.isCustom());
+        assertEquals("common_drops", r.tableRef());
     }
 
     @Test
