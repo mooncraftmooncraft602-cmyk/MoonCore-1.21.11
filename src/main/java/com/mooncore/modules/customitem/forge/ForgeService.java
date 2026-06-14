@@ -78,11 +78,20 @@ public final class ForgeService {
         TextureSynth.Archetype arch = TextureSynth.archetypeOf(baseTexture);
         int size = Math.max(16, Math.min(64, Math.max(base.getWidth(), base.getHeight())));
         long seed = (displayName + "|" + pal.name()).hashCode() & 0xffffffffL;
-        // outils/armes/armures = DESSINÉS depuis zéro (épée, pioche, hache, casque, plastron) ;
-        // minerai/gemme/lingot = pixel-art procédural. Plus jamais un simple recolorage plat.
-        BufferedImage themed = arch == TextureSynth.Archetype.ITEM
-                ? TextureSynth.drawTool(baseTexture, base, pal, seed)
-                : TextureSynth.synthesize(arch, base, pal, seed, size);
+        // outils/armes/armures = programme DSL COMPOSÉ depuis le nom (variante unique + modificateurs
+        // grand/petit/royal…), repli sur le dessin générique si le nom n'est pas typé ; minerai/gemme/lingot
+        // = pixel-art procédural. Plus jamais un simple recolorage plat.
+        BufferedImage themed;
+        if (arch == TextureSynth.Archetype.ITEM) {
+            TextureSynth.Kind kind = TextureSynth.itemKind(displayName);
+            String composeName = displayName;
+            if (kind == TextureSynth.Kind.GENERIC) { kind = TextureSynth.itemKind(baseTexture); composeName = baseTexture; }
+            themed = kind == TextureSynth.Kind.GENERIC
+                    ? TextureSynth.drawTool(baseTexture, base, pal, seed)
+                    : TextureSynth.renderProgram(TextureComposer.compose(composeName, seed), pal, seed);
+        } else {
+            themed = TextureSynth.synthesize(arch, base, pal, seed, size);
+        }
 
         // 3) item custom : id depuis le nom, matériau déduit de la base
         String id = slug(displayName);
