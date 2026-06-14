@@ -46,6 +46,8 @@ class ModuleWiringTest {
                 new ZoneModule(), new AntiAfkModule(), new EconomyBalancerModule(),
                 new AntiFarmModule(), new AudioManagerModule(), new HomeManagerModule(),
                 new PlaceholderModule(), new AdminToolsModule(),
+                new com.mooncore.modules.customitem.CustomItemManagerModule(),
+                new com.mooncore.modules.customblock.CustomBlockManagerModule(),
                 new com.mooncore.modules.crop.CropManagerModule(),
                 new com.mooncore.modules.loot.LootManagerModule(),
                 new com.mooncore.modules.mechanic.MechanicModule(),
