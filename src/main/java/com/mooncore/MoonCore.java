@@ -134,6 +134,7 @@ public final class MoonCore extends JavaPlugin {
         moduleManager.register(new com.mooncore.modules.kit.KitModule());
         // Modules livrés par l'IA n°2 (économie & contenu) — cf. docs/HANDOFF-AI2.md.
         moduleManager.register(new com.mooncore.modules.shop.ShopModule());
+        moduleManager.register(new com.mooncore.modules.market.MarketModule());
         moduleManager.register(new com.mooncore.modules.auction.AuctionModule());
         moduleManager.register(new com.mooncore.modules.spawner.SpawnerGuiModule());
         moduleManager.register(new com.mooncore.modules.integrations.IntegrationsModule());

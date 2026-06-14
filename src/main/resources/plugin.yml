@@ -108,6 +108,7 @@ permissions:
   mooncore.warp.use: { default: true }
   mooncore.kit.use: { default: true }
   mooncore.shop.use: { default: true }
+  mooncore.market.use: { default: true }
   mooncore.ah.use: { default: true }
   mooncore.spawner.use: { default: true }
   mooncore.admin.spawn: { default: op }
@@ -142,6 +143,7 @@ permissions:
   mooncore.repair.use: { default: op }
   mooncore.admin.warp: { default: op }
   mooncore.admin.shop: { default: op }
+  mooncore.admin.market: { default: op }
   mooncore.spawner.mine: { default: op }
 
   # ----- Bypass (staff de confiance) -----
