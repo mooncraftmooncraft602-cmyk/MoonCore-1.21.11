@@ -21,8 +21,21 @@ public final class PaletteResolver {
         return n.toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Vrai si un des mots-clés correspond à un <b>mot</b> du nom (pas une sous-chaîne au milieu d'un autre
+     * mot : « air » ne doit PAS matcher « lun<u>air</u>e », ni « or » matcher « z<u>or</u>glub »). Tolère les
+     * flexions courtes (pluriels : « polaire » ↔ « polaires », « abysse » ↔ « abysses ») : le token doit
+     * commencer par le mot-clé avec au plus 2 caractères en plus.
+     */
     private static boolean has(String hay, String... needles) {
-        for (String n : needles) if (hay.contains(n)) return true;
+        String[] tokens = hay.split("[^a-z0-9]+");
+        for (String kw : needles) {
+            for (String tk : tokens) {
+                if (tk.isEmpty()) continue;
+                if (tk.equals(kw)) return true;
+                if (tk.startsWith(kw) && tk.length() - kw.length() <= 2) return true;
+            }
+        }
         return false;
     }
 

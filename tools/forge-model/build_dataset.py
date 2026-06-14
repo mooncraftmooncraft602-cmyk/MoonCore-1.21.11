@@ -42,14 +42,14 @@ def _ramp_line(name: str, hexes: list[str]) -> str:
 
 
 def _theme_ramp(th: lexicon.Theme, rng: random.Random) -> list[str]:
-    """Rampe d'un thème, avec petite variation déterministe (diversité du dataset)."""
-    hue = th["hue"] + rng.uniform(-8, 8)
-    sat = max(0.0, min(1.0, th["sat"] + rng.uniform(-0.08, 0.08)))
+    """Rampe d'un thème. Variation FAIBLE : signal thème->teinte net (le modèle apprend la bonne teinte)."""
+    hue = th["hue"] + rng.uniform(-3, 3)
+    sat = max(0.0, min(1.0, th["sat"] + rng.uniform(-0.04, 0.04)))
     hl = th["hl"]
-    lo = rng.uniform(0.10, 0.18)
-    hi = rng.uniform(0.86, 0.95)
+    lo = rng.uniform(0.12, 0.15)
+    hi = rng.uniform(0.88, 0.93)
     return colors.make_ramp(hue, sat, stops=STOPS, light_lo=lo, light_hi=hi,
-                            highlight_hue=hl, rng=rng, hue_jitter=3.0)
+                            highlight_hue=hl, rng=rng, hue_jitter=1.5)
 
 
 def _make_name(th: lexicon.Theme, rng: random.Random) -> str:
@@ -94,7 +94,7 @@ def generate(target_chars: int, seed: int, sample: bool) -> list[str]:
     while total < target_chars and len(lines) < limit:
         th = rng.choice(lexicon.THEMES)
         name = _make_name(th, rng)
-        variants = 1 if sample else rng.randint(1, 3)
+        variants = 1 if sample else rng.randint(1, 2)
         for _ in range(variants):
             ramp = _theme_ramp(th, rng)
             ln = _ramp_line(name, ramp)

@@ -32,61 +32,104 @@ public final class ForgeSubCommand implements SubCommand {
     @Override public String category() { return "admin"; }
     @Override public boolean playerOnly() { return true; }
 
+    private static final double STRENGTH = 0.9;
+    private static volatile GptPaletteSource gptCache;   // modèle Java chargé une fois
+
+    /** Modèle GPT en JVM (chargé depuis plugins/MoonCore/forge-gpt.bin), mémoïsé. */
+    private static GptPaletteSource gpt(MoonCore plugin) {
+        GptPaletteSource g = gptCache;
+        if (g == null) {
+            synchronized (ForgeSubCommand.class) {
+                g = gptCache;
+                if (g == null) g = gptCache = new GptPaletteSource(new java.io.File(plugin.getDataFolder(), "forge-gpt.bin"));
+            }
+        }
+        return g;
+    }
+
     @Override
     public void execute(MoonCore plugin, CommandSender s, String[] a) {
         Player p = (Player) s;
+
+        // /moon forge suggest <nom…>  -> propose des couleurs (sans rien forger)
+        if (a.length >= 1 && (a[0].equalsIgnoreCase("suggest") || a[0].equalsIgnoreCase("propose"))) {
+            suggest(plugin, p, String.join(" ", java.util.Arrays.copyOfRange(a, 1, a.length)).trim());
+            return;
+        }
+
         int i = 0;
         boolean ai = a.length > 0 && a[0].equalsIgnoreCase("ai");
         boolean model = a.length > 0 && (a[0].equalsIgnoreCase("model") || a[0].equalsIgnoreCase("local"));
         if (ai || model) i = 1;
         if (a.length < i + 2) {
-            msg(p, "<gray>/moon forge [ai|model] <textureBase> <nom…>");
-            msg(p, "<dark_gray>ex : /moon forge diamond_sword Épée du Vent  ·  /moon forge model diamond_sword Épée du Vent");
+            msg(p, "<gray>/moon forge [ai|model] <textureBase> <nom…> [#couleur …]");
+            msg(p, "<dark_gray>ex : /moon forge diamond_sword Épée du Vent");
+            msg(p, "<dark_gray>     /moon forge model diamond_sword Épée Lunaire     <gray>(modèle IA, sur le serveur)");
+            msg(p, "<dark_gray>     /moon forge diamond_sword Ma Lame #1b5e20 #66bb6a #e8f5e9   <gray>(tes couleurs)");
+            msg(p, "<dark_gray>     /moon forge suggest Épée du Vent     <gray>(conseille des couleurs)");
             return;
         }
         String base = a[i];
-        String name = String.join(" ", java.util.Arrays.copyOfRange(a, i + 1, a.length)).trim();
+        ForgeColors.Parsed parsed = ForgeColors.parseNameAndColors(a, i + 1);
+        String name = parsed.name();
         ForgeService svc = new ForgeService(plugin, module);
-        double strength = 0.9;
 
+        // 1) Couleurs explicites fournies -> priment sur tout (l'utilisateur choisit).
+        if (!parsed.colors().isEmpty()) {
+            ThemePalette pal = ForgeColors.paletteFromChosen(name, parsed.colors());
+            msg(p, svc.forge(p, base, name, pal, STRENGTH).message());
+            return;
+        }
+
+        // 2) Modèle IA EN JVM (sans dépendance externe) — async, repli déterministe.
         if (model) {
-            // Modèle local auto-hébergé (sidecar) : palette async, forge resynchronisée sur le thread principal.
-            String endpoint = "http://127.0.0.1:8770/palette";
-            int timeout = 8;
-            AiAdminModule am = plugin.moduleManager().get(AiAdminModule.class);
-            if (am != null && am.client() != null) {
-                endpoint = am.client().config().localModelEndpoint();
-                timeout = am.client().config().localModelTimeoutSeconds();
+            GptPaletteSource g = gpt(plugin);
+            if (!g.available()) {
+                msg(p, "<yellow>Modèle non installé (forge-gpt.bin) — palette déduite du nom.");
+                msg(p, svc.forge(p, base, name, null, STRENGTH).message());
+                return;
             }
-            msg(p, "<gray>🜂 Modèle local : palette pour <white>" + name + "<gray>… <dark_gray>(repli auto si éteint)");
-            new LocalModelPaletteSource(endpoint, timeout).resolve(name).whenComplete((palette, err) ->
-                    plugin.schedulers().sync(() -> {
-                        ThemePalette pal = (err != null || palette == null) ? PaletteResolver.fromName(name) : palette;
-                        msg(p, svc.forge(p, base, name, pal, strength).message());
-                    }));
+            msg(p, "<gray>🜂 Modèle (serveur) : couleurs pour <white>" + name + "<gray>…");
+            g.resolve(name).whenComplete((pal, err) ->
+                    plugin.schedulers().sync(() -> msg(p, svc.forge(p, base, name,
+                            (err != null ? PaletteResolver.fromName(name) : pal), STRENGTH).message())));
             return;
         }
 
-        if (!ai) {
-            ForgeService.Result r = svc.forge(p, base, name, null, strength);
-            msg(p, r.message());
+        // 3) IA externe (LLM) si demandée et configurée.
+        if (ai) {
+            AiAdminModule aiMod = plugin.moduleManager().get(AiAdminModule.class);
+            if (aiMod == null || aiMod.client() == null || !aiMod.client().config().hasApiKey()) {
+                msg(p, "<yellow>IA non configurée — palette déduite du nom.");
+                msg(p, svc.forge(p, base, name, null, STRENGTH).message());
+                return;
+            }
+            msg(p, "<gray>🜂 Forge IA pour <white>" + name + "<gray>…");
+            ForgePaletteAI.resolve(aiMod.client(), name).whenComplete((pal, err) ->
+                    plugin.schedulers().sync(() -> msg(p, svc.forge(p, base, name,
+                            (err != null ? PaletteResolver.fromName(name) : pal), STRENGTH).message())));
             return;
         }
-        // Mode IA : palette choisie par le LLM (async), forge resynchronisée sur le thread principal.
-        AiAdminModule aiMod = plugin.moduleManager().get(AiAdminModule.class);
-        if (aiMod == null || aiMod.client() == null || !aiMod.client().config().hasApiKey()) {
-            msg(p, "<yellow>IA non configurée — palette déduite du nom.");
-            ForgeService.Result r = svc.forge(p, base, name, null, strength);
-            msg(p, r.message());
-            return;
+
+        // 4) Défaut : moteur déterministe (instantané, marche pour TOUT nom).
+        msg(p, svc.forge(p, base, name, null, STRENGTH).message());
+    }
+
+    /** Conseille des couleurs pour un nom (moteur déterministe + modèle si dispo), sans forger. */
+    private void suggest(MoonCore plugin, Player p, String name) {
+        if (name.isBlank()) { msg(p, "<red>/moon forge suggest <nom…>"); return; }
+        ThemePalette kw = PaletteResolver.fromName(name);
+        msg(p, "<gradient:#8a2be2:#c77dff>Couleurs proposées</gradient> <gray>pour <white>" + name);
+        msg(p, " <gray>thème <white>" + kw.name() + "<gray> : <white>" + String.join(" ", kw.hexStops()));
+        GptPaletteSource g = gpt(plugin);
+        if (g.available()) {
+            java.util.concurrent.CompletableFuture.supplyAsync(() -> g.suggestHex(name)).whenComplete((hex, err) ->
+                    plugin.schedulers().sync(() -> {
+                        if (err == null && hex != null && !hex.isEmpty())
+                            msg(p, " <gray>modèle (serveur) : <white>" + String.join(" ", hex));
+                    }));
         }
-        msg(p, "<gray>🜂 Forge IA en cours pour <white>" + name + "<gray>…");
-        ForgePaletteAI.resolve(aiMod.client(), name).whenComplete((palette, err) ->
-                plugin.schedulers().sync(() -> {
-                    ThemePalette pal = (err != null || palette == null) ? PaletteResolver.fromName(name) : palette;
-                    ForgeService.Result r = svc.forge(p, base, name, pal, strength);
-                    msg(p, r.message());
-                }));
+        msg(p, "<dark_gray>Forge avec ton choix : /moon forge <base> " + name + " #couleur #couleur …");
     }
 
     private static void msg(Player p, String mm) { p.sendMessage(Text.mm(mm)); }
@@ -95,6 +138,7 @@ public final class ForgeSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             List<String> opts = new ArrayList<>(COMMON_BASES);
+            opts.add(0, "suggest");
             opts.add(0, "model");
             opts.add(0, "ai");
             return filter(opts, a[0]);

@@ -34,18 +34,27 @@ python -m venv .venv
 REM sanity rapide : .venv\Scripts\python train.py --quick
 ```
 
-## Lancer le sidecar (à côté du serveur Minecraft)
-```bat
-run.bat            REM écoute sur 127.0.0.1:8770
-```
-Test : `curl -s -X POST localhost:8770/palette -H "content-type: application/json" -d "{\"name\":\"Épée du Vent\"}"`
+## Utilisation : inférence DANS le serveur (recommandé, zéro dépendance)
+L'inférence tourne **dans la JVM du plugin** — pas de Python, pas de sidecar à l'exécution.
+1. Exporter le modèle entraîné vers un binaire compact :
+   ```bat
+   .venv\Scripts\python export.py        REM produit forge-gpt.bin (~13 Mo)
+   ```
+2. Copier `forge-gpt.bin` dans le dossier du plugin : `plugins/MoonCore/forge-gpt.bin`.
+3. En jeu : **`/moon forge model diamond_sword Épée du Vent`** → le serveur charge le modèle et
+   décide les couleurs lui-même. Modèle absent → repli automatique sur le moteur déterministe.
 
-## Activer côté plugin
-Dans `plugins/MoonCore/modules/ai-assistant.yml` :
-```yaml
-local-model:
-  enabled: true
-  endpoint: "http://127.0.0.1:8770/palette"
-  timeout-seconds: 8
-```
-Puis en jeu : `/moon forge model diamond_sword Épée du Vent`. Sidecar éteint → repli automatique.
+Modes de la commande :
+- `/moon forge <base> <nom>` — moteur déterministe (instantané, marche pour tout nom).
+- `/moon forge model <base> <nom>` — modèle GPT exécuté sur le serveur.
+- `/moon forge <base> <nom> #aaa #bbb #ccc` — **tes couleurs** (tu choisis).
+- `/moon forge suggest <nom>` — **conseille** des couleurs (à copier/ajuster).
+
+## (Optionnel) sidecar HTTP
+Une alternative `serve.py` (FastAPI, `POST /palette`) existe si tu préfères un service séparé
+(`run.bat`, port 8770, config `local-model` dans `ai-assistant.yml`). Non requis : l'inférence Java
+intégrée est le mode par défaut.
+
+## Conformité
+Le forward pass Java ({@code GptInference}) est validé contre PyTorch par un test golden
+(`make_golden.py` + `GptInferenceTest`) : logits identiques → mêmes couleurs.

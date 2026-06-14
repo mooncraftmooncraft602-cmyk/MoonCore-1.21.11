@@ -33,6 +33,13 @@ public final class ThemePalette {
     public String name() { return name; }
     public List<Stop> stops() { return List.copyOf(stops); }
 
+    /** Les couleurs de la rampe en {@code #rrggbb} (de l'ombre à la lumière) — pour afficher/conseiller. */
+    public List<String> hexStops() {
+        List<String> out = new ArrayList<>(stops.size());
+        for (Stop s : stops) out.add(String.format(java.util.Locale.ROOT, "#%06x", s.rgb() & 0xFFFFFF));
+        return out;
+    }
+
     /**
      * Construit une rampe à partir d'une liste de couleurs (≥1), réparties uniformément en luminance de la
      * 1re (ombres) à la dernière (hautes lumières). Sert aux palettes du modèle local (dégradés à N stops).
