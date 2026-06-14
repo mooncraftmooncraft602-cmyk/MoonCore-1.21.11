@@ -151,7 +151,11 @@ public final class BossManagerModule extends AbstractModule {
         return true;
     }
 
-    private static void clampField(java.util.Map<String, Object> m, String key, double min, double max) {
+    /**
+     * Borne anti-triche une valeur numérique d'une map de champs IA dans [min,max]. Les valeurs non
+     * numériques (ou absentes) sont laissées intactes. Package-private pour test (contrat anti-abus).
+     */
+    static void clampField(java.util.Map<String, Object> m, String key, double min, double max) {
         Object v = m.get(key);
         if (v instanceof Number n) {
             m.put(key, Math.max(min, Math.min(max, n.doubleValue())));
