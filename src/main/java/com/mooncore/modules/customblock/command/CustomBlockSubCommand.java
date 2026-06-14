@@ -111,6 +111,9 @@ public final class CustomBlockSubCommand implements SubCommand {
                 ? "oui (remplace " + d.replace().name() + ", Y " + d.minY() + "→" + d.maxY()
                   + ", " + d.veinsPerChunk() + " veine(s)/chunk, taille " + d.veinSize() + ")"
                 : "non"));
+        if (d.dropItemId() != null && !d.dropItemId().isBlank() && !module.customItemExists(d.dropItemId())) {
+            msg(s, " <red>⚠ drop custom inconnu : <white>" + d.dropItemId() + "<red> (repli silencieux sur le bloc lui-même).");
+        }
     }
 
     private void give(CommandSender s, String[] a) {

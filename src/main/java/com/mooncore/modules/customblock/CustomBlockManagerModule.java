@@ -205,6 +205,13 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
         return services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
     }
 
+    /** True si un item custom MoonCore de cet id existe (pour avertir d'un drop custom pendant). */
+    public boolean customItemExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var ci = customItems();
+        return ci != null && ci.create(id, 1) != null;
+    }
+
     /**
      * Tire la table de loot référencée par le bloc ({@link CustomBlockDef#lootTableId}) et matérialise les
      * résultats en ItemStacks. Liste vide si le bloc n'utilise pas de table, si le module loot est absent
