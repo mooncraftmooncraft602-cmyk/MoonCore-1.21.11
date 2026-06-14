@@ -55,6 +55,7 @@ public final class MechanicModule extends AbstractModule {
         }
 
         registerListener(new MechanicListener(this));
+        plugin().rootCommand().register(new MechanicSubCommand(this));
         this.intervalTask = schedulers().syncTimer(this::tickInterval, INTERVAL_PERIOD, INTERVAL_PERIOD);
 
         log().info("MechanicManager : " + defs.size() + " mécanique(s) (" + runnableCount() + " active(s)).");
@@ -104,6 +105,11 @@ public final class MechanicModule extends AbstractModule {
 
     public void clearCooldowns(java.util.UUID player) {
         for (MechanicDef d : defs.values()) cooldowns.clear(d.id(), player);
+    }
+
+    /** Exécute les actions d'une mécanique pour un joueur en ignorant cooldown/filtre (pour {@code /moon mechanic test}). */
+    public void runActions(MechanicDef def, org.bukkit.entity.Player player) {
+        if (executor != null) executor.run(def, player);
     }
 
     /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
