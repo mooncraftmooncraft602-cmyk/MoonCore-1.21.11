@@ -8,8 +8,8 @@ import java.util.Locale;
  * serveur). {@link #fromText} est tolérant (alias FR/EN) ; la robustesse est testée sans serveur.
  */
 public enum ActionType {
-    MESSAGE,    // params: text (MiniMessage, placeholders %player%)
-    COMMAND,    // params: command (exécutée console ; %player% remplacé)
+    MESSAGE,    // params: text (MiniMessage, placeholders %player% %world% %x% %y% %z% %online%)
+    COMMAND,    // params: command (exécutée console ; placeholders %player% %world% %x/y/z% %online%)
     SOUND,      // params: sound, volume, pitch
     POTION,     // params: effect, duration (ticks), amplifier
     GIVE_ITEM,  // params: item (Material ou custom:<id>), amount
