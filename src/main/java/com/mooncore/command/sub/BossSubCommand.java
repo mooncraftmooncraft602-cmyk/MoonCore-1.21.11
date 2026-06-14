@@ -37,7 +37,14 @@ public final class BossSubCommand implements SubCommand {
                     sender.sendMessage(cm.message("boss-list-empty"));
                     return;
                 }
-                module.bossIds().forEach(id -> sender.sendMessage(cm.message("boss-list-entry", "id", id)));
+                module.bossIds().forEach(id -> {
+                    sender.sendMessage(cm.message("boss-list-entry", "id", id));
+                    var def = module.definition(id);
+                    if (def != null && def.usesLootTable() && !module.lootTableExists(def.lootTableId())) {
+                        sender.sendMessage(Text.mm("   <yellow>⚠ table de loot inconnue : <white>" + def.lootTableId()
+                                + "<yellow> (repli sur les drops vanilla)."));
+                    }
+                });
                 sender.sendMessage(cm.message("boss-active", "count", String.valueOf(module.activeCount())));
             }
             case "spawn" -> {

@@ -561,6 +561,13 @@ public final class BossManagerModule extends AbstractModule {
                 : loot.rollItems(def.lootTableId(), java.util.concurrent.ThreadLocalRandom.current());  // matérialisation centralisée
     }
 
+    /** True si une table de loot de cet id existe (module loot présent). Pour avertir des références pendantes. */
+    public boolean lootTableExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        return loot != null && loot.def(id) != null;
+    }
+
     public void addVanillaDrop(String bossId, org.bukkit.inventory.ItemStack item) {
         if (item == null || item.getType().isAir()) return;
         vanillaDrops.computeIfAbsent(bossId.toLowerCase(Locale.ROOT), k -> new java.util.ArrayList<>()).add(item.clone());
