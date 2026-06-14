@@ -109,6 +109,10 @@ public final class MechanicExecutor {
                 if (cmd.startsWith("/")) cmd = cmd.substring(1);
                 if (!cmd.isEmpty()) p.performCommand(cmd);   // exécutée avec les permissions du joueur
             }
+            case ACTIONBAR -> {
+                String text = placeholders(a.param("text", ""), p);
+                if (!text.isBlank()) p.sendActionBar(Text.mm(text));
+            }
             case NONE -> { /* ignoré */ }
         }
     }

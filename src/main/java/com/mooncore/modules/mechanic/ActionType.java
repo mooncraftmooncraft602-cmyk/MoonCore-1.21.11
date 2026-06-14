@@ -29,6 +29,7 @@ public enum ActionType {
     PARTICLE,   // params: particle, count — affiche des particules sur le joueur
     BROADCAST,  // params: text — message diffusé à TOUT le serveur (vs message = joueur seul)
     PLAYER_COMMAND, // params: command — exécutée EN TANT QUE joueur (ses permissions ; vs command = console)
+    ACTIONBAR,  // params: text — message dans la barre d'action (au-dessus de la hotbar ; placeholders)
     NONE;       // inerte (non reconnu)
 
     /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
@@ -57,6 +58,7 @@ public enum ActionType {
             case "particle", "particule", "particles" -> PARTICLE;
             case "broadcast", "announce", "annonce", "diffuse", "bc" -> BROADCAST;
             case "player_command", "player_cmd", "run_as_player", "commande_joueur", "self_command" -> PLAYER_COMMAND;
+            case "actionbar", "action_bar", "barre_action", "hotbar_message", "ab" -> ACTIONBAR;
             default -> NONE;
         };
     }

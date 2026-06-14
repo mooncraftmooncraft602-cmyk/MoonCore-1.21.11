@@ -402,7 +402,8 @@ public final class AiPrompts {
                 - launch { power, up }  (propulse le joueur)  ·  particle { particle, count }
                 - broadcast { text }  (message a TOUT le serveur ; vs message = joueur declencheur seul)
                 - player_command { command }  (executee EN TANT QUE joueur, ses permissions ; vs command = console)
-                Placeholders disponibles dans text/title/subtitle/command/broadcast :
+                - actionbar { text }  (message dans la barre d'action, au-dessus de la hotbar)
+                Placeholders disponibles dans text/title/subtitle/command/broadcast/actionbar :
                   %player% %world% %x% %y% %z% %online%  (substitues a l'execution ; clés inconnues laissees telles quelles).
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;

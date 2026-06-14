@@ -56,6 +56,9 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.BROADCAST, ActionType.fromText("bc"));
         assertEquals(ActionType.PLAYER_COMMAND, ActionType.fromText("run_as_player"));
         assertEquals(ActionType.PLAYER_COMMAND, ActionType.fromText("commande_joueur"));
+        assertEquals(ActionType.ACTIONBAR, ActionType.fromText("actionbar"));
+        assertEquals(ActionType.ACTIONBAR, ActionType.fromText("action-bar"));
+        assertEquals(ActionType.ACTIONBAR, ActionType.fromText("barre_action"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }
