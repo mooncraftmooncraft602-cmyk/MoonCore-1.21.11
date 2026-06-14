@@ -87,6 +87,10 @@ public final class LootSubCommand implements SubCommand {
     private void info(CommandSender s, String[] a) {
         LootTableDef d = need(s, a); if (d == null) return;
         msg(s, "<gradient:#8a2be2:#c77dff>" + d.id() + "</gradient> <gray>— " + d.displayName());
+        java.util.Set<String> parents = LootManagerModule.referencingTables(module.definitions(), d.id());
+        if (!parents.isEmpty()) {
+            msg(s, " <gray>Référencée par : <white>" + String.join(", ", parents) + " <dark_gray>(imbrication)");
+        }
         if (d.pools().isEmpty()) { msg(s, " <gray>(aucun pool — <white>/moon loot addpool " + d.id() + "<gray>)"); return; }
         for (int i = 0; i < d.pools().size(); i++) {
             LootPool p = d.pools().get(i);
