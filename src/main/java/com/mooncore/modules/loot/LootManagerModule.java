@@ -47,6 +47,7 @@ public final class LootManagerModule extends AbstractModule {
             }
         }
 
+        plugin().rootCommand().register(new LootSubCommand(this));
         log().info("LootManager : " + defs.size() + " table(s) de loot.");
     }
 
