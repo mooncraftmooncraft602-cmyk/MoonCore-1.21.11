@@ -101,6 +101,10 @@ public final class MechanicSubCommand implements SubCommand {
             msg(s, "   <dark_gray>" + i + ". <white>" + ac.type().name().toLowerCase(Locale.ROOT)
                     + " <gray>" + ac.params());
         }
+        java.util.Set<String> dl = d.danglingLootTables(module::lootTableExists);
+        if (!dl.isEmpty()) msg(s, " <red>⚠ table(s) de loot inconnue(s) : <white>" + String.join(", ", dl));
+        java.util.Set<String> di = d.danglingCustomItems(module::customItemExists);
+        if (!di.isEmpty()) msg(s, " <red>⚠ item(s) custom inconnu(s) : <white>" + String.join(", ", di));
     }
 
     private void setTrigger(CommandSender s, String[] a) {
