@@ -211,22 +211,9 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
      * ou si la table est introuvable (le drop fixe reste utilisé en repli côté listener).
      */
     public java.util.List<ItemStack> lootDrops(CustomBlockDef def, java.util.random.RandomGenerator rng) {
-        java.util.List<ItemStack> out = new java.util.ArrayList<>();
-        if (def == null || !def.usesLootTable()) return out;
+        if (def == null || !def.usesLootTable()) return java.util.List.of();
         var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
-        if (loot == null) return out;
-        for (com.mooncore.modules.loot.LootResult r : loot.roll(def.lootTableId(), rng)) {
-            if (r.count() <= 0) continue;
-            ItemStack stack;
-            if (r.isCustom()) {
-                var ci = customItems();
-                stack = ci == null ? null : ci.create(r.itemId(), r.count());
-            } else {
-                stack = (r.material() == null || r.material().isAir()) ? null : new ItemStack(r.material(), r.count());
-            }
-            if (stack != null) out.add(stack);
-        }
-        return out;
+        return loot == null ? java.util.List.of() : loot.rollItems(def.lootTableId(), rng);  // matérialisation centralisée
     }
 
     public org.bukkit.Server server() { return Bukkit.getServer(); }

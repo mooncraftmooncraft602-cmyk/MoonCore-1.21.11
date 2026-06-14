@@ -551,24 +551,10 @@ public final class BossManagerModule extends AbstractModule {
      * ou si la table est introuvable.
      */
     public java.util.List<org.bukkit.inventory.ItemStack> lootDrops(BossDefinition def) {
-        java.util.List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
-        if (def == null || !def.usesLootTable()) return out;
+        if (def == null || !def.usesLootTable()) return java.util.List.of();
         var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
-        if (loot == null) return out;
-        var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
-        for (com.mooncore.modules.loot.LootResult r : loot.roll(def.lootTableId(),
-                java.util.concurrent.ThreadLocalRandom.current())) {
-            if (r.count() <= 0) continue;
-            org.bukkit.inventory.ItemStack stack;
-            if (r.isCustom()) {
-                stack = ci == null ? null : ci.create(r.itemId(), r.count());
-            } else {
-                stack = (r.material() == null || r.material().isAir())
-                        ? null : new org.bukkit.inventory.ItemStack(r.material(), r.count());
-            }
-            if (stack != null) out.add(stack);
-        }
-        return out;
+        return loot == null ? java.util.List.of()
+                : loot.rollItems(def.lootTableId(), java.util.concurrent.ThreadLocalRandom.current());  // matérialisation centralisée
     }
 
     public void addVanillaDrop(String bossId, org.bukkit.inventory.ItemStack item) {
