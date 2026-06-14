@@ -104,4 +104,21 @@ class MechanicDefTest {
         d.save(cfg);
         assertEquals(0.25, MechanicDef.load("x", cfg).chance(), 1e-9);
     }
+
+    @Test
+    void permissionNormalizationAndRoundTrip() {
+        MechanicDef d = new MechanicDef("x");
+        assertTrue(d.isPublic());                          // aucune par défaut
+        d.setPermission("  none  ");                       // 'none' → public
+        assertTrue(d.isPublic());
+        d.setPermission("mooncore.perk.fly");
+        assertFalse(d.isPublic());
+        assertEquals("mooncore.perk.fly", d.permission());
+
+        MemoryConfiguration cfg = new MemoryConfiguration();
+        d.save(cfg);
+        MechanicDef back = MechanicDef.load("x", cfg);
+        assertEquals("mooncore.perk.fly", back.permission());
+        assertFalse(back.isPublic());
+    }
 }

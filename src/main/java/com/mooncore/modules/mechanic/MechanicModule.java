@@ -84,6 +84,7 @@ public final class MechanicModule extends AbstractModule {
         for (MechanicDef d : byTrigger(trigger)) {
             if (trigger.usesMatchKey() && d.matchKey() != null
                     && !d.matchKey().equalsIgnoreCase(contextKey)) continue;
+            if (!d.isPublic() && !player.hasPermission(d.permission())) continue;
             if (!d.passes(java.util.concurrent.ThreadLocalRandom.current().nextDouble())) continue;
             if (!cooldowns.tryAcquire(d.id(), player.getUniqueId(), d.cooldownTicks(), now)) continue;
             executor.run(d, player);
@@ -97,7 +98,8 @@ public final class MechanicModule extends AbstractModule {
         long now = currentTick();
         for (MechanicDef d : intervals) {
             for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
-                if (cooldowns.tryAcquire(d.id(), p.getUniqueId(), d.intervalTicks(), now)
+                if ((d.isPublic() || p.hasPermission(d.permission()))
+                        && cooldowns.tryAcquire(d.id(), p.getUniqueId(), d.intervalTicks(), now)
                         && d.passes(java.util.concurrent.ThreadLocalRandom.current().nextDouble())) {
                     executor.run(d, p);
                 }

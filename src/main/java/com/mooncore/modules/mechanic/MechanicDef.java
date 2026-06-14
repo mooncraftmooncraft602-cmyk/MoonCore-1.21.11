@@ -26,6 +26,7 @@ public final class MechanicDef {
     private int cooldownTicks = 0;           // anti-spam par joueur (0 = aucun)
     private int intervalTicks = 100;         // période si trigger == INTERVAL
     private double chance = 1.0;             // probabilité de déclenchement [0..1] (1 = toujours)
+    private String permission = null;        // si non null : ne déclenche que si le joueur a cette permission
     private boolean enabled = true;
     private final List<MechanicAction> actions = new ArrayList<>();
 
@@ -57,6 +58,14 @@ public final class MechanicDef {
     /** True si le tirage {@code rngValue} ∈ [0,1) passe la probabilité {@code chance} (toujours vrai si chance ≥ 1). */
     public boolean passes(double rngValue) { return chance >= 1.0 || rngValue < chance; }
 
+    public String permission() { return permission; }
+    public void setPermission(String p) {
+        String t = (p == null) ? null : p.trim();
+        this.permission = (t == null || t.isEmpty() || t.equalsIgnoreCase("none")) ? null : t;
+    }
+    /** True si aucune permission n'est requise ({@code permission} null). */
+    public boolean isPublic() { return permission == null; }
+
     public boolean enabled() { return enabled; }
     public void setEnabled(boolean b) { this.enabled = b; }
 
@@ -77,6 +86,7 @@ public final class MechanicDef {
         s.set("cooldown-ticks", cooldownTicks);
         s.set("interval-ticks", intervalTicks);
         s.set("chance", chance);
+        s.set("permission", permission);
         s.set("enabled", enabled);
         for (int i = 0; i < actions.size(); i++) {
             MechanicAction a = actions.get(i);
@@ -97,6 +107,7 @@ public final class MechanicDef {
         d.setCooldownTicks(s.getInt("cooldown-ticks", 0));
         d.setIntervalTicks(s.getInt("interval-ticks", 100));
         d.setChance(s.getDouble("chance", 1.0));
+        d.setPermission(s.getString("permission", null));
         d.enabled = s.getBoolean("enabled", true);
 
         ConfigurationSection actionsSec = s.getConfigurationSection("actions");

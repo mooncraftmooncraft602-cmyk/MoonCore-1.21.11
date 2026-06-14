@@ -343,6 +343,7 @@ public final class AiPrompts {
                   "cooldown-ticks": entier (anti-spam par joueur ; 20 = 1 s ; 0 = aucun),
                   "interval-ticks": entier (si trigger INTERVAL : période d'exécution par joueur),
                   "chance": nombre 0.0-1.0 (probabilité de déclenchement ; 1.0 = toujours ; 0.1 = 10%),
+                  "permission": "noeud de permission requis (ex mooncore.perk.x) ; omets pour 'public'",
                   "enabled": booléen,
                   "actions": [
                     { "type": "<TYPE>", "params": { "<clé>": "<valeur>" } }
