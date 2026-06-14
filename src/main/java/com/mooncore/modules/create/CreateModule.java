@@ -6,6 +6,7 @@ import com.mooncore.modules.crop.CropManagerModule;
 import com.mooncore.modules.customblock.CustomBlockManagerModule;
 import com.mooncore.modules.customitem.CustomItemManagerModule;
 import com.mooncore.modules.loot.LootManagerModule;
+import com.mooncore.modules.mechanic.MechanicModule;
 
 /**
  * Commande de création/gestion de contenu unifiée (Étape E). Construit le {@link ContentTypeRegistry},
@@ -13,7 +14,7 @@ import com.mooncore.modules.loot.LootManagerModule;
  * S'active après les modules de contenu (softDepends) pour qu'ils soient présents.
  */
 @ModuleInfo(id = "create", name = "CreateCommand",
-        softDepends = {"custom-item", "custom-block", "crop", "boss", "loot", "ai-assistant"})
+        softDepends = {"custom-item", "custom-block", "crop", "boss", "loot", "mechanic", "ai-assistant"})
 public final class CreateModule extends AbstractModule {
 
     private final ContentTypeRegistry registry = new ContentTypeRegistry();
@@ -55,6 +56,11 @@ public final class CreateModule extends AbstractModule {
             LootContentHandler h = new LootContentHandler(loot);
             if (ai != null) h.withAi(ai.prompts(), ai.validator());
             registry.register(h);
+        }
+
+        MechanicModule mechanic = plugin().moduleManager().get(MechanicModule.class);
+        if (mechanic != null) {
+            registry.register(new MechanicContentHandler(mechanic));
         }
 
         plugin().rootCommand().register(new CreateSubCommand(registry));
