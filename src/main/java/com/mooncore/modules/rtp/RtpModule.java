@@ -74,12 +74,23 @@ public final class RtpModule extends AbstractModule implements SubCommand {
     }
 
     /** Cherche une position de surface sûre (jusqu'à 24 essais) ; null si rien trouvé. */
+    /**
+     * Tire une composante de coordonnée dans l'anneau {@code [min, radius]} (valeur absolue), signe aléatoire.
+     * Pur (RNG injecté). Garantit {@code min <= |résultat| <= radius} : jamais dans l'exclusion centrale ni
+     * hors du rayon. Package-private pour test.
+     */
+    static int ringComponent(java.util.random.RandomGenerator rng, int min, int radius) {
+        int m = Math.max(0, Math.min(min, radius));
+        int span = radius - m;                       // >= 0
+        int magnitude = m + (span <= 0 ? 0 : rng.nextInt(span + 1));
+        return (rng.nextBoolean() ? 1 : -1) * magnitude;
+    }
+
     private Location findSafe(World w) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         for (int i = 0; i < 24; i++) {
-            int sign1 = rnd.nextBoolean() ? 1 : -1, sign2 = rnd.nextBoolean() ? 1 : -1;
-            int x = sign1 * (min + rnd.nextInt(radius - min + 1));
-            int z = sign2 * (min + rnd.nextInt(radius - min + 1));
+            int x = ringComponent(rnd, min, radius);
+            int z = ringComponent(rnd, min, radius);
             int y = w.getHighestBlockYAt(x, z);
             if (y <= w.getMinHeight() + 1 || y >= w.getMaxHeight() - 2) continue;
             Material ground = w.getBlockAt(x, y, z).getType();
