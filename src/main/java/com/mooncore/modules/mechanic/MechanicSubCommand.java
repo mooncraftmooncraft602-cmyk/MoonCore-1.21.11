@@ -123,11 +123,17 @@ public final class MechanicSubCommand implements SubCommand {
         String v = a[2].equalsIgnoreCase("none") ? null : a[2];
         d.setMatchKey(v); module.put(d);
         msg(s, "<green>Filtre de " + d.id() + " = <white>" + (d.matchKey() == null ? "(tout)" : d.matchKey()));
-        // Avertit si le filtre cible un item custom inexistant.
-        if (d.matchKey() != null && d.matchKey().startsWith("custom:")
-                && !module.customItemExists(d.matchKey().substring("custom:".length()))) {
-            msg(s, "<yellow>⚠ Item custom inconnu : <white>" + d.matchKey().substring("custom:".length())
-                    + "<yellow> (le filtre ne correspondra à rien).");
+        // Avertit si le filtre custom: cible un contenu inexistant — bloc custom pour les triggers de bloc,
+        // sinon item custom (USE_ITEM, CONSUME_ITEM…). Évite un faux « item inconnu » pour un bloc valide.
+        if (d.matchKey() != null && d.matchKey().startsWith("custom:")) {
+            String customId = d.matchKey().substring("custom:".length());
+            TriggerType tr = d.trigger();
+            boolean blockTrigger = tr == TriggerType.BREAK_BLOCK || tr == TriggerType.PLACE_BLOCK || tr == TriggerType.INTERACT_BLOCK;
+            boolean exists = blockTrigger ? module.customBlockExists(customId) : module.customItemExists(customId);
+            if (!exists) {
+                msg(s, "<yellow>⚠ " + (blockTrigger ? "Bloc" : "Item") + " custom inconnu : <white>" + customId
+                        + "<yellow> (le filtre ne correspondra à rien).");
+            }
         }
     }
 

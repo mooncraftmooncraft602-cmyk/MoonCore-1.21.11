@@ -143,6 +143,13 @@ public final class MechanicModule extends AbstractModule {
         return ci != null && ci.create(id, 1) != null;
     }
 
+    /** True si un bloc custom MoonCore de cet id existe (pour valider un matchKey de trigger de bloc). */
+    public boolean customBlockExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var cb = services().get(com.mooncore.api.customblock.CustomBlockService.class).orElse(null);
+        return cb != null && cb.ids().contains(id.toLowerCase(Locale.ROOT));
+    }
+
     /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
     public String blockContextKey(org.bukkit.block.Block block) {
         if (block == null) return null;
