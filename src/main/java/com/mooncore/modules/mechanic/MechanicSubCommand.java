@@ -178,6 +178,14 @@ public final class MechanicSubCommand implements SubCommand {
                 msg(s, "<yellow>⚠ Table de loot inconnue : <white>" + table + "<yellow> (crée-la ou corrige l'id).");
             }
         }
+        // Avertit si une action give_item référence un item custom inexistant.
+        if (type == ActionType.GIVE_ITEM) {
+            String item = params.getOrDefault("item", "").trim();
+            if (item.toLowerCase(Locale.ROOT).startsWith("custom:")
+                    && !module.customItemExists(item.substring("custom:".length()))) {
+                msg(s, "<yellow>⚠ Item custom inconnu : <white>" + item.substring("custom:".length()) + "<yellow>.");
+            }
+        }
     }
 
     private void removeAction(CommandSender s, String[] a) {

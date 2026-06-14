@@ -122,6 +122,13 @@ public final class MechanicModule extends AbstractModule {
         return loot != null && loot.def(id) != null;
     }
 
+    /** True si un item custom MoonCore de cet id existe (pour la validation des actions {@code GIVE_ITEM}). */
+    public boolean customItemExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+        return ci != null && ci.create(id, 1) != null;
+    }
+
     /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
     public String blockContextKey(org.bukkit.block.Block block) {
         if (block == null) return null;
