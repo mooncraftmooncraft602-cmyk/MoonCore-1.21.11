@@ -295,15 +295,17 @@ public final class AiActionValidator {
         }
     }
 
-    /** Extrait le premier objet JSON, même entouré de texte/markdown (```json ... ```). */
-    private static String extractJson(String text) {
+    /** Extrait le premier objet JSON, même entouré de texte/markdown (```json ... ```). Package-private pour test. */
+    static String extractJson(String text) {
+        if (text == null) return null;
         int start = text.indexOf('{');
         int end = text.lastIndexOf('}');
         if (start < 0 || end <= start) return null;
         return text.substring(start, end + 1);
     }
 
-    private static String sanitizeId(String id) {
+    /** Normalise un id IA (slug, max 40, défaut ai_item). Package-private pour test. */
+    static String sanitizeId(String id) {
         String s = id.toLowerCase(Locale.ROOT).trim().replaceAll("[^a-z0-9_-]", "_");
         if (s.isBlank()) s = "ai_item";
         return s.length() > 40 ? s.substring(0, 40) : s;
