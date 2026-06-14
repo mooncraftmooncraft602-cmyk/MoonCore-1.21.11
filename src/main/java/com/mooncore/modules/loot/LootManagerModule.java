@@ -88,6 +88,60 @@ public final class LootManagerModule extends AbstractModule {
         return out;
     }
 
+    /**
+     * Ajoute à {@code out} chaque {@code "<type>:<id>"} de {@code idToTable} dont la table de loot associée
+     * égale {@code targetId} (insensible à la casse). Pur/statique → testable sans serveur.
+     */
+    static void addMatches(String type, Map<String, String> idToTable, String targetId, List<String> out) {
+        if (idToTable == null || targetId == null) return;
+        String t = targetId.toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> e : idToTable.entrySet()) {
+            String table = e.getValue();
+            if (table != null && table.toLowerCase(Locale.ROOT).equals(t)) out.add(type + ":" + e.getKey());
+        }
+    }
+
+    /**
+     * Recherche <b>inverse</b> : tous les contenus (cultures, blocs, boss, mécaniques) qui référencent la table
+     * {@code tableId}, sous forme {@code "<type>:<id>"}. Sert à avertir avant suppression d'une table encore
+     * utilisée (la récolte/casse/drop retomberait sur le repli fixe). Interroge chaque module défensivement.
+     */
+    public List<String> externalReferencesTo(String tableId) {
+        List<String> out = new java.util.ArrayList<>();
+        if (tableId == null || tableId.isBlank()) return out;
+        var mm = plugin().moduleManager();
+
+        var crop = mm.get(com.mooncore.modules.crop.CropManagerModule.class);
+        if (crop != null) {
+            Map<String, String> m = new LinkedHashMap<>();
+            for (var d : crop.definitions()) m.put(d.id(), d.lootTableId());
+            addMatches("crop", m, tableId, out);
+        }
+        var block = mm.get(com.mooncore.modules.customblock.CustomBlockManagerModule.class);
+        if (block != null) {
+            Map<String, String> m = new LinkedHashMap<>();
+            for (var d : block.rawDefs().values()) m.put(d.id(), d.lootTableId());
+            addMatches("block", m, tableId, out);
+        }
+        var boss = mm.get(com.mooncore.modules.boss.BossManagerModule.class);
+        if (boss != null) {
+            Map<String, String> m = new LinkedHashMap<>();
+            for (String id : boss.bossIds()) {
+                var def = boss.definition(id);
+                if (def != null) m.put(id, def.lootTableId());
+            }
+            addMatches("boss", m, tableId, out);
+        }
+        var mech = mm.get(com.mooncore.modules.mechanic.MechanicModule.class);
+        if (mech != null) {
+            String t = tableId.toLowerCase(Locale.ROOT);
+            for (var d : mech.definitions()) {
+                if (d.lootTablesUsed().contains(t)) out.add("mechanic:" + d.id());
+            }
+        }
+        return out;
+    }
+
     public boolean removeDef(String id) {
         String norm = id == null ? null : id.toLowerCase(Locale.ROOT);
         if (norm == null) return false;
