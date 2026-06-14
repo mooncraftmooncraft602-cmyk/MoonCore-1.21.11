@@ -448,6 +448,7 @@ public final class AiActionValidator {
         d.setMatchKey(str(root, "match", null));
         d.setCooldownTicks(intOf(root, "cooldown-ticks", 0));
         d.setIntervalTicks(intOf(root, "interval-ticks", 100));
+        d.setChance(dblOf(root, "chance", 1.0));
         d.setEnabled(bool(root, "enabled", true));
 
         if (root.has("actions") && root.get("actions").isJsonArray()) {

@@ -25,6 +25,7 @@ public final class MechanicDef {
     private String matchKey = null;          // bloc/item ciblé (Material ou custom:<id>) ; null = tout
     private int cooldownTicks = 0;           // anti-spam par joueur (0 = aucun)
     private int intervalTicks = 100;         // période si trigger == INTERVAL
+    private double chance = 1.0;             // probabilité de déclenchement [0..1] (1 = toujours)
     private boolean enabled = true;
     private final List<MechanicAction> actions = new ArrayList<>();
 
@@ -51,6 +52,11 @@ public final class MechanicDef {
     public int intervalTicks() { return intervalTicks; }
     public void setIntervalTicks(int t) { this.intervalTicks = Math.max(1, Math.min(1_728_000, t)); }
 
+    public double chance() { return chance; }
+    public void setChance(double c) { this.chance = Math.max(0.0, Math.min(1.0, c)); }
+    /** True si le tirage {@code rngValue} ∈ [0,1) passe la probabilité {@code chance} (toujours vrai si chance ≥ 1). */
+    public boolean passes(double rngValue) { return chance >= 1.0 || rngValue < chance; }
+
     public boolean enabled() { return enabled; }
     public void setEnabled(boolean b) { this.enabled = b; }
 
@@ -70,6 +76,7 @@ public final class MechanicDef {
         s.set("match", matchKey);
         s.set("cooldown-ticks", cooldownTicks);
         s.set("interval-ticks", intervalTicks);
+        s.set("chance", chance);
         s.set("enabled", enabled);
         for (int i = 0; i < actions.size(); i++) {
             MechanicAction a = actions.get(i);
@@ -89,6 +96,7 @@ public final class MechanicDef {
         d.setMatchKey(s.getString("match", null));
         d.setCooldownTicks(s.getInt("cooldown-ticks", 0));
         d.setIntervalTicks(s.getInt("interval-ticks", 100));
+        d.setChance(s.getDouble("chance", 1.0));
         d.enabled = s.getBoolean("enabled", true);
 
         ConfigurationSection actionsSec = s.getConfigurationSection("actions");

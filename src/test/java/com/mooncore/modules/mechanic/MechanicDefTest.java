@@ -77,4 +77,31 @@ class MechanicDefTest {
         d.setIntervalTicks(0);
         assertEquals(1, d.intervalTicks());                // plancher 1
     }
+
+    @Test
+    void chanceClampsAndGates() {
+        MechanicDef d = new MechanicDef("x");
+        assertEquals(1.0, d.chance(), 1e-9);               // défaut : toujours
+        assertTrue(d.passes(0.99));                        // chance 1.0 → tout passe
+        d.setChance(0.3);
+        assertEquals(0.3, d.chance(), 1e-9);
+        assertTrue(d.passes(0.0));                         // tirage < 0.3 → passe
+        assertTrue(d.passes(0.29));
+        assertFalse(d.passes(0.3));                        // borne exacte → échoue
+        assertFalse(d.passes(0.9));
+        d.setChance(5.0);
+        assertEquals(1.0, d.chance(), 1e-9);               // clampé à 1
+        d.setChance(-2.0);
+        assertEquals(0.0, d.chance(), 1e-9);               // clampé à 0
+        assertFalse(d.passes(0.0));                        // chance 0 → rien ne passe
+    }
+
+    @Test
+    void chanceRoundTrips() {
+        MechanicDef d = new MechanicDef("x");
+        d.setChance(0.25);
+        MemoryConfiguration cfg = new MemoryConfiguration();
+        d.save(cfg);
+        assertEquals(0.25, MechanicDef.load("x", cfg).chance(), 1e-9);
+    }
 }

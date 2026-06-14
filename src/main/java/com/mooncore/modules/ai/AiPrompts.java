@@ -342,6 +342,7 @@ public final class AiPrompts {
                   "match": "objet ciblé : Material (ex DIAMOND) ou custom:<id> ou EntityType ou cause de dégâts (FALL, FIRE...) ; omets pour 'tout'",
                   "cooldown-ticks": entier (anti-spam par joueur ; 20 = 1 s ; 0 = aucun),
                   "interval-ticks": entier (si trigger INTERVAL : période d'exécution par joueur),
+                  "chance": nombre 0.0-1.0 (probabilité de déclenchement ; 1.0 = toujours ; 0.1 = 10%),
                   "enabled": booléen,
                   "actions": [
                     { "type": "<TYPE>", "params": { "<clé>": "<valeur>" } }

@@ -40,6 +40,7 @@ public final class MechanicSubCommand implements SubCommand {
                 case "match" -> setMatch(s, a);
                 case "cooldown" -> setCooldown(s, a);
                 case "interval" -> setInterval(s, a);
+                case "chance" -> setChance(s, a);
                 case "enable" -> setEnabled(s, a);
                 case "addaction" -> addAction(s, a);
                 case "clearactions" -> clearActions(s, a);
@@ -84,7 +85,8 @@ public final class MechanicSubCommand implements SubCommand {
                 + (d.matchKey() != null ? " <gray>match <white>" + d.matchKey() : "")
                 + " <gray>· cooldown <white>" + d.cooldownTicks() + "t"
                 + (d.trigger() == TriggerType.INTERVAL ? " <gray>· intervalle <white>" + d.intervalTicks() + "t" : ""));
-        msg(s, " <gray>Active : <white>" + d.enabled() + " <gray>· exécutable : <white>" + d.isRunnable());
+        msg(s, " <gray>Probabilité : <white>" + Math.round(d.chance() * 100) + "% <gray>· active : <white>"
+                + d.enabled() + " <gray>· exécutable : <white>" + d.isRunnable());
         for (int i = 0; i < d.actions().size(); i++) {
             MechanicAction ac = d.actions().get(i);
             msg(s, "   <dark_gray>" + i + ". <white>" + ac.type().name().toLowerCase(Locale.ROOT)
@@ -121,6 +123,13 @@ public final class MechanicSubCommand implements SubCommand {
         if (a.length < 3) { msg(s, "<red>/moon mechanic interval <id> <ticks>"); return; }
         d.setIntervalTicks(Integer.parseInt(a[2])); module.put(d);
         msg(s, "<green>Intervalle de " + d.id() + " = <white>" + d.intervalTicks() + "t");
+    }
+
+    private void setChance(CommandSender s, String[] a) {
+        MechanicDef d = need(s, a); if (d == null) return;
+        if (a.length < 3) { msg(s, "<red>/moon mechanic chance <id> <0.0-1.0>  (ex 0.1 = 10%)"); return; }
+        d.setChance(Double.parseDouble(a[2])); module.put(d);
+        msg(s, "<green>Probabilité de " + d.id() + " = <white>" + Math.round(d.chance() * 100) + "%");
     }
 
     private void setEnabled(CommandSender s, String[] a) {
@@ -178,7 +187,7 @@ public final class MechanicSubCommand implements SubCommand {
         String[] l = {
                 "create <id> / delete <id> / list / info <id> / reload",
                 "trigger <id> <type>  ·  match <id> <Material|custom:id|EntityType|none>",
-                "cooldown <id> <ticks>  ·  interval <id> <ticks>  ·  enable <id> <on|off>",
+                "cooldown <id> <ticks>  ·  interval <id> <ticks>  ·  chance <id> <0.0-1.0>  ·  enable <id> <on|off>",
                 "addaction <id> <type> [clé=valeur ...]  ·  clearactions <id>",
                 "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)"
         };
@@ -193,12 +202,12 @@ public final class MechanicSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "trigger", "match", "cooldown",
-                    "interval", "enable", "addaction", "clearactions", "test", "reload"), a[0]);
+                    "interval", "chance", "enable", "addaction", "clearactions", "test", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "trigger", "match", "cooldown", "interval", "enable",
+                case "delete", "info", "trigger", "match", "cooldown", "interval", "chance", "enable",
                      "addaction", "clearactions", "test" -> filter(new ArrayList<>(module.ids()), a[1]);
                 default -> List.of();
             };
