@@ -27,12 +27,16 @@ public final class AiConfig {
     private final int texturePalette;
     private final boolean textureDither;
     private final String imageEndpointOverride;   // endpoint image indépendant (service SD local)
+    private final boolean localModelEnabled;      // modèle local de palettes (sidecar Python) — forge
+    private final String localModelEndpoint;
+    private final int localModelTimeoutSeconds;
 
     private AiConfig(String provider, String model, String apiKey, String endpointOverride,
                      double temperature, int timeoutSeconds, int maxRequestsPerMinute,
                      int maxOutputTokens, List<String> availableModels,
                      boolean generateTextures, String imageModel, int textureSize,
-                     int texturePalette, boolean textureDither, String imageEndpointOverride) {
+                     int texturePalette, boolean textureDither, String imageEndpointOverride,
+                     boolean localModelEnabled, String localModelEndpoint, int localModelTimeoutSeconds) {
         this.provider = provider;
         this.model = model;
         this.apiKey = apiKey;
@@ -48,6 +52,9 @@ public final class AiConfig {
         this.texturePalette = texturePalette;
         this.textureDither = textureDither;
         this.imageEndpointOverride = imageEndpointOverride;
+        this.localModelEnabled = localModelEnabled;
+        this.localModelEndpoint = localModelEndpoint;
+        this.localModelTimeoutSeconds = localModelTimeoutSeconds;
     }
 
     public static AiConfig from(FileConfiguration cfg) {
@@ -71,8 +78,12 @@ public final class AiConfig {
         int texPalette = cfg.getInt("texture-palette", 0); // 0 = pas de quantization
         boolean texDither = cfg.getBoolean("texture-dither", false);
         String imgEndpoint = cfg.getString("image-endpoint", "");
+        boolean lmEnabled = cfg.getBoolean("local-model.enabled", false);
+        String lmEndpoint = cfg.getString("local-model.endpoint", "http://127.0.0.1:8770/palette");
+        int lmTimeout = cfg.getInt("local-model.timeout-seconds", 8);
         return new AiConfig(provider, model, apiKey, endpoint, temp, timeout, rate, maxTokens, models,
-                genTex, imageModel, texSize, texPalette, texDither, imgEndpoint);
+                genTex, imageModel, texSize, texPalette, texDither, imgEndpoint,
+                lmEnabled, lmEndpoint, lmTimeout);
     }
 
     public String provider() { return provider; }
@@ -92,6 +103,10 @@ public final class AiConfig {
 
     public boolean hasApiKey() { return apiKey != null && !apiKey.isBlank(); }
 
+    public boolean localModelEnabled() { return localModelEnabled; }
+    public String localModelEndpoint() { return localModelEndpoint; }
+    public int localModelTimeoutSeconds() { return localModelTimeoutSeconds; }
+
     /** Endpoint de génération d'image dérivé de l'endpoint de chat (même base API). */
     public String imageEndpoint() {
         // Endpoint image dédié (ex. service Stable Diffusion local) — prioritaire.
@@ -110,6 +125,7 @@ public final class AiConfig {
     public AiConfig withModel(String newModel) {
         return new AiConfig(provider, newModel, apiKey, endpointOverride, temperature,
                 timeoutSeconds, maxRequestsPerMinute, maxOutputTokens, availableModels,
-                generateTextures, imageModel, textureSize, texturePalette, textureDither, imageEndpointOverride);
+                generateTextures, imageModel, textureSize, texturePalette, textureDither, imageEndpointOverride,
+                localModelEnabled, localModelEndpoint, localModelTimeoutSeconds);
     }
 }

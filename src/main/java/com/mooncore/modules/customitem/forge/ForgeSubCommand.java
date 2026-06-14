@@ -37,16 +37,35 @@ public final class ForgeSubCommand implements SubCommand {
         Player p = (Player) s;
         int i = 0;
         boolean ai = a.length > 0 && a[0].equalsIgnoreCase("ai");
-        if (ai) i = 1;
+        boolean model = a.length > 0 && (a[0].equalsIgnoreCase("model") || a[0].equalsIgnoreCase("local"));
+        if (ai || model) i = 1;
         if (a.length < i + 2) {
-            msg(p, "<gray>/moon forge [ai] <textureBase> <nom…>");
-            msg(p, "<dark_gray>ex : /moon forge diamond_sword Épée du Vent");
+            msg(p, "<gray>/moon forge [ai|model] <textureBase> <nom…>");
+            msg(p, "<dark_gray>ex : /moon forge diamond_sword Épée du Vent  ·  /moon forge model diamond_sword Épée du Vent");
             return;
         }
         String base = a[i];
         String name = String.join(" ", java.util.Arrays.copyOfRange(a, i + 1, a.length)).trim();
         ForgeService svc = new ForgeService(plugin, module);
         double strength = 0.9;
+
+        if (model) {
+            // Modèle local auto-hébergé (sidecar) : palette async, forge resynchronisée sur le thread principal.
+            String endpoint = "http://127.0.0.1:8770/palette";
+            int timeout = 8;
+            AiAdminModule am = plugin.moduleManager().get(AiAdminModule.class);
+            if (am != null && am.client() != null) {
+                endpoint = am.client().config().localModelEndpoint();
+                timeout = am.client().config().localModelTimeoutSeconds();
+            }
+            msg(p, "<gray>🜂 Modèle local : palette pour <white>" + name + "<gray>… <dark_gray>(repli auto si éteint)");
+            new LocalModelPaletteSource(endpoint, timeout).resolve(name).whenComplete((palette, err) ->
+                    plugin.schedulers().sync(() -> {
+                        ThemePalette pal = (err != null || palette == null) ? PaletteResolver.fromName(name) : palette;
+                        msg(p, svc.forge(p, base, name, pal, strength).message());
+                    }));
+            return;
+        }
 
         if (!ai) {
             ForgeService.Result r = svc.forge(p, base, name, null, strength);
@@ -76,10 +95,12 @@ public final class ForgeSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             List<String> opts = new ArrayList<>(COMMON_BASES);
+            opts.add(0, "model");
             opts.add(0, "ai");
             return filter(opts, a[0]);
         }
-        if (a.length == 2 && a[0].equalsIgnoreCase("ai")) return filter(COMMON_BASES, a[1]);
+        if (a.length == 2 && (a[0].equalsIgnoreCase("ai") || a[0].equalsIgnoreCase("model") || a[0].equalsIgnoreCase("local")))
+            return filter(COMMON_BASES, a[1]);
         return List.of();
     }
 

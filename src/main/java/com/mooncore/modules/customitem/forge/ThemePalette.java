@@ -33,6 +33,24 @@ public final class ThemePalette {
     public String name() { return name; }
     public List<Stop> stops() { return List.copyOf(stops); }
 
+    /**
+     * Construit une rampe à partir d'une liste de couleurs (≥1), réparties uniformément en luminance de la
+     * 1re (ombres) à la dernière (hautes lumières). Sert aux palettes du modèle local (dégradés à N stops).
+     * Les couleurs doivent être pré-triées sombre→clair pour un ombrage cohérent.
+     */
+    public static ThemePalette ofColors(String name, List<Integer> colorsDarkToLight) {
+        if (colorsDarkToLight == null || colorsDarkToLight.isEmpty()) {
+            return new ThemePalette(name, List.of(new Stop(0.5, 0x808080)));
+        }
+        int n = colorsDarkToLight.size();
+        List<Stop> s = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            double pos = n == 1 ? 0.5 : (double) i / (n - 1);
+            s.add(new Stop(pos, colorsDarkToLight.get(i) & 0xFFFFFF));
+        }
+        return new ThemePalette(name, s);
+    }
+
     /** Construit une rampe sombre→moyen→clair (3 teintes) : le cas courant d'un thème. */
     public static ThemePalette ramp(String name, int dark, int mid, int light) {
         List<Stop> s = new ArrayList<>();

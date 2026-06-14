@@ -34,3 +34,10 @@ logs/
 
 # Fichiers temporaires javac (lint)
 javac.*.args
+
+# Forge model — artefacts régénérables (gros / locaux), pas le code
+tools/forge-model/.venv/
+tools/forge-model/data/
+tools/forge-model/model.pt
+tools/forge-model/*.log
+tools/forge-model/__pycache__/

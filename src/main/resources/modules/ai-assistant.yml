@@ -66,3 +66,11 @@ limits:
     pve_damage: 50.0
     movement_speed: 30.0
     cooldown_reduction: 40.0
+
+# ============= MODELE LOCAL DE PALETTES (forge) =============
+# Petit GPT auto-heberge (sidecar Python, tools/forge-model) qui decide les couleurs/degrades
+# pour /moon forge model <base> <nom>. Le serveur fonctionne sans lui (repli sur le moteur deterministe).
+local-model:
+  enabled: false                              # mets true apres avoir lance run.bat
+  endpoint: "http://127.0.0.1:8770/palette"
+  timeout-seconds: 8
