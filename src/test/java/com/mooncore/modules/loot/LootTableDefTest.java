@@ -116,6 +116,25 @@ class LootTableDefTest {
     }
 
     @Test
+    void referencingTablesFindsParents() {
+        LootTableDef dungeon = new LootTableDef("dungeon");
+        dungeon.add(new LootPool(1, 1).add(new LootEntry(null, Material.AIR, 1, 1, 1, "rare")));
+        LootTableDef boss = new LootTableDef("boss");
+        boss.add(new LootPool(1, 1).add(new LootEntry(null, Material.AIR, 1, 1, 1, "rare")));
+        LootTableDef rare = new LootTableDef("rare");
+        rare.add(new LootPool(1, 1).add(new LootEntry(null, Material.DIAMOND, 1, 1, 1)));
+        java.util.List<LootTableDef> all = java.util.List.of(dungeon, boss, rare);
+
+        // dungeon et boss référencent "rare".
+        assertEquals(java.util.Set.of("dungeon", "boss"),
+                com.mooncore.modules.loot.LootManagerModule.referencingTables(all, "rare"));
+        // personne ne référence "dungeon".
+        assertTrue(com.mooncore.modules.loot.LootManagerModule.referencingTables(all, "dungeon").isEmpty());
+        // robustesse aux nulls.
+        assertTrue(com.mooncore.modules.loot.LootManagerModule.referencingTables(null, "rare").isEmpty());
+    }
+
+    @Test
     void countRangeIsClampedConsistently() {
         // min > max fourni → max relevé au min ; valeurs négatives clampées à 0.
         LootEntry e = new LootEntry(null, Material.STONE, 1, 9, 2);

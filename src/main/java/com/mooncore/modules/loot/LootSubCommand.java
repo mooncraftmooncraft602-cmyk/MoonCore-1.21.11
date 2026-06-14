@@ -63,7 +63,13 @@ public final class LootSubCommand implements SubCommand {
 
     private void delete(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>/moon loot delete <id>"); return; }
-        msg(s, module.removeDef(a[1]) ? "<green>Supprimée : " + a[1] : "<red>Id inconnu.");
+        java.util.Set<String> referencing = LootManagerModule.referencingTables(module.definitions(), a[1]);
+        boolean removed = module.removeDef(a[1]);
+        if (!removed) { msg(s, "<red>Id inconnu."); return; }
+        msg(s, "<green>Supprimée : " + a[1]);
+        if (!referencing.isEmpty()) {
+            msg(s, "<yellow>⚠ Table(s) qui la référençai(en)t (désormais pendante(s)) : <white>" + String.join(", ", referencing));
+        }
     }
 
     private void list(CommandSender s) {

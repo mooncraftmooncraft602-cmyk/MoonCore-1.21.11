@@ -77,6 +77,17 @@ public final class LootManagerModule extends AbstractModule {
         }
     }
 
+    /** Ids des tables de {@code all} qui référencent {@code targetId} (imbrication). Pur statique, testable. */
+    public static java.util.Set<String> referencingTables(java.util.Collection<LootTableDef> all, String targetId) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        if (targetId == null || all == null) return out;
+        String t = targetId.toLowerCase(Locale.ROOT);
+        for (LootTableDef d : all) {
+            if (d != null && !d.id().equals(t) && d.referencedTables().contains(t)) out.add(d.id());
+        }
+        return out;
+    }
+
     public boolean removeDef(String id) {
         String norm = id == null ? null : id.toLowerCase(Locale.ROOT);
         if (norm == null) return false;
