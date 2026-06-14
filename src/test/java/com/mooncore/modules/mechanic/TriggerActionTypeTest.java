@@ -34,6 +34,11 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.MONEY, ActionType.fromText("argent"));
         assertEquals(ActionType.POTION, ActionType.fromText("effet"));
         assertEquals(ActionType.TELEPORT, ActionType.fromText("tp"));
+        assertEquals(ActionType.LIGHTNING, ActionType.fromText("foudre"));
+        assertEquals(ActionType.SPAWN_MOB, ActionType.fromText("summon"));
+        assertEquals(ActionType.TITLE, ActionType.fromText("titre"));
+        assertEquals(ActionType.CLEAR_EFFECTS, ActionType.fromText("clear-effects"));
+        assertEquals(ActionType.FEED, ActionType.fromText("nourris"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }

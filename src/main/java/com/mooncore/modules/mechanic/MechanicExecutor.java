@@ -67,8 +67,38 @@ public final class MechanicExecutor {
                         .ifPresent(pr -> pr.addXp(p.getUniqueId(), amt, "mechanic"));
             }
             case TELEPORT -> teleport(a, p);
+            case LIGHTNING -> {
+                boolean dmg = Boolean.parseBoolean(a.param("damage", "true"));
+                if (dmg) p.getWorld().strikeLightning(p.getLocation());
+                else p.getWorld().strikeLightningEffect(p.getLocation());
+            }
+            case SPAWN_MOB -> spawnMob(a, p);
+            case TITLE -> p.showTitle(net.kyori.adventure.title.Title.title(
+                    Text.mm(placeholders(a.param("title", ""), p)),
+                    Text.mm(placeholders(a.param("subtitle", ""), p))));
+            case CLEAR_EFFECTS -> {
+                for (PotionEffect e : new java.util.ArrayList<>(p.getActivePotionEffects())) {
+                    p.removePotionEffect(e.getType());
+                }
+            }
+            case FEED -> {
+                int amt = a.intParam("amount", 20);
+                p.setFoodLevel(Math.max(0, Math.min(20, p.getFoodLevel() + amt)));
+                p.setSaturation(Math.min(20f, p.getSaturation() + amt));
+            }
             case NONE -> { /* ignoré */ }
         }
+    }
+
+    private void spawnMob(MechanicAction a, Player p) {
+        String name = a.param("entity", "").toUpperCase(Locale.ROOT).trim();
+        if (name.isEmpty()) return;
+        org.bukkit.entity.EntityType type;
+        try { type = org.bukkit.entity.EntityType.valueOf(name); }
+        catch (IllegalArgumentException ex) { return; }
+        if (!type.isSpawnable()) return;
+        int count = Math.max(1, Math.min(20, a.intParam("count", 1)));
+        for (int i = 0; i < count; i++) p.getWorld().spawnEntity(p.getLocation(), type);
     }
 
     private void playSound(MechanicAction a, Player p) {

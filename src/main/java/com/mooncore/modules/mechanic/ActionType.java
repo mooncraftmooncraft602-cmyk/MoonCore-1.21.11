@@ -18,6 +18,11 @@ public enum ActionType {
     HEAL,       // params: amount
     XP,         // params: amount (progression)
     TELEPORT,   // params: x, y, z [, world] OU target=spawn
+    LIGHTNING,  // params: damage (true/false) — éclair à la position du joueur
+    SPAWN_MOB,  // params: entity (EntityType), count
+    TITLE,      // params: title, subtitle (MiniMessage, %player%)
+    CLEAR_EFFECTS, // aucun paramètre : retire tous les effets de potion
+    FEED,       // params: amount (points de faim) — recharge la nourriture
     NONE;       // inerte (non reconnu)
 
     /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
@@ -35,6 +40,11 @@ public enum ActionType {
             case "heal", "soin", "soigne", "regen" -> HEAL;
             case "xp", "exp", "experience" -> XP;
             case "teleport", "tp", "teleporte" -> TELEPORT;
+            case "lightning", "eclair", "foudre", "strike" -> LIGHTNING;
+            case "spawn_mob", "spawn", "summon", "invoque", "spawn_entity" -> SPAWN_MOB;
+            case "title", "titre" -> TITLE;
+            case "clear_effects", "clear", "cure", "retire_effets", "milk" -> CLEAR_EFFECTS;
+            case "feed", "nourris", "faim", "food" -> FEED;
             default -> NONE;
         };
     }

@@ -355,6 +355,8 @@ public final class AiPrompts {
                 - give_item{ item, amount }              (item = Material ou custom:<id>)
                 - money    { amount }   ·  xp { amount }  ·  damage { amount }  ·  heal { amount }
                 - teleport { x, y, z, world }  OU  { target: "spawn" }
+                - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
+                - clear_effects { }  ·  feed { amount }
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }

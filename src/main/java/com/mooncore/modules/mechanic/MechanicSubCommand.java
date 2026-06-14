@@ -183,7 +183,8 @@ public final class MechanicSubCommand implements SubCommand {
                 "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
-        msg(s, "<gray>Types action : message, command, sound, potion, give_item, money, damage, heal, xp, teleport.");
+        msg(s, "<gray>Types action : message, command, sound, potion, give_item, money, damage, heal, xp,");
+        msg(s, "<gray>  teleport, lightning, spawn_mob, title, clear_effects, feed.");
     }
 
     private static void msg(CommandSender s, String mm) { s.sendMessage(Text.mm(mm)); }
