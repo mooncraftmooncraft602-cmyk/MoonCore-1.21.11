@@ -196,7 +196,8 @@ public final class BossManagerModule extends AbstractModule {
                     b.getString("bar-color", "PURPLE"),
                     emptyToNull(b.getString("texture-key", "")),
                     b.getInt("texture-custom-model-data", textureModelData(id)),
-                    equipment);
+                    equipment,
+                    emptyToNull(b.getString("loot-table", "")));
         } catch (IllegalArgumentException e) {
             log().warn("Boss invalide ignoré : " + id + " (" + e.getMessage() + ")");
             return null;
@@ -477,6 +478,10 @@ public final class BossManagerModule extends AbstractModule {
             for (org.bukkit.inventory.ItemStack it : vanillaDrops(def.id())) {
                 loc.getWorld().dropItemNaturally(loc, it.clone());
             }
+            // Table de loot référencée (en plus des drops vanilla et de la récompense au top-damager).
+            for (org.bukkit.inventory.ItemStack it : lootDrops(def)) {
+                loc.getWorld().dropItemNaturally(loc, it);
+            }
         }
 
         eventBus().post(new BossDefeatedEvent(def.id(), top, Map.copyOf(ab.damageByPlayer())));
@@ -538,6 +543,32 @@ public final class BossManagerModule extends AbstractModule {
 
     public java.util.List<org.bukkit.inventory.ItemStack> vanillaDrops(String bossId) {
         return vanillaDrops.getOrDefault(bossId.toLowerCase(Locale.ROOT), java.util.List.of());
+    }
+
+    /**
+     * Tire la table de loot référencée par le boss ({@link BossDefinition#lootTableId}) et matérialise les
+     * résultats en ItemStacks. Liste vide si le boss n'utilise pas de table, si le module loot est absent
+     * ou si la table est introuvable.
+     */
+    public java.util.List<org.bukkit.inventory.ItemStack> lootDrops(BossDefinition def) {
+        java.util.List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
+        if (def == null || !def.usesLootTable()) return out;
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        if (loot == null) return out;
+        var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+        for (com.mooncore.modules.loot.LootResult r : loot.roll(def.lootTableId(),
+                java.util.concurrent.ThreadLocalRandom.current())) {
+            if (r.count() <= 0) continue;
+            org.bukkit.inventory.ItemStack stack;
+            if (r.isCustom()) {
+                stack = ci == null ? null : ci.create(r.itemId(), r.count());
+            } else {
+                stack = (r.material() == null || r.material().isAir())
+                        ? null : new org.bukkit.inventory.ItemStack(r.material(), r.count());
+            }
+            if (stack != null) out.add(stack);
+        }
+        return out;
     }
 
     public void addVanillaDrop(String bossId, org.bukkit.inventory.ItemStack item) {

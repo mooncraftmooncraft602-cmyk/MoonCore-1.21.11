@@ -21,7 +21,8 @@ public record BossDefinition(
         String barColor,
         String textureKey,
         int textureCustomModelData,
-        java.util.Map<String, String> equipment) {
+        java.util.Map<String, String> equipment,
+        String lootTableId) {
 
     public BossDefinition {
         if (phases == null || phases.isEmpty()) {
@@ -30,5 +31,9 @@ public record BossDefinition(
         if (maxHealth <= 0) maxHealth = 100;
         if (textureKey != null && textureKey.isBlank()) textureKey = null;
         if (equipment == null) equipment = java.util.Map.of();
+        if (lootTableId != null && lootTableId.isBlank()) lootTableId = null;
     }
+
+    /** True si la défaite du boss doit tirer une table de loot (en plus de la récompense/drops existants). */
+    public boolean usesLootTable() { return lootTableId != null; }
 }

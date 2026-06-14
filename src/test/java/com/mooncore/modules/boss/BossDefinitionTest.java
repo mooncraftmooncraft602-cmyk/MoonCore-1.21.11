@@ -19,7 +19,20 @@ class BossDefinitionTest {
     private BossDefinition def(double maxHealth, List<BossPhase> phases, String textureKey,
                               Map<String, String> equipment) {
         return new BossDefinition("b", "Boss", EntityType.ZOMBIE, maxHealth, 8, 0.25, 0,
-                phases, null, 0, "PURPLE", textureKey, 0, equipment);
+                phases, null, 0, "PURPLE", textureKey, 0, equipment, null);
+    }
+
+    @Test
+    void lootTableNormalizationAndFlag() {
+        BossDefinition none = new BossDefinition("b", "Boss", EntityType.ZOMBIE, 100, 8, 0.25, 0,
+                List.of(), null, 0, "PURPLE", null, 0, Map.of(), "   ");  // blanc → null
+        assertNull(none.lootTableId());
+        assertTrue(!none.usesLootTable());
+
+        BossDefinition with = new BossDefinition("b", "Boss", EntityType.ZOMBIE, 100, 8, 0.25, 0,
+                List.of(), null, 0, "PURPLE", null, 0, Map.of(), "boss_drops");
+        assertEquals("boss_drops", with.lootTableId());
+        assertTrue(with.usesLootTable());
     }
 
     @Test

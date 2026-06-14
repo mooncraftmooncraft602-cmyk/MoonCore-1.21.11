@@ -214,6 +214,7 @@ public final class AiPrompts {
                   "armor": nombre (0 à 30),
                   "bar-color": un de [PURPLE, RED, BLUE, GREEN, YELLOW, WHITE, PINK],
                   "progression-xp": entier (xp donné à la mort),
+                  "loot-table": "id optionnel d'une table de loot tirée à la défaite (en plus de la récompense)",
                   "phases": {
                     "phase1": { "from-percent": 100, "abilities": [
                        { "type": "<TYPE>", "cooldown-ticks": 100, "magnitude": 4, "count": 2, "radius": 8 }
