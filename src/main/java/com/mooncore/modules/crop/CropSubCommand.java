@@ -101,6 +101,12 @@ public final class CropSubCommand implements SubCommand {
                     + " <gray>· graines rendues <white>" + d.seedReturnMin() + "–" + d.seedReturnMax()
                     + " <gray>· replantable <white>" + d.replantable());
         }
+        if (d.seedCustomId() != null && !module.customItemExists(d.seedCustomId())) {
+            msg(s, " <red>⚠ graine custom inconnue : <white>" + d.seedCustomId() + "<red> (aucune graine ne sera donnée/plantable).");
+        }
+        if (d.dropItemId() != null && !module.customItemExists(d.dropItemId())) {
+            msg(s, " <red>⚠ drop custom inconnu : <white>" + d.dropItemId() + "<red> (récolte vide sur ce repli).");
+        }
     }
 
     private void setSeed(CommandSender s, String[] a) {

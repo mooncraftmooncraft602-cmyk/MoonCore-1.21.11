@@ -237,6 +237,13 @@ public final class CropManagerModule extends AbstractModule {
         return services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
     }
 
+    /** True si un item custom MoonCore de cet id existe (pour avertir d'une graine/drop custom pendant). */
+    public boolean customItemExists(String id) {
+        if (id == null || id.isBlank()) return false;
+        var ci = customItems();
+        return ci != null && ci.create(id, 1) != null;
+    }
+
     /** Trouve la culture dont le bloc support == {@code placeOn} ET dont la graine correspond à l'item en main. */
     public CropDef matchSeed(org.bukkit.inventory.ItemStack item, org.bukkit.Material placeOn) {
         if (item == null || item.getType().isAir()) return null;
