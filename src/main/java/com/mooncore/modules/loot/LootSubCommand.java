@@ -72,7 +72,9 @@ public final class LootSubCommand implements SubCommand {
         msg(s, "<gradient:#8a2be2:#c77dff>Tables de loot</gradient> <dark_gray>(" + defs.size() + ")");
         for (LootTableDef d : defs) {
             int entries = d.pools().stream().mapToInt(p -> p.entries().size()).sum();
-            msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.pools().size() + " pool(s), " + entries + " entrée(s))");
+            boolean dangling = !d.danglingReferences(id -> module.def(id) != null).isEmpty();
+            msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.pools().size() + " pool(s), " + entries + " entrée(s))"
+                    + (dangling ? " <red>⚠ réf. pendante" : ""));
         }
     }
 
@@ -212,8 +214,7 @@ public final class LootSubCommand implements SubCommand {
         LootTableDef d = need(s, a); if (d == null) return;
         java.util.Set<String> refs = d.referencedTables();
         if (refs.isEmpty()) { msg(s, "<green>✔ " + d.id() + " : aucune table imbriquée référencée."); return; }
-        java.util.List<String> dangling = new ArrayList<>();
-        for (String ref : refs) if (module.def(ref) == null) dangling.add(ref);
+        java.util.Set<String> dangling = d.danglingReferences(id -> module.def(id) != null);
         if (dangling.isEmpty()) {
             msg(s, "<green>✔ " + d.id() + " : " + refs.size() + " référence(s) imbriquée(s), toutes valides.");
         } else {

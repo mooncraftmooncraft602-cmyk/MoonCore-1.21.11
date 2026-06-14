@@ -100,6 +100,22 @@ class LootTableDefTest {
     }
 
     @Test
+    void danglingReferencesUsesInjectedExistencePredicate() {
+        LootTableDef t = new LootTableDef("dungeon");
+        t.add(new LootPool(1, 1)
+                .add(new LootEntry(null, Material.AIR, 1, 1, 1, "common"))
+                .add(new LootEntry(null, Material.AIR, 1, 1, 1, "missing"))
+                .add(new LootEntry(null, Material.DIAMOND, 1, 1, 1)));   // item, pas une ref
+        // "common" existe, "missing" non → seul "missing" est pendant.
+        java.util.Set<String> known = java.util.Set.of("common", "rare");
+        assertEquals(java.util.Set.of("missing"), t.danglingReferences(known::contains));
+        // prédicat null = rien n'existe → toutes les refs pendantes.
+        assertEquals(java.util.Set.of("common", "missing"), t.danglingReferences(null));
+        // table sans ref → jamais de pendante.
+        assertTrue(new LootTableDef("x").danglingReferences(id -> false).isEmpty());
+    }
+
+    @Test
     void countRangeIsClampedConsistently() {
         // min > max fourni → max relevé au min ; valeurs négatives clampées à 0.
         LootEntry e = new LootEntry(null, Material.STONE, 1, 9, 2);

@@ -41,6 +41,18 @@ public final class LootTableDef {
         return out;
     }
 
+    /**
+     * Références imbriquées <b>pendantes</b> : ids référencés dont {@code exists} dit qu'ils n'existent pas.
+     * Pur (prédicat d'existence injecté) → testable sans le module ni le serveur.
+     */
+    public java.util.Set<String> danglingReferences(java.util.function.Predicate<String> exists) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (String ref : referencedTables()) {
+            if (exists == null || !exists.test(ref)) out.add(ref);
+        }
+        return out;
+    }
+
     /** Ids des tables référencées par les entrées de cette table (imbrication), sans doublon. Pur. */
     public java.util.Set<String> referencedTables() {
         java.util.LinkedHashSet<String> refs = new java.util.LinkedHashSet<>();
