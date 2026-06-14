@@ -72,9 +72,13 @@ public final class ForgeService {
         }
         if (base == null) return new Result(false, null, "<red>Texture de base illisible (PNG attendu).");
 
-        // 2) palette (déduite du nom si non fournie) + recolorisation des pixels existants
+        // 2) palette (déduite du nom si non fournie) + GÉNÉRATION d'une texture détaillée selon l'archetype
+        //    (minerai/gemme/lingot = pixel-art procédural ; outil/armure = silhouette vanilla détaillée).
         ThemePalette pal = palette != null ? palette : PaletteResolver.fromName(displayName);
-        BufferedImage themed = TextureRecolorer.recolor(base, pal, strength);
+        TextureSynth.Archetype arch = TextureSynth.archetypeOf(baseTexture);
+        int size = Math.max(16, Math.min(64, Math.max(base.getWidth(), base.getHeight())));
+        long seed = (displayName + "|" + pal.name()).hashCode() & 0xffffffffL;
+        BufferedImage themed = TextureSynth.synthesize(arch, base, pal, seed, size);
 
         // 3) item custom : id depuis le nom, matériau déduit de la base
         String id = slug(displayName);
@@ -105,8 +109,11 @@ public final class ForgeService {
                 player.getWorld().dropItemNaturally(player.getLocation(), overflow);
             }
         }
-        return new Result(true, id, "<green>✦ Forgé <white>" + displayName + "<green> "
-                + "<gray>(base <white>" + baseTexture + "<gray>, thème <white>" + pal.name() + "<gray>, cmd "
-                + def.customModelData() + "). Pack mis à jour — récupère ton arme !");
+        String kind = switch (arch) {
+            case ORE -> "minerai"; case GEM -> "gemme"; case INGOT -> "lingot"; case ITEM -> "objet";
+        };
+        return new Result(true, id, "<green>✦ Forgé <white>" + displayName + "<green> <gray>(" + kind
+                + " généré, thème <white>" + pal.name() + "<gray>, cmd " + def.customModelData()
+                + "). Pack mis à jour — récupère ton item !");
     }
 }

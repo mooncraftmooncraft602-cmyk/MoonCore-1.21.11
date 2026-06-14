@@ -41,3 +41,4 @@ tools/forge-model/data/
 tools/forge-model/model.pt
 tools/forge-model/*.log
 tools/forge-model/__pycache__/
+tools/forge-model/samples/
