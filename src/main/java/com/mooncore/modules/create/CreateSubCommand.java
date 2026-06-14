@@ -214,11 +214,14 @@ public final class CreateSubCommand implements SubCommand {
     }
 
     /** Normalise les synonymes de {@code kind} de l'IA vers les types enregistrés. */
-    private static String normalizeKind(String kind) {
+    /** Normalise le {@code kind} d'un élément de création unifiée vers un type du registre. Package-private pour test. */
+    static String normalizeKind(String kind) {
         return switch (kind.toLowerCase(Locale.ROOT)) {
             case "ore", "minerai" -> "block";
             case "mob" -> "boss";
             case "plant", "plante", "culture" -> "crop";
+            case "loottable", "loot_table", "table_loot", "butin" -> "loot";
+            case "mecanique", "mechanism", "trigger", "trap", "piege" -> "mechanic";
             default -> kind.toLowerCase(Locale.ROOT);
         };
     }

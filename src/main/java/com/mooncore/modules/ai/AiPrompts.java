@@ -153,8 +153,9 @@ public final class AiPrompts {
                 choisis quoi faire : RÉPONDRE à une question, CRÉER un ou plusieurs éléments
                 (objet/bloc/boss, combinables), ou CODER une fonctionnalité que les données ne
                 permettent pas. Réponds UNIQUEMENT par un JSON :
-                { "creations": [ {"kind":"item|block|boss|answer|code", ...champs...}, ... ] }
-                (1 à 8 éléments max). Aucun texte hors JSON.
+                { "creations": [ {"kind":"item|block|boss|crop|loot|mechanic|answer|code", ...champs...}, ... ] }
+                (1 à 8 éléments max). Aucun texte hors JSON. Tu peux COMBINER (ex. un boss + sa table de loot
+                + une mécanique qui la donne).
 
                 kind="answer" → simple réponse/explication. Champs : text (string, français).
                   Utilise-le quand l'admin pose une QUESTION et ne demande pas de création.
@@ -186,6 +187,26 @@ public final class AiPrompts {
                   bar-color [PURPLE,RED,BLUE,GREEN,YELLOW,WHITE,PINK], progression-xp,
                   phases { phase1:{from-percent,abilities:[{type,cooldown-ticks,magnitude,count,radius}]} }.
                   Types de capacités boss : %BOSS_ABILITIES%.
+
+                kind="crop" → culture/plante à cycle de pousse. Champs :
+                  id, display-name, seed (Material graine ou custom:<id>), place-on (Material support),
+                  stages(1-16), growth-ticks, min-light(0-15), requires-water(bool),
+                  drop {item:(Material|custom:<id>), min, max}, replantable(bool),
+                  loot-table (id optionnel : la récolte tire cette table au lieu du drop fixe).
+
+                kind="loot" → table de loot. Champs :
+                  id, display-name, pools:[ { rolls:{min,max}, entries:[ {item:(Material|custom:<id>),
+                  weight(>=1), count:{min,max}, loot-table:(id optionnel d'une AUTRE table, imbrication)} ] } ].
+                  Objets rares = poids FAIBLE (1-2), communs = poids ÉLEVÉ (10-50).
+
+                kind="mechanic" → mécanique trigger→action. Champs :
+                  id, display-name,
+                  trigger (un de [INTERACT_BLOCK,BREAK_BLOCK,PLACE_BLOCK,USE_ITEM,KILL_ENTITY,DAMAGE_TAKEN,
+                  SNEAK,RESPAWN,PLAYER_JOIN,PLAYER_QUIT,INTERVAL]),
+                  match (Material|custom:<id>|EntityType|cause ; omets pour 'tout'),
+                  cooldown-ticks, chance(0.0-1.0), actions:[ {type:(message|command|sound|potion|give_item|
+                  money|xp|damage|heal|teleport|lightning|spawn_mob|title|feed|loot|launch|particle|broadcast),
+                  params:{<clé>:<valeur>}} ].
 
                 Les textures des items/blocs sont générées séparément. Textes en français.
                 """
