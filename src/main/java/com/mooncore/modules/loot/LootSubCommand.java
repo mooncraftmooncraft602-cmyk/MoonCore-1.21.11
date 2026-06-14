@@ -98,6 +98,11 @@ public final class LootSubCommand implements SubCommand {
         if (!parents.isEmpty()) {
             msg(s, " <gray>Référencée par : <white>" + String.join(", ", parents) + " <dark_gray>(imbrication)");
         }
+        java.util.List<String> cycle = LootManagerModule.detectReferenceCycle(d.id(),
+                id -> { LootTableDef t = module.def(id); return t == null ? java.util.Set.of() : t.referencedTables(); });
+        if (!cycle.isEmpty()) {
+            msg(s, " <red>⚠ cycle de références (tronqué au tirage) : <white>" + String.join(" → ", cycle));
+        }
         if (d.pools().isEmpty()) { msg(s, " <gray>(aucun pool — <white>/moon loot addpool " + d.id() + "<gray>)"); return; }
         for (int i = 0; i < d.pools().size(); i++) {
             LootPool p = d.pools().get(i);
