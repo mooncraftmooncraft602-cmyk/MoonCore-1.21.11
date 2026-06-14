@@ -9,6 +9,10 @@ Build **avancé** de MoonCore ciblant **Paper 1.21.11** (Java 21). Dépôt disti
 - **Features ex-plugins réintégrées en modules** : EnderChest, Vanish, RTP, OnePlayerSleep, ClearLag, PvPManager, PlayerHeads, Essentials (heal/feed/fly/god/repair/hat/near/workbench/back), Messagerie (`/msg`,`/reply`), Warps, Kits.
 - **Commandes utilisables sans `/moon`** : `/ec`, `/heal`, `/warp`, `/msg`, `/rtp`, `/home`, `/spawn`… (`/moon …` reste valable).
 - **Integrations** : MoonCore se *branche* sur les plugins déjà installés (WorldGuard, CoreProtect, Vault, LuckPerms, Geyser…) au lieu de les réécrire.
+- **Contenu data-driven « MCreator in-game »** : tout se crée sans recompiler, par commande ou **par IA** (`/moon content create <type> …` ou `/moon content createall <description>` qui génère plusieurs éléments combinés) :
+  - **Tables de loot** (`/moon loot`) : pools pondérés, **tables imbriquées**, simulation (`test`), remplissage de conteneur (`fill`). Référençables par cultures, blocs, boss et mécaniques.
+  - **Mécaniques trigger→action** (`/moon mechanic`) : 11 déclencheurs (interaction/casse/pose de bloc, clic d'item, kill, dégâts subis, sneak, respawn, connexion, intervalle) × 19 actions (message, commande, potion, donner item, argent/xp, foudre, invocation, table de loot, propulsion, broadcast…), avec probabilité, permission et cooldown.
+  - **Cultures** custom à cycle de pousse (`/moon crop`), **recettes** shaped/shapeless/fonte/découpe **et forge** (`/moon item smithing`, `/moon ai createsmithing`).
 
 ## Build
 
@@ -31,4 +35,4 @@ Jar final : `target/MoonCore-2.0.0-mc1.21.11.jar` (dépendances embarquées + re
 
 ## État
 
-Build **vert**, 80 tests. Plugin de saison complet (progression, events, boss, zones, anti-farm, économie, enchants, endgame) + studio de contenu (items/blocs/mobs/boss/armures custom) + suite QoL de type Essentials.
+Build **vert**, 290 tests. Plugin de saison complet (progression, events, boss, zones, anti-farm, économie, enchants, endgame) + studio de contenu (items/blocs/mobs/boss/armures custom) + **systèmes data-driven loot/mécaniques/cultures + recettes complètes (dont forge)** générables par IA + suite QoL de type Essentials.
