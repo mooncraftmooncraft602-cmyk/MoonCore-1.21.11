@@ -449,7 +449,7 @@ public final class AiActionValidator {
                                 customId, mat, intOf(eo, "weight", 1), cMin, cMax, ref));
                     }
                 }
-                d.add(pool);
+                if (!pool.entries().isEmpty()) d.add(pool);  // pool vide (toutes entrées filtrées) : non ajouté
             }
         }
         return d;

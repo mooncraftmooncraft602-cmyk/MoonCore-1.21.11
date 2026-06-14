@@ -3,7 +3,6 @@ package com.mooncore.modules.ai;
 import com.mooncore.modules.loot.LootEntry;
 import com.mooncore.modules.loot.LootPool;
 import com.mooncore.modules.loot.LootTableDef;
-import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,9 +51,23 @@ class AiValidateLootTest {
         String json = """
                 { "pools": [ { "entries": [ { "loot-table": "Butin", "weight": 2 } ] } ] }
                 """;
-        // La référence pointe sur la table elle-même → annulée → entrée vide → ignorée.
+        // La référence pointe sur la table elle-même → annulée → entrée vide → ignorée → pool vide → non ajouté.
         LootTableDef d = validator().validateLoot(json, "butin");
-        assertTrue(d.pools().get(0).entries().isEmpty());
+        assertTrue(d.pools().isEmpty());
+    }
+
+    @Test
+    void poolWithOnlyInvalidEntriesIsDropped() {
+        String json = """
+                { "pools": [
+                    { "entries": [ { "item": "materiau_bidon" }, { "item": "encore_faux" } ] },
+                    { "entries": [ { "item": "custom:gem" } ] }
+                  ] }
+                """;
+        LootTableDef d = validator().validateLoot(json, "t");
+        // Le 1er pool (toutes entrées invalides) est filtré ; seul le 2e (custom valide) subsiste.
+        assertEquals(1, d.pools().size());
+        assertEquals("gem", d.pools().get(0).entries().get(0).itemId());
     }
 
     @Test
