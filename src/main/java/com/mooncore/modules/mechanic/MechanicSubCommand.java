@@ -268,6 +268,14 @@ public final class MechanicSubCommand implements SubCommand {
         java.util.List<String> issues = new ArrayList<>();
         if (d.trigger() == TriggerType.NONE) issues.add("déclencheur non défini");
         if (d.actions().stream().noneMatch(MechanicAction::isValid)) issues.add("aucune action valide");
+        // matchKey custom: doit exister (bloc custom pour un trigger de bloc, item custom sinon).
+        if (d.matchKey() != null && d.matchKey().startsWith("custom:")) {
+            String cid = d.matchKey().substring("custom:".length());
+            TriggerType tr = d.trigger();
+            boolean blockTrig = tr == TriggerType.BREAK_BLOCK || tr == TriggerType.PLACE_BLOCK || tr == TriggerType.INTERACT_BLOCK;
+            boolean ok = blockTrig ? module.customBlockExists(cid) : module.customItemExists(cid);
+            if (!ok) issues.add("filtre matchKey → " + (blockTrig ? "bloc" : "item") + " custom inconnu : " + cid);
+        }
         for (int i = 0; i < d.actions().size(); i++) {
             String missing = d.actions().get(i).missingRequiredParam();
             if (missing != null) {
