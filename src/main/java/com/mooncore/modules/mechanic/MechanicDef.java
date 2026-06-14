@@ -98,6 +98,29 @@ public final class MechanicDef {
         return out;
     }
 
+    /** Ids d'items custom MoonCore référencés par les actions {@code GIVE_ITEM} (param {@code item=custom:<id>}). Pur. */
+    public java.util.Set<String> customItemsUsed() {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (MechanicAction a : actions) {
+            if (a.type() != ActionType.GIVE_ITEM) continue;
+            String item = a.param("item", "").trim();
+            if (item.toLowerCase(Locale.ROOT).startsWith("custom:")) {
+                String id = item.substring("custom:".length()).trim().toLowerCase(Locale.ROOT);
+                if (!id.isEmpty()) out.add(id);
+            }
+        }
+        return out;
+    }
+
+    /** Items custom référencés (actions {@code GIVE_ITEM}) que {@code exists} déclare inexistants. Pur (prédicat injecté). */
+    public java.util.Set<String> danglingCustomItems(java.util.function.Predicate<String> exists) {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (String id : customItemsUsed()) {
+            if (exists == null || !exists.test(id)) out.add(id);
+        }
+        return out;
+    }
+
     /** True si la mécanique est exécutable (active, déclencheur reconnu, au moins une action valide). */
     public boolean isRunnable() {
         if (!enabled || trigger == TriggerType.NONE) return false;

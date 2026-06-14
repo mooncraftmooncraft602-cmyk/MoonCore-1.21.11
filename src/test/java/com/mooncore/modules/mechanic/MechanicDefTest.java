@@ -92,6 +92,28 @@ class MechanicDefTest {
     }
 
     @Test
+    void customItemsUsedCollectsOnlyCustomGiveItemRefs() {
+        MechanicDef d = new MechanicDef("rewarder");
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:Magic_Wand")));  // normalisé minuscule
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:magic_wand")));  // doublon
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "DIAMOND")));            // vanilla → ignoré
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of()));                             // sans item → ignoré
+        d.addAction(new MechanicAction(ActionType.MESSAGE, Map.of("text", "hi")));                   // autre type → ignoré
+        assertEquals(java.util.Set.of("magic_wand"), d.customItemsUsed());
+        assertTrue(new MechanicDef("x").customItemsUsed().isEmpty());
+    }
+
+    @Test
+    void danglingCustomItemsUsesInjectedPredicate() {
+        MechanicDef d = new MechanicDef("rewarder");
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:known")));
+        d.addAction(new MechanicAction(ActionType.GIVE_ITEM, Map.of("item", "custom:gone")));
+        assertEquals(java.util.Set.of("gone"), d.danglingCustomItems(java.util.Set.of("known")::contains));
+        assertEquals(java.util.Set.of("known", "gone"), d.danglingCustomItems(null));   // null → tout pendant
+        assertTrue(new MechanicDef("x").danglingCustomItems(t -> false).isEmpty());      // aucune action give_item
+    }
+
+    @Test
     void costClampsAndRoundTrips() {
         MechanicDef d = new MechanicDef("paid");
         assertFalse(d.hasCost());                 // gratuit par défaut
