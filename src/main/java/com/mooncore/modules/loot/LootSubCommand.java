@@ -41,6 +41,7 @@ public final class LootSubCommand implements SubCommand {
                 case "removeentry" -> removeEntry(s, a);
                 case "test", "roll" -> test(s, a);
                 case "give" -> give(s, a);
+                case "stats" -> stats(s, a);
                 case "fill" -> fill(s, a);
                 case "validate" -> validate(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Tables de loot rechargées."); }
@@ -223,6 +224,23 @@ public final class LootSubCommand implements SubCommand {
         msg(s, "<green>Donné <white>" + n + "<green> pile(s) de la table " + d.id() + " à " + t.getName() + ".");
     }
 
+    private void stats(CommandSender s, String[] a) {
+        LootTableDef d = need(s, a); if (d == null) return;
+        int n = a.length >= 3 ? Math.max(10, Math.min(100_000, Integer.parseInt(a[2]))) : 1000;
+        List<List<LootResult>> samples = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) samples.add(module.rollFlat(d.id(), ThreadLocalRandom.current()));
+        List<LootStats.Entry> agg = LootStats.aggregate(samples);
+        msg(s, "<gradient:#8a2be2:#c77dff>Balance</gradient> <gray>" + d.id() + " <dark_gray>sur " + n + " tirages");
+        if (agg.isEmpty()) { msg(s, " <gray>(aucun drop — table vide ou pools sans entrée)"); return; }
+        int shown = 0;
+        for (LootStats.Entry e : agg) {
+            if (shown++ >= 25) { msg(s, " <dark_gray>… " + (agg.size() - 25) + " autre(s)"); break; }
+            String name = e.custom() ? "<light_purple>" + e.key() : "<white>" + e.key();
+            msg(s, String.format(Locale.ROOT, " %s <gray>— <aqua>%.1f%%<gray> des tirages, <yellow>%.2f<gray>/tirage",
+                    name, e.frequency() * 100.0, e.avgPerIteration()));
+        }
+    }
+
     private void fill(CommandSender s, String[] a) {
         if (!(s instanceof org.bukkit.entity.Player p)) { msg(s, "<red>Réservé aux joueurs (vise un conteneur)."); return; }
         if (a.length < 2) { msg(s, "<red>/moon loot fill <id>  (vise un coffre/baril)"); return; }
@@ -266,7 +284,8 @@ public final class LootSubCommand implements SubCommand {
                 "addpool <id> [rollsMin] [rollsMax]  (ajoute un pool de tirages)",
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
                 "removepool <id> <poolIndex>  ·  removeentry <id> <poolIndex> <entryIndex>  ·  clearpools <id>",
-                "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)",
+                "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur|@a> <id>  (donne le butin tiré)",
+                "stats <id> [n]  (balance : fréquence + quantité moyenne par item sur n tirages, défaut 1000)",
                 "fill <id>  (remplit le conteneur visé avec le butin tiré — design de donjons)",
                 "validate <id>  (vérifie que les références imbriquées table:<id> existent)"
         };
@@ -280,13 +299,13 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "removepool", "removeentry", "clearpools", "test", "give", "fill", "validate", "reload"), a[0]);
+                    "removepool", "removeentry", "clearpools", "test", "stats", "give", "fill", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "addpool", "addentry", "removepool", "removeentry",
-                     "clearpools", "test", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
+                     "clearpools", "test", "stats", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> {
                     List<String> names = org.bukkit.Bukkit.getOnlinePlayers().stream()
                             .map(org.bukkit.entity.Player::getName).collect(Collectors.toList());
