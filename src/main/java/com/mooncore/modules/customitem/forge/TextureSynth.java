@@ -219,31 +219,48 @@ public final class TextureSynth {
 
     private static final ThemePalette WOOD = ThemePalette.ramp("wood", 0x2c1d10, 0x5a4026, 0x8a6a3e);
     private static final ThemePalette STEEL = ThemePalette.ramp("steel", 0x3a3d44, 0x80858f, 0xccd0d8);
-    private static final int MAT_METAL = 1, MAT_WOOD = 2, MAT_STEEL = 3;
+    private static final ThemePalette GOLD = ThemePalette.ramp("gold", 0x5a3c0e, 0xc9971f, 0xffe8a8);
+    private static final int MAT_METAL = 1, MAT_WOOD = 2, MAT_STEEL = 3, MAT_GOLD = 4;
 
     public static BufferedImage drawSword(ThemePalette p, long seed) {
         int[][] m = new int[16][16];
         capsule(m, MAT_WOOD, 4.2, 11.0, 2.6, 13.8, 1.0, false);   // poignée
-        disc(m, MAT_STEEL, 2.2, 13.8, 1.4);                       // pommeau
-        capsule(m, MAT_STEEL, 2.9, 7.9, 7.1, 12.1, 1.0, false);   // garde
-        capsule(m, MAT_METAL, 5.0, 10.2, 13.6, 1.8, 1.7, true);   // lame (s'affine vers la pointe)
-        return shade(m, p);
+        capsule(m, MAT_GOLD, 3.5, 11.4, 4.3, 12.6, 0.9, false);   // virole dorée
+        disc(m, MAT_GOLD, 2.2, 13.8, 1.5);                        // pommeau doré
+        capsule(m, MAT_GOLD, 2.7, 7.7, 7.3, 12.3, 1.1, false);    // garde dorée (s'étend)
+        capsule(m, MAT_METAL, 5.0, 10.2, 13.7, 1.6, 1.7, true);   // lame (s'affine vers la pointe)
+        BufferedImage img = shade(m, p);
+        fuller(img, 6.0, 9.4, 12.8, 2.6);                         // rainure centrale de la lame
+        jewel(img, 5.0, 10.0, 1.6, p);                            // joyau serti dans la garde
+        glint(img, 12, 3, p); glint(img, 10, 5, p);              // éclats sur la lame
+        return img;
     }
 
     public static BufferedImage drawPickaxe(ThemePalette p, long seed) {
         int[][] m = new int[16][16];
-        capsule(m, MAT_WOOD, 10.6, 14.2, 8.0, 5.8, 1.0, false);   // manche
-        capsule(m, MAT_METAL, 2.4, 6.2, 13.6, 3.4, 1.45, true);   // tête en arc (pointes effilées)
-        return shade(m, p);
+        capsule(m, MAT_WOOD, 10.8, 14.4, 8.2, 6.4, 1.0, false);   // manche
+        capsule(m, MAT_GOLD, 8.9, 7.4, 9.7, 8.8, 0.9, false);     // virole dorée
+        capsule(m, MAT_METAL, 8.0, 4.6, 2.2, 6.6, 1.7, true);     // tête : moitié gauche (pointe)
+        capsule(m, MAT_METAL, 8.0, 4.6, 13.8, 3.0, 1.7, true);    // tête : moitié droite (pointe)
+        disc(m, MAT_GOLD, 8.0, 5.6, 1.8);                         // socle doré (jonction)
+        BufferedImage img = shade(m, p);
+        jewel(img, 8.0, 5.4, 1.6, p);                             // joyau central
+        glint(img, 4, 5, p); glint(img, 12, 4, p);
+        return img;
     }
 
     public static BufferedImage drawAxe(ThemePalette p, long seed) {
         int[][] m = new int[16][16];
-        capsule(m, MAT_WOOD, 12.6, 14.6, 5.4, 2.8, 1.0, false);   // manche
-        disc(m, MAT_METAL, 4.4, 5.8, 3.0);                        // corps de tête
-        capsule(m, MAT_METAL, 6.0, 2.6, 2.4, 5.0, 1.7, false);    // dos haut
-        capsule(m, MAT_METAL, 2.4, 5.0, 4.6, 9.4, 1.9, false);    // tranchant (gauche)
-        return shade(m, p);
+        capsule(m, MAT_WOOD, 12.6, 14.6, 5.6, 3.0, 1.0, false);   // manche
+        disc(m, MAT_METAL, 4.7, 5.9, 3.1);                        // corps de tête
+        capsule(m, MAT_METAL, 6.4, 2.6, 2.4, 5.0, 1.7, false);    // dos haut
+        capsule(m, MAT_METAL, 2.4, 5.0, 5.0, 9.6, 1.9, false);    // tranchant (gauche)
+        capsule(m, MAT_GOLD, 6.6, 3.2, 6.0, 8.6, 0.7, false);     // liseré doré (dos)
+        disc(m, MAT_GOLD, 6.6, 5.4, 1.4);                         // socle doré (jonction manche)
+        BufferedImage img = shade(m, p);
+        jewel(img, 4.6, 5.8, 1.6, p);                             // joyau sur la tête
+        glint(img, 2, 6, p); glint(img, 3, 4, p);
+        return img;
     }
 
     public static BufferedImage drawHelmet(ThemePalette p, long seed) {
@@ -254,7 +271,15 @@ public final class TextureSynth {
             boolean slit = y >= 7 && y <= 8 && x >= 4 && x <= 11;     // fente des yeux (vide)
             if (dome && !slit) m[x][y] = MAT_METAL;
         }
-        return shade(m, p);
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {   // liserés dorés
+            if (m[x][y] != MAT_METAL) continue;
+            if (y >= 11) m[x][y] = MAT_GOLD;                          // bandeau du bas
+            else if ((y == 6 || y == 9) && x >= 4 && x <= 11) m[x][y] = MAT_GOLD;  // cadre de la fente
+        }
+        BufferedImage img = shade(m, p);
+        jewel(img, 8.0, 4.6, 1.5, p);                                // joyau frontal
+        glint(img, 5, 3, p); glint(img, 11, 4, p);
+        return img;
     }
 
     public static BufferedImage drawChestplate(ThemePalette p, long seed) {
@@ -265,7 +290,15 @@ public final class TextureSynth {
             boolean pauldron = y >= 2 && y <= 5 && ((x >= 2 && x <= 4) || (x >= 11 && x <= 13));
             if (torso || pauldron) m[x][y] = MAT_METAL;
         }
-        return shade(m, p);
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {   // liserés dorés (col + épaules)
+            if (m[x][y] != MAT_METAL) continue;
+            if (y == 5 && (x <= 5 || x >= 10)) m[x][y] = MAT_GOLD;    // bandeau des épaules
+            else if ((x == 5 || x == 10) && y >= 5 && y <= 6) m[x][y] = MAT_GOLD;
+        }
+        BufferedImage img = shade(m, p);
+        jewel(img, 7.5, 8.8, 1.7, p);                                // joyau au centre du torse
+        glint(img, 4, 4, p); glint(img, 11, 4, p);
+        return img;
     }
 
     // -- moteur de dessin partagé : masque matière -> couleur (lumière haut-gauche) + contour 1px --
@@ -285,13 +318,52 @@ public final class TextureSynth {
             if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= r) m[x][y] = val;
     }
 
+    /** Joyau facetté serti (post-traitement) : disque dégradé haut-gauche, rebord sombre, éclat blanc central. */
+    private static void jewel(BufferedImage img, double cx, double cy, double r, ThemePalette p) {
+        int dark = p.colorAt(0.55), lite = p.colorAt(0.98), rim = ThemePalette.darken(p.colorAt(0.28), 0.30);
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            double d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+            if (d > r) continue;
+            double f = clampf(0.5 + 0.55 * (((cx - x - 0.5) + (cy - y - 0.5)) / (2 * r)));  // facette haut-gauche
+            int col = d > r - 0.7 ? rim : ThemePalette.lerpRgb(dark, lite, f);
+            set(img, x, y, argb(255, col));
+        }
+        set(img, (int) Math.round(cx - 0.4 * r), (int) Math.round(cy - 0.4 * r),
+                argb(255, ThemePalette.lighten(p.colorAt(0.95), 0.6)));                     // éclat
+    }
+
+    /** Éclat spéculaire (1px quasi-blanc) si le pixel cible est déjà opaque. */
+    private static void glint(BufferedImage img, int x, int y, ThemePalette p) {
+        if (x >= 0 && y >= 0 && x < 16 && y < 16 && alpha(img.getRGB(x, y)) != 0)
+            set(img, x, y, argb(255, ThemePalette.lighten(p.colorAt(0.95), 0.5)));
+    }
+
+    /** Rainure centrale (fuller) : assombrit légèrement une bande le long d'un segment, sans toucher les bords. */
+    private static void fuller(BufferedImage img, double ax, double ay, double bx, double by) {
+        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
+            if (alpha(img.getRGB(x, y)) == 0) continue;
+            double[] c = segCoord(x + 0.5, y + 0.5, ax, ay, bx, by);
+            if (c[0] < 0 || c[0] > 1 || Math.abs(c[1]) > 0.45) continue;
+            if (opaqueNeighbor4(img, x, y)) set(img, x, y, argb(255, ThemePalette.darken(img.getRGB(x, y) & 0xFFFFFF, 0.20)));
+        }
+    }
+
+    /** Vrai si les 4 voisins orthogonaux sont opaques (pixel intérieur, pas un bord). */
+    private static boolean opaqueNeighbor4(BufferedImage img, int x, int y) {
+        for (int[] d : new int[][]{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
+            int nx = x + d[0], ny = y + d[1];
+            if (nx < 0 || ny < 0 || nx >= 16 || ny >= 16 || alpha(img.getRGB(nx, ny)) == 0) return false;
+        }
+        return true;
+    }
+
     /** Masque matière → image : aplat thématique ombré (lumière haut-gauche) + arêtes + contour sombre. */
     private static BufferedImage shade(int[][] m, ThemePalette p) {
         BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
             int mat = m[x][y];
             if (mat == 0) continue;
-            ThemePalette ramp = mat == MAT_WOOD ? WOOD : mat == MAT_STEEL ? STEEL : p;
+            ThemePalette ramp = mat == MAT_WOOD ? WOOD : mat == MAT_STEEL ? STEEL : mat == MAT_GOLD ? GOLD : p;
             double g = clampf(0.52 + 0.30 * (((7.5 - x) + (7.5 - y)) / 15.0));   // dégradé haut-gauche
             int col;
             if (empty(m, x - 1, y) || empty(m, x, y - 1)) col = ramp.colorAt(clampf(g + 0.34));   // arête éclairée
