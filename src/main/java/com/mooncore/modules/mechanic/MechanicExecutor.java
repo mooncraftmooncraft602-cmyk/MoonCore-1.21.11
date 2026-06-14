@@ -104,17 +104,7 @@ public final class MechanicExecutor {
         if (table.isEmpty()) return;
         var loot = plugin.moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
         if (loot == null) return;
-        var ci = plugin.services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
-        for (com.mooncore.modules.loot.LootResult r : loot.roll(table, java.util.concurrent.ThreadLocalRandom.current())) {
-            if (r.count() <= 0) continue;
-            ItemStack stack;
-            if (r.isCustom()) {
-                stack = ci == null ? null : ci.create(r.itemId(), r.count());
-            } else {
-                stack = (r.material() == null || r.material().isAir()) ? null : new ItemStack(r.material(), r.count());
-            }
-            if (stack != null) p.getInventory().addItem(stack);
-        }
+        loot.give(p, table, java.util.concurrent.ThreadLocalRandom.current());  // matérialisation centralisée
     }
 
     private void spawnParticle(MechanicAction a, Player p) {

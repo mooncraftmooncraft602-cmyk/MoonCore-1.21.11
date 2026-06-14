@@ -38,6 +38,7 @@ public final class LootSubCommand implements SubCommand {
                 case "addentry" -> addEntry(s, a);
                 case "clearpools" -> clearPools(s, a);
                 case "test", "roll" -> test(s, a);
+                case "give" -> give(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Tables de loot rechargées."); }
                 default -> help(s);
             }
@@ -142,6 +143,16 @@ public final class LootSubCommand implements SubCommand {
         }
     }
 
+    private void give(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<red>/moon loot give <joueur> <id>"); return; }
+        org.bukkit.entity.Player t = org.bukkit.Bukkit.getPlayerExact(a[1]);
+        if (t == null) { msg(s, "<red>Joueur hors-ligne."); return; }
+        LootTableDef d = module.def(a[2]);
+        if (d == null) { msg(s, "<red>Id inconnu : " + a[2]); return; }
+        int n = module.give(t, d.id(), ThreadLocalRandom.current());
+        msg(s, "<green>Donné <white>" + n + "<green> pile(s) de la table " + d.id() + " à " + t.getName() + ".");
+    }
+
     private LootTableDef need(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>Id manquant."); return null; }
         LootTableDef d = module.def(a[1]);
@@ -156,7 +167,7 @@ public final class LootSubCommand implements SubCommand {
                 "addpool <id> [rollsMin] [rollsMax]  (ajoute un pool de tirages)",
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
                 "clearpools <id>  (retire tous les pools)",
-                "test <id> [n]  (simule n tirages, max 20)"
+                "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, "<gray>Référence une table sur une culture/bloc/boss via leur champ <white>loot-table<gray>.");
@@ -168,15 +179,20 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "clearpools", "test", "reload"), a[0]);
+                    "clearpools", "test", "give", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "addpool", "addentry", "clearpools", "test" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
+                case "give" -> filter(org.bukkit.Bukkit.getOnlinePlayers().stream()
+                        .map(org.bukkit.entity.Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();
             };
+        }
+        if (a.length == 3 && sub.equals("give")) {
+            return filter(new ArrayList<>(module.ids()), a[2]);
         }
         if (a.length == 4 && sub.equals("addentry")) {
             List<String> opts = new ArrayList<>(List.of("custom:"));

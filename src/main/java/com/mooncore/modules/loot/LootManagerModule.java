@@ -92,6 +92,35 @@ public final class LootManagerModule extends AbstractModule {
         return d == null ? List.of() : d.roll(rng);
     }
 
+    /** Matérialise un résultat de loot en ItemStack (item custom prioritaire, sinon Material), ou null. */
+    public org.bukkit.inventory.ItemStack materialize(LootResult r) {
+        if (r == null || r.count() <= 0) return null;
+        if (r.isCustom()) {
+            var ci = services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+            return ci == null ? null : ci.create(r.itemId(), r.count());
+        }
+        return (r.material() == null || r.material().isAir())
+                ? null : new org.bukkit.inventory.ItemStack(r.material(), r.count());
+    }
+
+    /** Tire une table et matérialise les résultats en ItemStacks (centralise la conversion des consommateurs). */
+    public List<org.bukkit.inventory.ItemStack> rollItems(String id, RandomGenerator rng) {
+        List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
+        for (LootResult r : roll(id, rng)) {
+            org.bukkit.inventory.ItemStack stack = materialize(r);
+            if (stack != null) out.add(stack);
+        }
+        return out;
+    }
+
+    /** Donne au joueur le butin tiré de la table ; retourne le nombre de piles données (0 si table inconnue). */
+    public int give(org.bukkit.entity.Player player, String id, RandomGenerator rng) {
+        if (player == null) return 0;
+        List<org.bukkit.inventory.ItemStack> items = rollItems(id, rng);
+        for (org.bukkit.inventory.ItemStack it : items) player.getInventory().addItem(it);
+        return items.size();
+    }
+
     /** Sérialise une table en JSON via le pont YAML↔JSON (réutilise {@code def.save}). */
     private static String toJson(LootTableDef def) {
         org.bukkit.configuration.MemoryConfiguration cfg = new org.bukkit.configuration.MemoryConfiguration();
