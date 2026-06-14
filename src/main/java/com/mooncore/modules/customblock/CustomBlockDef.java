@@ -63,9 +63,9 @@ public final class CustomBlockDef {
     public void setDropXp(int x) { this.dropXp = x; }
     public boolean requiresPickaxe() { return requiresPickaxe; }
     public void setRequiresPickaxe(boolean b) {
-        this.requiresPickaxe = b;
-        this.requiredTool = b ? ToolKind.PICKAXE : ToolKind.NONE;
-        if (b && minToolTier == ToolTier.HAND) minToolTier = ToolTier.WOOD;
+        // Délègue à setRequiredTool pour garder l'état cohérent (sinon requiredTool=NONE pouvait
+        // coexister avec minToolTier=WOOD selon le setter utilisé).
+        setRequiredTool(b ? ToolKind.PICKAXE : ToolKind.NONE);
     }
     public ToolKind requiredTool() { return requiredTool; }
     public void setRequiredTool(ToolKind tool) {
