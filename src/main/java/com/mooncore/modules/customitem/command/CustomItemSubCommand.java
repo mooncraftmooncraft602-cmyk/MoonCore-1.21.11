@@ -173,6 +173,11 @@ public final class CustomItemSubCommand implements SubCommand {
         if (d.recipe() != null && !d.recipe().isEmpty()) {
             msg(s, " <gray>Recette : <white>" + d.recipe().shape + " " + d.recipe().ingredients);
         }
+        if (d.canSmith()) {
+            CustomItemDef.SmithingRecipe sm = d.smithing();
+            msg(s, " <gray>Forge : <white>" + sm.base + " + " + sm.addition
+                    + (sm.template != null ? " <gray>(patron " + sm.template + ")" : ""));
+        }
     }
 
     private void create(CommandSender s, String[] a) {
@@ -571,7 +576,7 @@ public final class CustomItemSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("menu", "paint", "importvanilla", "list", "info", "create", "clone", "delete", "rename", "give", "get",
-                    "edit", "stat", "ability", "rarity", "model", "recipe", "drop", "reward",
+                    "edit", "stat", "ability", "rarity", "model", "recipe", "smithing", "drop", "reward",
                     "export", "import", "pack", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
@@ -580,6 +585,7 @@ public final class CustomItemSubCommand implements SubCommand {
                 case "info", "delete", "remove", "rename", "edit", "clone", "get", "rarity", "model", "recipe", "drop", "reward", "paint" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(online(), a[1]);
+                case "smithing", "forge" -> filter(List.of("set", "clear"), a[1]);   // op d'abord
                 case "stat", "ability" -> filter(List.of("add", "set", "remove", "list"), a[1]);
                 case "pack" -> filter(List.of("rebuild", "resend", "url", "generate"), a[1]);
                 default -> List.of();
@@ -592,6 +598,7 @@ public final class CustomItemSubCommand implements SubCommand {
                 case "rarity" -> filter(List.of("set"), a[2]);
                 case "model" -> filter(List.of("set", "preview"), a[2]);
                 case "recipe" -> filter(List.of("set", "clear"), a[2]);
+                case "smithing", "forge" -> filter(new ArrayList<>(module.ids()), a[2]);   // id après l op
                 case "create" -> filter(materials(), a[2]);
                 case "edit" -> filter(List.of("material", "type", "tool", "glow", "unbreakable", "lore"), a[2]);
                 default -> List.of();
