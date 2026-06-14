@@ -478,6 +478,7 @@ public final class AiActionValidator {
                 JsonObject ao = ae.getAsJsonObject();
                 com.mooncore.modules.mechanic.ActionType type =
                         com.mooncore.modules.mechanic.ActionType.fromText(str(ao, "type", "none"));
+                if (type == com.mooncore.modules.mechanic.ActionType.NONE) continue;  // type inconnu/halluciné : ignoré (pas de poids mort)
                 java.util.Map<String, String> params = new java.util.LinkedHashMap<>();
                 if (ao.has("params") && ao.get("params").isJsonObject()) {
                     for (var entry : ao.getAsJsonObject("params").entrySet()) {
