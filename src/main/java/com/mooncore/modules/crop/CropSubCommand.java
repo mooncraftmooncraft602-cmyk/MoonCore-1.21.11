@@ -86,7 +86,8 @@ public final class CropSubCommand implements SubCommand {
         msg(s, " <gray>Graine : <white>" + (d.seedCustomId() != null ? "✦ " + d.seedCustomId() : d.seed().name())
                 + " <gray>sur <white>" + d.placeOn().name());
         msg(s, " <gray>Étapes : <white>" + d.stages() + " <gray>· ticks/étape <white>" + d.growthTicks()
-                + " <gray>· lumière min <white>" + d.minLight() + " <gray>· eau <white>" + d.requiresWater());
+                + " <gray>· lumière min <white>" + d.minLight() + " <gray>· eau <white>" + d.requiresWater()
+                + " <gray>· engrais <white>" + d.bonemealable());
         if (d.usesLootTable()) {
             msg(s, " <gray>Récolte : <white>table de loot " + d.lootTableId()
                     + (module.lootTableExists(d.lootTableId()) ? "" : " <yellow>⚠ inconnue")
