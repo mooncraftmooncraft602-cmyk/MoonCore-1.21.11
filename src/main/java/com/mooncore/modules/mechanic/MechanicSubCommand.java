@@ -187,15 +187,19 @@ public final class MechanicSubCommand implements SubCommand {
             int eq = a[i].indexOf('=');
             if (eq > 0) params.put(a[i].substring(0, eq), a[i].substring(eq + 1));
         }
-        d.addAction(new MechanicAction(type, params)); module.put(d);
+        MechanicAction added = new MechanicAction(type, params);
+        d.addAction(added); module.put(d);
         msg(s, "<green>Action <white>" + type.name().toLowerCase(Locale.ROOT) + "<green> ajoutée à " + d.id()
                 + " <gray>(" + d.actions().size() + " au total). <white>" + params);
-        // Avertit (sans bloquer) si une action loot référence une table inexistante.
+        // Avertit (sans bloquer) si un paramètre essentiel manque → l'action serait un no-op.
+        String missing = added.missingRequiredParam();
+        if (missing != null) {
+            msg(s, "<yellow>⚠ Paramètre requis manquant : <white>" + missing + "<yellow> (l'action ne fera rien).");
+        }
+        // Avertit si une action loot référence une table présente mais inexistante.
         if (type == ActionType.LOOT) {
             String table = params.getOrDefault("table", "").trim();
-            if (table.isEmpty()) {
-                msg(s, "<yellow>⚠ Action loot sans paramètre <white>table=<id><yellow>.");
-            } else if (!module.lootTableExists(table)) {
+            if (!table.isEmpty() && !module.lootTableExists(table)) {
                 msg(s, "<yellow>⚠ Table de loot inconnue : <white>" + table + "<yellow> (crée-la ou corrige l'id).");
             }
         }
