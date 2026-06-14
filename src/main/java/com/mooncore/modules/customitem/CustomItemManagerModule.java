@@ -87,6 +87,7 @@ public final class CustomItemManagerModule extends AbstractModule
         recipeManager.registerAll();
 
         plugin().rootCommand().register(new CustomItemSubCommand(this));
+        plugin().rootCommand().register(new com.mooncore.modules.customitem.forge.ForgeSubCommand(this));
 
         // Tick des effets passifs continus (régén/célérité) toutes les 2 s.
         this.passiveTask = schedulers().syncTimer(listener::tickPassives, 40L, 40L);

@@ -191,12 +191,16 @@ public final class CustomItemSubCommand implements SubCommand {
         ToolKind hint = ToolKind.fromText(id);
         if (hint != ToolKind.NONE) d.setTool(hint, ToolTier.IRON);
         if (a.length >= 3) {
+            // a[2] = matériau si reconnu, sinon début du nom d'affichage (ne JAMAIS échouer sur une phrase).
             Material m = Material.matchMaterial(a[2].toUpperCase(Locale.ROOT));
-            if (m == null) { msg(s, "<red>Matériau inconnu : " + a[2]); return; }
-            d.setMaterial(m);
+            int nameStart = 2;
+            if (m != null) { d.setMaterial(m); nameStart = 3; }
+            if (a.length > nameStart) {
+                d.setDisplayName(String.join(" ", java.util.Arrays.copyOfRange(a, nameStart, a.length)));
+            }
         }
         module.put(d);
-        msg(s, "<green>Objet <white>" + id + "<green> créé.");
+        msg(s, "<green>Objet <white>" + id + "<green> créé" + (d.displayName() != null ? " <gray>(" + d.displayName() + "<gray>)" : "") + ".");
         Player p = player(s);
         if (p != null) com.mooncore.modules.customitem.editor.ItemEditorMenu.open(module, module.chatInput(), p, id);
         else msg(s, "<gray>Édite-le en jeu avec <white>/moon item edit " + id);

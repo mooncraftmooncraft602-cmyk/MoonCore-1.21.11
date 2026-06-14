@@ -71,9 +71,24 @@ public final class PaintManager {
         return 16;
     }
 
+    /** Fournisseur de textures vanilla (extraction depuis le client.jar), mémoïsé par instance de plugin. */
+    private static volatile com.mooncore.modules.customitem.forge.VanillaTextureProvider vanillaProvider;
+
+    public static com.mooncore.modules.customitem.forge.VanillaTextureProvider vanilla(MoonCore plugin) {
+        com.mooncore.modules.customitem.forge.VanillaTextureProvider v = vanillaProvider;
+        if (v == null) {
+            synchronized (PaintManager.class) {
+                v = vanillaProvider;
+                if (v == null) v = vanillaProvider = new com.mooncore.modules.customitem.forge.VanillaTextureProvider(plugin);
+            }
+        }
+        return v;
+    }
+
     /**
-     * Résout la texture PNG d'une base à importer : item custom → bloc custom → boss
-     * custom → texture VANILLA (vanilla-textures/, ex. deepslate_diamond_ore). null si introuvable.
+     * Résout la texture PNG d'une base à importer : item custom → bloc custom → boss custom → cache
+     * vanilla → <b>extraction depuis le client.jar</b> (item/bloc/armure vanilla, ex. diamond_sword,
+     * deepslate_diamond_ore, netherite_chestplate). null si introuvable.
      */
     public static java.io.File resolveTexture(MoonCore plugin, String id) {
         if (id == null || id.isBlank()) return null;
@@ -86,7 +101,7 @@ public final class PaintManager {
         if (boss.isFile()) return boss;
         java.io.File vanilla = new java.io.File(plugin.getDataFolder(), "vanilla-textures/" + norm + ".png");
         if (vanilla.isFile()) return vanilla;
-        return null;
+        return vanilla(plugin).resolve(norm);    // extrait du client.jar à la demande (puis caché)
     }
 
     public PaintSession get(UUID uuid) { return sessions.get(uuid); }
