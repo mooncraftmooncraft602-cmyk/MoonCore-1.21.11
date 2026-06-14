@@ -31,18 +31,54 @@ public final class RecipeManager {
         for (CustomItemDef def : module.rawDefs().values()) {
             register(def);
             registerSmelt(def);
+            registerStonecut(def);
         }
     }
 
-    /** Recette de FOURNAISE : l'objet custom (exact) → résultat configuré (def.smeltsInto). */
+    /** Recette de TAILLEUR DE PIERRE : l'objet custom (exact) → résultat (Material ou item custom). */
+    public boolean registerStonecut(CustomItemDef def) {
+        if (!def.canCut()) return false;
+        NamespacedKey key = new NamespacedKey(plugin, "ci_cut_" + def.id());
+        try {
+            ItemStack result = module.cutOutput(def);
+            if (result == null) {
+                plugin.logger().warn("Recette de tailleur ignorée pour " + def.id() + " : résultat introuvable.");
+                return false;
+            }
+            RecipeChoice input = new RecipeChoice.ExactChoice(module.buildItem(def, 1));
+            org.bukkit.inventory.StonecuttingRecipe recipe =
+                    new org.bukkit.inventory.StonecuttingRecipe(key, result, input);
+            plugin.getServer().addRecipe(recipe);
+            registered.add(key);
+            return true;
+        } catch (Exception e) {
+            plugin.logger().warn("Recette de tailleur invalide pour " + def.id() + " : " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Recette de cuisson : l'objet custom (exact) → résultat configuré, qui peut être un
+     * Material vanilla <b>ou un autre item custom</b> ({@code smeltsIntoCustom}). Le type
+     * d'appareil (four / haut-fourneau / fumoir) suit {@code def.smeltType()}. Le résultat
+     * exact est en plus garanti par {@code CustomItemListener.onSmelt} (FurnaceSmeltEvent).
+     */
     public boolean registerSmelt(CustomItemDef def) {
-        if (!def.canSmelt() || def.smeltsInto() == null) return false;
+        if (!def.canSmelt()) return false;
         NamespacedKey key = new NamespacedKey(plugin, "ci_smelt_" + def.id());
         try {
-            ItemStack result = new ItemStack(def.smeltsInto(), Math.max(1, def.smeltAmount()));
+            ItemStack result = module.smeltOutput(def);
+            if (result == null) {
+                plugin.logger().warn("Recette de fonte ignorée pour " + def.id()
+                        + " : résultat introuvable (item custom « " + def.smeltsIntoCustom() + " » ?).");
+                return false;
+            }
             RecipeChoice input = new RecipeChoice.ExactChoice(module.buildItem(def, 1));
-            org.bukkit.inventory.FurnaceRecipe recipe =
-                    new org.bukkit.inventory.FurnaceRecipe(key, result, input, 0.2f, 200);
+            org.bukkit.inventory.Recipe recipe = switch (def.smeltType()) {
+                case BLAST -> new org.bukkit.inventory.BlastingRecipe(key, result, input, 0.2f, 100);
+                case SMOKER -> new org.bukkit.inventory.SmokingRecipe(key, result, input, 0.2f, 100);
+                case FURNACE -> new org.bukkit.inventory.FurnaceRecipe(key, result, input, 0.2f, 200);
+            };
             plugin.getServer().addRecipe(recipe);
             registered.add(key);
             return true;
@@ -96,11 +132,16 @@ public final class RecipeManager {
         return material == null || !material.isItem() ? null : new RecipeChoice.MaterialChoice(material);
     }
 
-    /** Garantit exactement 3 lignes de 3 caractères (les espaces = slots vides). */
-    private static List<String> normalizeShape(List<String> shape) {
+    /**
+     * Garantit exactement 3 lignes de 3 caractères (les espaces = slots vides). Tolérant : une shape
+     * {@code null}, plus courte/longue, ou une ligne {@code null} sont normalisées sans erreur.
+     * Package-private pour test.
+     */
+    static List<String> normalizeShape(List<String> shape) {
         List<String> out = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
-            String row = i < shape.size() ? shape.get(i) : "   ";
+            String row = (shape != null && i < shape.size()) ? shape.get(i) : "   ";
+            if (row == null) row = "   ";                 // ligne null → vide (anti-NPE)
             if (row.length() > 3) row = row.substring(0, 3);
             while (row.length() < 3) row += " ";
             out.add(row);
