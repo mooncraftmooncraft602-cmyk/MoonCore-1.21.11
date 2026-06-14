@@ -193,15 +193,22 @@ public final class TextureSynth {
     public enum Kind { SWORD, PICKAXE, AXE, HELMET, CHESTPLATE, GENERIC }
 
     public static Kind itemKind(String baseName) {
-        String n = baseName == null ? "" : baseName.toLowerCase(Locale.ROOT);
-        if (n.contains("pickaxe") || n.contains("pioche")) return Kind.PICKAXE;       // avant "axe"
-        if (n.contains("axe") || n.contains("hache") || n.contains("hatchet")) return Kind.AXE;
+        String n = baseName == null ? "" : java.text.Normalizer.normalize(baseName, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);     // sans accents
+        if (n.contains("pickaxe") || n.contains("pioche") || n.contains("foreuse")
+                || n.contains("piochon") || n.contains("piolet")) return Kind.PICKAXE;     // avant "axe"
+        if (n.contains("axe") || n.contains("hache") || n.contains("hatchet") || n.contains("cognee")
+                || n.contains("doloire") || n.contains("tomahawk") || n.contains("francisque")) return Kind.AXE;
         if (n.contains("sword") || n.contains("blade") || n.contains("dagger") || n.contains("katana")
-                || n.contains("sabre") || n.contains("epee") || n.contains("lame")) return Kind.SWORD;
+                || n.contains("sabre") || n.contains("epee") || n.contains("lame") || n.contains("glaive")
+                || n.contains("dague") || n.contains("rapiere") || n.contains("espadon") || n.contains("cimeterre")
+                || n.contains("fleuret") || n.contains("estoc")) return Kind.SWORD;
         if (n.contains("helmet") || n.contains("cap") || n.contains("hood") || n.contains("crown")
-                || n.contains("casque") || n.contains("heaume")) return Kind.HELMET;
-        if (n.contains("chestplate") || n.contains("tunic") || n.contains("plastron")
-                || n.contains("chest") || n.contains("plate")) return Kind.CHESTPLATE;
+                || n.contains("casque") || n.contains("heaume") || n.contains("coiffe") || n.contains("bassinet")
+                || n.contains("salade") || n.contains("armet") || n.contains("couronne") || n.contains("calotte")) return Kind.HELMET;
+        if (n.contains("chestplate") || n.contains("tunic") || n.contains("plastron") || n.contains("chest")
+                || n.contains("plate") || n.contains("cuirasse") || n.contains("armure") || n.contains("harnois")
+                || n.contains("haubert") || n.contains("broigne") || n.contains("corselet")) return Kind.CHESTPLATE;
         return Kind.GENERIC;
     }
 

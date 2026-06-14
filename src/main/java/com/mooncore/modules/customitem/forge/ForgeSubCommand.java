@@ -33,15 +33,28 @@ public final class ForgeSubCommand implements SubCommand {
     @Override public boolean playerOnly() { return true; }
 
     private static final double STRENGTH = 0.9;
-    private static volatile GptPaletteSource gptCache;   // modèle Java chargé une fois
+    private static volatile GptPaletteSource gptCache;   // modèle couleur chargé une fois
+    private static volatile GptProgramSource dslCache;   // modèle DSL (forme/texture) chargé une fois
 
-    /** Modèle GPT en JVM (chargé depuis plugins/MoonCore/forge-gpt.bin), mémoïsé. */
+    /** Modèle GPT couleur en JVM (chargé depuis plugins/MoonCore/forge-gpt.bin), mémoïsé. */
     private static GptPaletteSource gpt(MoonCore plugin) {
         GptPaletteSource g = gptCache;
         if (g == null) {
             synchronized (ForgeSubCommand.class) {
                 g = gptCache;
                 if (g == null) g = gptCache = new GptPaletteSource(new java.io.File(plugin.getDataFolder(), "forge-gpt.bin"));
+            }
+        }
+        return g;
+    }
+
+    /** Modèle GPT DSL en JVM (chargé depuis plugins/MoonCore/forge-gpt-dsl.bin) : l'IA écrit la texture. */
+    private static GptProgramSource gptDsl(MoonCore plugin) {
+        GptProgramSource g = dslCache;
+        if (g == null) {
+            synchronized (ForgeSubCommand.class) {
+                g = dslCache;
+                if (g == null) g = dslCache = new GptProgramSource(new java.io.File(plugin.getDataFolder(), "forge-gpt-dsl.bin"));
             }
         }
         return g;
@@ -60,6 +73,12 @@ public final class ForgeSubCommand implements SubCommand {
         // /moon forge dsl <nom…> :: <programme DSL>  -> texture écrite dans le LANGAGE du serveur
         if (a.length >= 1 && a[0].equalsIgnoreCase("dsl")) {
             forgeDsl(plugin, p, java.util.Arrays.copyOfRange(a, 1, a.length));
+            return;
+        }
+
+        // /moon forge ia <nom…>  -> l'IA (modèle DSL en JVM) ÉCRIT la texture, le serveur la dessine
+        if (a.length >= 1 && a[0].equalsIgnoreCase("ia")) {
+            forgeIa(plugin, p, java.util.Arrays.copyOfRange(a, 1, a.length));
             return;
         }
 
@@ -141,6 +160,32 @@ public final class ForgeSubCommand implements SubCommand {
         msg(p, new ForgeService(plugin, module).forgeProgram(p, name, dsl, null).message());
     }
 
+    /**
+     * {@code /moon forge ia <nom…>} — l'<b>IA écrit la texture</b> : le modèle DSL en JVM génère le programme
+     * (la suite de mots), le serveur le dessine. Couleur déduite du nom. Filet : compositeur si le modèle est
+     * absent ou produit un programme invalide ({@link GptProgramSource}).
+     */
+    private void forgeIa(MoonCore plugin, Player p, String[] rest) {
+        String name = String.join(" ", rest).trim();
+        if (name.isBlank()) {
+            msg(p, "<gray>/moon forge ia <nom…>   <dark_gray>— l'IA (serveur) écrit la texture");
+            msg(p, "<dark_gray>ex : /moon forge ia Épée du Dragon Céleste");
+            return;
+        }
+        ForgeService svc = new ForgeService(plugin, module);
+        ThemePalette pal = PaletteResolver.fromName(name);
+        GptProgramSource g = gptDsl(plugin);
+        if (!g.available()) {
+            msg(p, "<yellow>Modèle DSL non installé (forge-gpt-dsl.bin) — compositeur utilisé.");
+            msg(p, svc.forgeProgram(p, name, TextureComposer.compose(name), pal).message());
+            return;
+        }
+        msg(p, "<gray>🜂 L'IA (serveur) écrit la texture de <white>" + name + "<gray>…");
+        g.resolve(name).whenComplete((prog, err) -> plugin.schedulers().sync(() ->
+                msg(p, svc.forgeProgram(p, name,
+                        (err != null || prog == null || prog.isBlank()) ? TextureComposer.compose(name) : prog, pal).message())));
+    }
+
     /** Conseille des couleurs pour un nom (moteur déterministe + modèle si dispo), sans forger. */
     private void suggest(MoonCore plugin, Player p, String name) {
         if (name.isBlank()) { msg(p, "<red>/moon forge suggest <nom…>"); return; }
@@ -166,6 +211,7 @@ public final class ForgeSubCommand implements SubCommand {
             List<String> opts = new ArrayList<>(COMMON_BASES);
             opts.add(0, "suggest");
             opts.add(0, "dsl");
+            opts.add(0, "ia");
             opts.add(0, "model");
             opts.add(0, "ai");
             return filter(opts, a[0]);

@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import os
 import pickle
+import random
 
 import numpy as np
 
@@ -27,10 +28,12 @@ def main() -> None:
     args = ap.parse_args()
 
     with open(args.inp, "r", encoding="utf-8") as f:
-        text = f.read()
-    if not text.endswith("\n"):
-        text += "\n"
-    print(f"corpus : {text.count(chr(10)):,} lignes, {len(text):,} chars")
+        rows = [ln for ln in f.read().splitlines() if ln.strip()]
+    # MÉLANGE les lignes : le corpus est ordonné par type d'objet, donc sans mélange le split
+    # train/val n'est pas iid et les fenêtres d'entraînement restent du même type. On interleave.
+    random.Random(1234).shuffle(rows)
+    text = "\n".join(rows) + "\n"
+    print(f"corpus : {len(rows):,} lignes (mélangées), {len(text):,} chars")
 
     chars = sorted(set(text))
     stoi = {c: i for i, c in enumerate(chars)}

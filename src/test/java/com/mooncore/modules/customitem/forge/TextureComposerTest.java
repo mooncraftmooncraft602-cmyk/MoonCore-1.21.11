@@ -41,8 +41,11 @@ class TextureComposerTest {
     /** Écrit le corpus {@code (nom => programme DSL)} dans tools/forge-model/data/dsl_data.txt + 6 aperçus. */
     @Test
     void writeDslCorpusAndSamples() throws Exception {
-        String[] kinds = {"Épée", "Lame", "Sabre", "Glaive", "Dague", "Katana", "Pioche", "Foreuse",
-                "Hache", "Hachette", "Casque", "Heaume", "Coiffe", "Plastron", "Cuirasse", "Armure"};
+        String[] kinds = {"Épée", "Lame", "Dague",          // épée
+                "Pioche", "Foreuse", "Piochon",             // pioche
+                "Hache", "Hachette", "Cognée",              // hache
+                "Casque", "Heaume", "Coiffe",               // casque
+                "Plastron", "Cuirasse", "Armure"};          // plastron — 3 par type = corpus ÉQUILIBRÉ
         String[] adj = {"", "Grande ", "Petite ", "Royale ", "Runique ", "Sacrée ", "Divine ", "Ancienne ",
                 "Légendaire ", "Mythique ", "Brute ", "Céleste ", "Impériale ", "Maudite ", "Brisée ", "Éternelle "};
         String[] themes = {"Feu", "Glace", "Foudre", "Vent", "Ombre", "Poison", "Sang", "Or", "Nature",

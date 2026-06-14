@@ -59,6 +59,13 @@ class TextureSynthTest {
         assertEquals(TextureSynth.Kind.HELMET, TextureSynth.itemKind("iron_helmet"));
         assertEquals(TextureSynth.Kind.CHESTPLATE, TextureSynth.itemKind("diamond_chestplate"));
         assertEquals(TextureSynth.Kind.GENERIC, TextureSynth.itemKind("stick"));
+        // synonymes FR (corpus IA) — sans ces alias, « Armure/Foreuse/Coiffe… » devenaient des épées
+        assertEquals(TextureSynth.Kind.CHESTPLATE, TextureSynth.itemKind("Armure du Dragon"));
+        assertEquals(TextureSynth.Kind.CHESTPLATE, TextureSynth.itemKind("Cuirasse Royale"));
+        assertEquals(TextureSynth.Kind.PICKAXE, TextureSynth.itemKind("Foreuse de Glace"));
+        assertEquals(TextureSynth.Kind.HELMET, TextureSynth.itemKind("Coiffe du Soleil"));
+        assertEquals(TextureSynth.Kind.AXE, TextureSynth.itemKind("Cognée de Foudre"));
+        assertEquals(TextureSynth.Kind.SWORD, TextureSynth.itemKind("Glaive Sacré"));
     }
 
     @Test
