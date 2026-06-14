@@ -211,8 +211,40 @@ public final class MechanicExecutor {
         if (world != null) p.teleport(new Location(world, x, y, z, p.getYaw(), p.getPitch()));
     }
 
-    /** Remplace les placeholders simples dans un texte d'action. */
+    /** Remplace les placeholders d'un texte d'action à partir du joueur cible. */
     private static String placeholders(String s, Player p) {
-        return s == null ? "" : s.replace("%player%", p.getName());
+        Location loc = p.getLocation();
+        java.util.Map<String, String> vars = new java.util.HashMap<>();
+        vars.put("player", p.getName());
+        vars.put("world", p.getWorld().getName());
+        vars.put("x", String.valueOf(loc.getBlockX()));
+        vars.put("y", String.valueOf(loc.getBlockY()));
+        vars.put("z", String.valueOf(loc.getBlockZ()));
+        vars.put("online", String.valueOf(Bukkit.getOnlinePlayers().size()));
+        return fillPlaceholders(s, vars);
+    }
+
+    /**
+     * Substitue chaque {@code %clé%} par sa valeur dans {@code vars} (pur → testable sans serveur). Les clés
+     * absentes sont laissées telles quelles ; les valeurs ne sont pas re-balayées (pas de substitution en cascade).
+     */
+    static String fillPlaceholders(String s, java.util.Map<String, String> vars) {
+        if (s == null || s.isEmpty() || vars == null || s.indexOf('%') < 0) return s == null ? "" : s;
+        StringBuilder out = new StringBuilder(s.length() + 16);
+        int i = 0, n = s.length();
+        while (i < n) {
+            char c = s.charAt(i);
+            if (c == '%') {
+                int end = s.indexOf('%', i + 1);
+                if (end > i) {
+                    String key = s.substring(i + 1, end);
+                    String val = vars.get(key);
+                    if (val != null) { out.append(val); i = end + 1; continue; }
+                }
+            }
+            out.append(c);
+            i++;
+        }
+        return out.toString();
     }
 }

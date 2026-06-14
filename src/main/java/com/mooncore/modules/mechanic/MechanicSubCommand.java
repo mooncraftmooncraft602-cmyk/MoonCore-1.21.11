@@ -272,6 +272,7 @@ public final class MechanicSubCommand implements SubCommand {
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, "<gray>Types action : message, command, sound, potion, give_item, money, take_money, damage, heal, xp,");
         msg(s, "<gray>  teleport, lightning, spawn_mob, title, clear_effects, feed, loot, launch, particle, broadcast, player_command.");
+        msg(s, "<gray>Placeholders (texte/title/command/broadcast) : <white>%player% %world% %x% %y% %z% %online%<gray>.");
     }
 
     private static void msg(CommandSender s, String mm) { s.sendMessage(Text.mm(mm)); }
