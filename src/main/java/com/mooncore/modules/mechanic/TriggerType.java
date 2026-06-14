@@ -1,0 +1,40 @@
+package com.mooncore.modules.mechanic;
+
+import java.util.Locale;
+
+/**
+ * Déclencheur d'une {@link MechanicDef} : l'événement de jeu qui lance les actions. Le filtrage fin
+ * (quel bloc / quel item) est porté par {@link MechanicDef#matchKey()}. {@link #fromText} est tolérant
+ * (alias FR/EN, séparateurs variés) — la robustesse de ce parsing est testée sans serveur.
+ */
+public enum TriggerType {
+    INTERACT_BLOCK,   // clic droit sur un bloc (custom via matchKey, sinon Material)
+    BREAK_BLOCK,      // casse d'un bloc
+    USE_ITEM,         // clic droit en tenant un item (custom via matchKey, sinon Material)
+    KILL_ENTITY,      // mort d'une entité tuée par le joueur
+    PLAYER_JOIN,      // connexion
+    PLAYER_QUIT,      // déconnexion
+    INTERVAL,         // tick périodique (matchKey ignoré ; période portée par la mécanique)
+    NONE;             // inerte (désactivé / non reconnu)
+
+    /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
+    public static TriggerType fromText(String raw) {
+        if (raw == null) return NONE;
+        String t = raw.trim().toLowerCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+        return switch (t) {
+            case "interact_block", "interact", "rightclick_block", "clic_bloc", "interaction_bloc" -> INTERACT_BLOCK;
+            case "break_block", "break", "casse", "casse_bloc", "mine_block" -> BREAK_BLOCK;
+            case "use_item", "use", "rightclick_item", "clic_item", "utilise_item" -> USE_ITEM;
+            case "kill_entity", "kill", "kill_mob", "tue", "tue_entite" -> KILL_ENTITY;
+            case "player_join", "join", "connexion", "arrivee" -> PLAYER_JOIN;
+            case "player_quit", "quit", "leave", "deconnexion", "depart" -> PLAYER_QUIT;
+            case "interval", "tick", "timer", "periodique", "periode" -> INTERVAL;
+            default -> NONE;
+        };
+    }
+
+    /** True si ce déclencheur cible un objet identifié (bloc/item) via {@code matchKey}. */
+    public boolean usesMatchKey() {
+        return this == INTERACT_BLOCK || this == BREAK_BLOCK || this == USE_ITEM || this == KILL_ENTITY;
+    }
+}
