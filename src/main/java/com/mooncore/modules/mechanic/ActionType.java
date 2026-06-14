@@ -13,7 +13,8 @@ public enum ActionType {
     SOUND,      // params: sound, volume, pitch
     POTION,     // params: effect, duration (ticks), amplifier
     GIVE_ITEM,  // params: item (Material ou custom:<id>), amount
-    MONEY,      // params: amount (économie)
+    MONEY,      // params: amount (crédite l'économie du joueur)
+    TAKE_MONEY, // params: amount (débite l'économie ; ne fait rien si solde insuffisant)
     DAMAGE,     // params: amount
     HEAL,       // params: amount
     XP,         // params: amount (progression)
@@ -41,6 +42,7 @@ public enum ActionType {
             case "potion", "effect", "effet", "potion_effect" -> POTION;
             case "give_item", "give", "item", "donne", "donne_item" -> GIVE_ITEM;
             case "money", "argent", "eco", "economy", "cash" -> MONEY;
+            case "take_money", "withdraw", "charge", "debite", "cout", "cost" -> TAKE_MONEY;
             case "damage", "degats", "hurt", "blesse" -> DAMAGE;
             case "heal", "soin", "soigne", "regen" -> HEAL;
             case "xp", "exp", "experience" -> XP;

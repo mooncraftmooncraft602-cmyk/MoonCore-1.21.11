@@ -39,6 +39,8 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.GIVE_ITEM, ActionType.fromText("give-item"));
         assertEquals(ActionType.GIVE_ITEM, ActionType.fromText("donne item"));
         assertEquals(ActionType.MONEY, ActionType.fromText("argent"));
+        assertEquals(ActionType.TAKE_MONEY, ActionType.fromText("charge"));
+        assertEquals(ActionType.TAKE_MONEY, ActionType.fromText("cost"));
         assertEquals(ActionType.POTION, ActionType.fromText("effet"));
         assertEquals(ActionType.TELEPORT, ActionType.fromText("tp"));
         assertEquals(ActionType.LIGHTNING, ActionType.fromText("foudre"));

@@ -56,6 +56,11 @@ public final class MechanicExecutor {
                 if (amt > 0) plugin.services().get(com.mooncore.api.economy.EconomyService.class)
                         .ifPresent(eco -> eco.deposit(p.getUniqueId(), amt, "mechanic"));
             }
+            case TAKE_MONEY -> {
+                double amt = a.doubleParam("amount", 0);
+                if (amt > 0) plugin.services().get(com.mooncore.api.economy.EconomyService.class)
+                        .ifPresent(eco -> eco.withdraw(p.getUniqueId(), amt, "mechanic"));  // no-op si solde insuffisant
+            }
             case DAMAGE -> {
                 double amt = a.doubleParam("amount", 0);
                 if (amt > 0) p.damage(amt);

@@ -392,7 +392,8 @@ public final class AiPrompts {
                 - sound    { sound, volume, pitch }
                 - potion   { effect, duration, amplifier }  (effect = nom vanilla, duration en ticks)
                 - give_item{ item, amount }              (item = Material ou custom:<id>)
-                - money    { amount }   ·  xp { amount }  ·  damage { amount }  ·  heal { amount }
+                - money    { amount } (credite)  ·  take_money { amount } (debite, paye une capacite)
+                - xp { amount }  ·  damage { amount }  ·  heal { amount }
                 - teleport { x, y, z, world }  OU  { target: "spawn" }
                 - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
                 - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
