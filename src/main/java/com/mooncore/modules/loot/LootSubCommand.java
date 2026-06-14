@@ -39,6 +39,7 @@ public final class LootSubCommand implements SubCommand {
                 case "clearpools" -> clearPools(s, a);
                 case "removepool" -> removePool(s, a);
                 case "removeentry" -> removeEntry(s, a);
+                case "rolls", "setrolls" -> setRolls(s, a);
                 case "test", "roll" -> test(s, a);
                 case "give" -> give(s, a);
                 case "stats" -> stats(s, a);
@@ -184,6 +185,20 @@ public final class LootSubCommand implements SubCommand {
                 + " <gray>(" + pool.entries().size() + " restante(s)).");
     }
 
+    private void setRolls(CommandSender s, String[] a) {
+        LootTableDef d = need(s, a); if (d == null) return;
+        if (a.length < 4) { msg(s, "<red>/moon loot rolls <id> <poolIndex> <min> [max]"); return; }
+        int pi = Integer.parseInt(a[2]);
+        if (pi < 0 || pi >= d.pools().size()) { msg(s, "<red>Pool inexistant : " + pi + " (0–" + (d.pools().size() - 1) + ")"); return; }
+        int min = Integer.parseInt(a[3]);
+        int max = a.length >= 5 ? Integer.parseInt(a[4]) : min;
+        LootPool pool = d.pools().get(pi);
+        pool.setRolls(min, max);   // entrées conservées
+        module.put(d);
+        msg(s, "<green>Rolls du pool <white>" + pi + "<green> de " + d.id() + " = <white>"
+                + pool.rollsMin() + "–" + pool.rollsMax() + " <gray>(" + pool.entries().size() + " entrée(s) conservée(s)).");
+    }
+
     private void clearPools(CommandSender s, String[] a) {
         LootTableDef d = need(s, a); if (d == null) return;
         d.pools().clear();
@@ -289,6 +304,7 @@ public final class LootSubCommand implements SubCommand {
                 "create <id> / delete <id> / list / info <id> / reload",
                 "addpool <id> [rollsMin] [rollsMax]  (ajoute un pool de tirages)",
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
+                "rolls <id> <poolIndex> <min> [max]  (ajuste les tirages d'un pool, garde les entrées)",
                 "removepool <id> <poolIndex>  ·  removeentry <id> <poolIndex> <entryIndex>  ·  clearpools <id>",
                 "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur|@a> <id>  (donne le butin tiré)",
                 "stats <id> [n]  (balance : fréquence + quantité moyenne par item sur n tirages, défaut 1000)",
@@ -305,13 +321,13 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "removepool", "removeentry", "clearpools", "test", "stats", "give", "fill", "validate", "reload"), a[0]);
+                    "removepool", "removeentry", "rolls", "clearpools", "test", "stats", "give", "fill", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "addpool", "addentry", "removepool", "removeentry",
-                     "clearpools", "test", "stats", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
+                     "rolls", "clearpools", "test", "stats", "fill", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> {
                     List<String> names = org.bukkit.Bukkit.getOnlinePlayers().stream()
                             .map(org.bukkit.entity.Player::getName).collect(Collectors.toList());
