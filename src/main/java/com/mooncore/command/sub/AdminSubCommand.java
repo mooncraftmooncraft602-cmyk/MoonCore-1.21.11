@@ -39,6 +39,7 @@ public final class AdminSubCommand implements SubCommand {
         switch (sub) {
             case "inspect" -> inspect(plugin, sender, args);
             case "migrate-content" -> migrateContent(plugin, sender);
+            case "timings" -> timings(plugin, sender, args);
             case "debug" -> debug(plugin, sender);
             case "info" -> sender.sendMessage(cm.prefixed("version",
                     "version", plugin.getPluginMeta().getVersion(),
@@ -123,6 +124,49 @@ public final class AdminSubCommand implements SubCommand {
         });
     }
 
+    /**
+     * {@code /moon admin timings [on|off|reset]} — mini-profiler des chemins chauds. Désactivé par
+     * défaut (coût nul) ; {@code on} l'active le temps d'une mesure, {@code off}/{@code reset} le coupe/vide.
+     * Sans argument : affiche le top des points de mesure (temps moyen / max / total).
+     */
+    private void timings(MoonCore plugin, CommandSender sender, String[] args) {
+        String prefix = plugin.configManager().prefix();
+        String sub = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "show";
+        switch (sub) {
+            case "on" -> {
+                com.mooncore.util.Timings.setEnabled(true);
+                sender.sendMessage(com.mooncore.util.Text.mm(prefix + "<green>Profiler activé.</green> "
+                        + "<gray>Laissez tourner puis relancez</gray> <white>/moon admin timings</white><gray>.</gray>"));
+            }
+            case "off" -> {
+                com.mooncore.util.Timings.setEnabled(false);
+                sender.sendMessage(com.mooncore.util.Text.mm(prefix + "<yellow>Profiler désactivé.</yellow>"));
+            }
+            case "reset" -> {
+                com.mooncore.util.Timings.reset();
+                sender.sendMessage(com.mooncore.util.Text.mm(prefix + "<gray>Mesures réinitialisées.</gray>"));
+            }
+            default -> {
+                List<com.mooncore.util.Timings.Snapshot> snaps = com.mooncore.util.Timings.snapshot();
+                String state = com.mooncore.util.Timings.isEnabled() ? "<green>actif</green>" : "<red>inactif</red>";
+                sender.sendMessage(com.mooncore.util.Text.mm(prefix + "<gray>Profiler :</gray> " + state
+                        + " <dark_gray>(on/off/reset)</dark_gray>"));
+                if (snaps.isEmpty()) {
+                    sender.sendMessage(com.mooncore.util.Text.mm(prefix + "<gray>Aucune mesure.</gray>"));
+                    return;
+                }
+                int shown = 0;
+                for (com.mooncore.util.Timings.Snapshot s : snaps) {
+                    if (shown++ >= 15) break;
+                    sender.sendMessage(com.mooncore.util.Text.mm(prefix + String.format(Locale.ROOT,
+                            "<white>%s</white> <gray>×%d</gray> <yellow>moy %.1fµs</yellow> "
+                                    + "<gold>max %.1fµs</gold> <aqua>tot %.1fms</aqua>",
+                            s.name(), s.count(), s.avgMicros(), s.maxMicros(), s.totalMillis())));
+                }
+            }
+        }
+    }
+
     private void debug(MoonCore plugin, CommandSender sender) {
         var cm = plugin.configManager();
         Runtime rt = Runtime.getRuntime();
@@ -151,13 +195,20 @@ public final class AdminSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender sender, String[] args) {
         if (args.length == 1) {
             List<String> out = new java.util.ArrayList<>();
-            for (String s : List.of("inspect", "migrate-content", "debug", "info")) {
+            for (String s : List.of("inspect", "migrate-content", "timings", "debug", "info")) {
                 if (s.startsWith(args[0].toLowerCase(Locale.ROOT))) out.add(s);
             }
             return out;
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("inspect")) {
             return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("timings")) {
+            List<String> out = new java.util.ArrayList<>();
+            for (String s : List.of("on", "off", "reset")) {
+                if (s.startsWith(args[1].toLowerCase(Locale.ROOT))) out.add(s);
+            }
+            return out;
         }
         return List.of();
     }

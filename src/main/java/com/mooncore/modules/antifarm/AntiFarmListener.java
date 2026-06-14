@@ -104,11 +104,13 @@ public final class AntiFarmListener implements Listener {
         if (module.entityMaxPerChunk() <= 0) return;
         if (!module.countedReasons().contains(e.getSpawnReason())) return;
 
+        long _t = com.mooncore.util.Timings.start();
         // Comptage borné : un seul chunk (déjà chargé puisqu'un mob y apparaît).
         int living = 0;
         for (Entity ent : e.getLocation().getChunk().getEntities()) {
             if (ent instanceof LivingEntity && !(ent instanceof Player)) living++;
         }
+        com.mooncore.util.Timings.stop("antifarm.onSpawnCount", _t);
         if (living >= module.entityMaxPerChunk()) {
             e.setCancelled(true);
             int chunkX = e.getLocation().getBlockX() >> 4;

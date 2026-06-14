@@ -67,7 +67,8 @@ public final class EnchantManagerModule extends AbstractModule {
         registerListener(new EnchantListener(this));
         plugin().rootCommand().register(new EnchantSubCommand(this));
 
-        equipTask = schedulers().syncTimer(this::tickEquip, 40L, 20L);
+        equipTask = schedulers().syncTimer(
+                () -> com.mooncore.util.Timings.sample("enchant.tickEquip", this::tickEquip), 40L, 20L);
     }
 
     @Override

@@ -219,23 +219,28 @@ public final class ZoneListener implements Listener {
                 && from.getBlockZ() == to.getBlockZ()) {
             return;
         }
-        Player p = e.getPlayer();
-        if (zone.bypasses(p)) return;
+        long _t = com.mooncore.util.Timings.start();
+        try {
+            Player p = e.getPlayer();
+            if (zone.bypasses(p)) return;
 
-        if (zone.flag(to, ZoneFlag.NO_ENTER) && !zone.flag(from, ZoneFlag.NO_ENTER)) {
-            e.setTo(from);
-            deny(p);
-            return;
-        }
-        if (zone.flag(from, ZoneFlag.NO_LEAVE) && !zone.flag(to, ZoneFlag.NO_LEAVE)) {
-            e.setTo(from);
-            deny(p);
-            return;
-        }
-        if (zone.flag(to, ZoneFlag.NO_FLIGHT) && p.isFlying()
-                && p.getGameMode() != GameMode.CREATIVE && p.getGameMode() != GameMode.SPECTATOR) {
-            p.setFlying(false);
-            p.setAllowFlight(false);
+            if (zone.flag(to, ZoneFlag.NO_ENTER) && !zone.flag(from, ZoneFlag.NO_ENTER)) {
+                e.setTo(from);
+                deny(p);
+                return;
+            }
+            if (zone.flag(from, ZoneFlag.NO_LEAVE) && !zone.flag(to, ZoneFlag.NO_LEAVE)) {
+                e.setTo(from);
+                deny(p);
+                return;
+            }
+            if (zone.flag(to, ZoneFlag.NO_FLIGHT) && p.isFlying()
+                    && p.getGameMode() != GameMode.CREATIVE && p.getGameMode() != GameMode.SPECTATOR) {
+                p.setFlying(false);
+                p.setAllowFlight(false);
+            }
+        } finally {
+            com.mooncore.util.Timings.stop("zone.onMove", _t);
         }
     }
 
