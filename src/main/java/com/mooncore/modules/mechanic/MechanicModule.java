@@ -27,12 +27,19 @@ public final class MechanicModule extends AbstractModule {
     private static final String CONTENT_TYPE = "mechanic";
 
     private final Map<String, MechanicDef> defs = new LinkedHashMap<>();
+    private final MechanicCooldowns cooldowns = new MechanicCooldowns();
     private MechanicStore store;
+    private MechanicExecutor executor;
+    private org.bukkit.scheduler.BukkitTask intervalTask;
     private com.mooncore.data.content.ContentSyncService contentSync; // miroir SQL (null = YAML pur)
+
+    /** Période de contrôle des mécaniques INTERVAL (ticks). Le cooldown par mécanique cale l'espacement réel. */
+    private static final long INTERVAL_PERIOD = 20L;
 
     @Override
     protected void onEnable() {
         this.store = new MechanicStore(plugin().getDataFolder(), log());
+        this.executor = new MechanicExecutor(plugin());
         reloadDefinitions();
 
         var dm = data();
@@ -47,12 +54,74 @@ public final class MechanicModule extends AbstractModule {
             }
         }
 
+        registerListener(new MechanicListener(this));
+        this.intervalTask = schedulers().syncTimer(this::tickInterval, INTERVAL_PERIOD, INTERVAL_PERIOD);
+
         log().info("MechanicManager : " + defs.size() + " mécanique(s) (" + runnableCount() + " active(s)).");
     }
 
     @Override
     protected void onDisable() {
+        if (intervalTask != null) { intervalTask.cancel(); intervalTask = null; }
+        cooldowns.clearAll();
         defs.clear();
+    }
+
+    // ---- Déclenchement (LIVE) ----
+
+    /** Tick courant du serveur (monotone), pour les cooldowns. */
+    private static long currentTick() { return org.bukkit.Bukkit.getCurrentTick(); }
+
+    /**
+     * Déclenche les mécaniques liées à {@code trigger} pour {@code player}, filtrées par {@code contextKey}
+     * (id de l'objet déclencheur : Material en minuscule, {@code custom:<id>}, ou type d'entité) quand le
+     * déclencheur utilise un match, puis sous réserve du cooldown par joueur. Exécute leurs actions.
+     */
+    public void fire(TriggerType trigger, org.bukkit.entity.Player player, String contextKey) {
+        if (player == null) return;
+        long now = currentTick();
+        for (MechanicDef d : byTrigger(trigger)) {
+            if (trigger.usesMatchKey() && d.matchKey() != null
+                    && !d.matchKey().equalsIgnoreCase(contextKey)) continue;
+            if (!cooldowns.tryAcquire(d.id(), player.getUniqueId(), d.cooldownTicks(), now)) continue;
+            executor.run(d, player);
+        }
+    }
+
+    /** Contrôle périodique des mécaniques INTERVAL : chaque joueur en ligne est cadencé par intervalTicks. */
+    private void tickInterval() {
+        List<MechanicDef> intervals = byTrigger(TriggerType.INTERVAL);
+        if (intervals.isEmpty()) return;
+        long now = currentTick();
+        for (MechanicDef d : intervals) {
+            for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                if (cooldowns.tryAcquire(d.id(), p.getUniqueId(), d.intervalTicks(), now)) {
+                    executor.run(d, p);
+                }
+            }
+        }
+    }
+
+    public void clearCooldowns(java.util.UUID player) {
+        for (MechanicDef d : defs.values()) cooldowns.clear(d.id(), player);
+    }
+
+    /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
+    public String blockContextKey(org.bukkit.block.Block block) {
+        if (block == null) return null;
+        String custom = services().get(com.mooncore.api.customblock.CustomBlockService.class)
+                .map(cb -> cb.idAt(block)).orElse(null);
+        if (custom != null) return "custom:" + custom.toLowerCase(Locale.ROOT);
+        return block.getType().name().toLowerCase(Locale.ROOT);
+    }
+
+    /** Clé de contexte d'un item : {@code custom:<id>} si item MoonCore, sinon Material en minuscule. */
+    public String itemContextKey(org.bukkit.inventory.ItemStack item) {
+        if (item == null || item.getType().isAir()) return null;
+        String custom = services().get(com.mooncore.api.customitem.CustomItemManagerService.class)
+                .map(ci -> ci.idOf(item)).orElse(null);
+        if (custom != null) return "custom:" + custom.toLowerCase(Locale.ROOT);
+        return item.getType().name().toLowerCase(Locale.ROOT);
     }
 
     public void reloadDefinitions() {
