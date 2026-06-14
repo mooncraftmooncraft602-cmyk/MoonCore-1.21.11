@@ -92,6 +92,21 @@ class MechanicDefTest {
     }
 
     @Test
+    void costClampsAndRoundTrips() {
+        MechanicDef d = new MechanicDef("paid");
+        assertFalse(d.hasCost());                 // gratuit par défaut
+        d.setCost(-50);
+        assertEquals(0.0, d.cost(), 1e-9);        // négatif → 0
+        d.setCost(250.0);
+        assertTrue(d.hasCost());
+        MemoryConfiguration cfg = new MemoryConfiguration();
+        d.save(cfg);
+        MechanicDef back = MechanicDef.load("paid", cfg);
+        assertEquals(250.0, back.cost(), 1e-9);
+        assertTrue(back.hasCost());
+    }
+
+    @Test
     void clampsCooldownAndInterval() {
         MechanicDef d = new MechanicDef("x");
         d.setCooldownTicks(-5);

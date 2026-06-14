@@ -26,6 +26,7 @@ public final class MechanicDef {
     private int cooldownTicks = 0;           // anti-spam par joueur (0 = aucun)
     private int intervalTicks = 100;         // période si trigger == INTERVAL
     private double chance = 1.0;             // probabilité de déclenchement [0..1] (1 = toujours)
+    private double cost = 0.0;               // coût en argent ; ne déclenche que si le joueur peut payer (0 = gratuit)
     private String permission = null;        // si non null : ne déclenche que si le joueur a cette permission
     private boolean enabled = true;
     private final List<MechanicAction> actions = new ArrayList<>();
@@ -57,6 +58,10 @@ public final class MechanicDef {
     public void setChance(double c) { this.chance = Math.max(0.0, Math.min(1.0, c)); }
     /** True si le tirage {@code rngValue} ∈ [0,1) passe la probabilité {@code chance} (toujours vrai si chance ≥ 1). */
     public boolean passes(double rngValue) { return chance >= 1.0 || rngValue < chance; }
+
+    public double cost() { return cost; }
+    public void setCost(double c) { this.cost = Math.max(0.0, c); }
+    public boolean hasCost() { return cost > 0.0; }
 
     public String permission() { return permission; }
     public void setPermission(String p) {
@@ -107,6 +112,7 @@ public final class MechanicDef {
         s.set("cooldown-ticks", cooldownTicks);
         s.set("interval-ticks", intervalTicks);
         s.set("chance", chance);
+        s.set("cost", cost);
         s.set("permission", permission);
         s.set("enabled", enabled);
         for (int i = 0; i < actions.size(); i++) {
@@ -128,6 +134,7 @@ public final class MechanicDef {
         d.setCooldownTicks(s.getInt("cooldown-ticks", 0));
         d.setIntervalTicks(s.getInt("interval-ticks", 100));
         d.setChance(s.getDouble("chance", 1.0));
+        d.setCost(s.getDouble("cost", 0.0));
         d.setPermission(s.getString("permission", null));
         d.enabled = s.getBoolean("enabled", true);
 

@@ -86,9 +86,22 @@ public final class MechanicModule extends AbstractModule {
                     && !d.matchKey().equalsIgnoreCase(contextKey)) continue;
             if (!d.isPublic() && !player.hasPermission(d.permission())) continue;
             if (!d.passes(java.util.concurrent.ThreadLocalRandom.current().nextDouble())) continue;
+            // Solvabilité AVANT le cooldown : un joueur qui ne peut pas payer n'est pas mis en cooldown.
+            if (d.hasCost() && !canAfford(player, d.cost())) continue;
             if (!cooldowns.tryAcquire(d.id(), player.getUniqueId(), d.cooldownTicks(), now)) continue;
+            if (d.hasCost()) charge(player, d.cost(), d.id());   // débit atomique avant les actions
             executor.run(d, player);
         }
+    }
+
+    private boolean canAfford(org.bukkit.entity.Player p, double amount) {
+        var eco = services().get(com.mooncore.api.economy.EconomyService.class).orElse(null);
+        return eco == null || eco.has(p.getUniqueId(), amount);   // pas d'économie = pas de blocage
+    }
+
+    private void charge(org.bukkit.entity.Player p, double amount, String mechanicId) {
+        services().get(com.mooncore.api.economy.EconomyService.class)
+                .ifPresent(eco -> eco.withdraw(p.getUniqueId(), amount, "mechanic:" + mechanicId));
     }
 
     /** Contrôle périodique des mécaniques INTERVAL : chaque joueur en ligne est cadencé par intervalTicks. */
@@ -99,8 +112,10 @@ public final class MechanicModule extends AbstractModule {
         for (MechanicDef d : intervals) {
             for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
                 if ((d.isPublic() || p.hasPermission(d.permission()))
+                        && (!d.hasCost() || canAfford(p, d.cost()))
                         && cooldowns.tryAcquire(d.id(), p.getUniqueId(), d.intervalTicks(), now)
                         && d.passes(java.util.concurrent.ThreadLocalRandom.current().nextDouble())) {
+                    if (d.hasCost()) charge(p, d.cost(), d.id());
                     executor.run(d, p);
                 }
             }

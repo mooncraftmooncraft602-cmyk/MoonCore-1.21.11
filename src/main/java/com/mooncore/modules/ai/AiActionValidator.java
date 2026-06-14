@@ -468,6 +468,7 @@ public final class AiActionValidator {
         d.setCooldownTicks(intOf(root, "cooldown-ticks", 0));
         d.setIntervalTicks(intOf(root, "interval-ticks", 100));
         d.setChance(dblOf(root, "chance", 1.0));
+        d.setCost(dblOf(root, "cost", 0.0));
         d.setPermission(str(root, "permission", null));
         d.setEnabled(bool(root, "enabled", true));
 

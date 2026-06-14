@@ -41,6 +41,7 @@ public final class MechanicSubCommand implements SubCommand {
                 case "cooldown" -> setCooldown(s, a);
                 case "interval" -> setInterval(s, a);
                 case "chance" -> setChance(s, a);
+                case "cost", "cout" -> setCost(s, a);
                 case "permission", "perm" -> setPermission(s, a);
                 case "enable" -> setEnabled(s, a);
                 case "addaction" -> addAction(s, a);
@@ -90,7 +91,8 @@ public final class MechanicSubCommand implements SubCommand {
                 + (d.matchKey() != null ? " <gray>match <white>" + d.matchKey() : "")
                 + " <gray>· cooldown <white>" + d.cooldownTicks() + "t"
                 + (d.trigger() == TriggerType.INTERVAL ? " <gray>· intervalle <white>" + d.intervalTicks() + "t" : ""));
-        msg(s, " <gray>Probabilité : <white>" + Math.round(d.chance() * 100) + "% <gray>· permission : <white>"
+        msg(s, " <gray>Probabilité : <white>" + Math.round(d.chance() * 100) + "% <gray>· coût : <white>"
+                + (d.hasCost() ? d.cost() + "$" : "gratuit") + " <gray>· permission : <white>"
                 + (d.isPublic() ? "(aucune)" : d.permission()));
         msg(s, " <gray>Active : <white>" + d.enabled() + " <gray>· exécutable : <white>" + d.isRunnable());
         for (int i = 0; i < d.actions().size(); i++) {
@@ -142,6 +144,13 @@ public final class MechanicSubCommand implements SubCommand {
         if (a.length < 3) { msg(s, "<red>/moon mechanic chance <id> <0.0-1.0>  (ex 0.1 = 10%)"); return; }
         d.setChance(Double.parseDouble(a[2])); module.put(d);
         msg(s, "<green>Probabilité de " + d.id() + " = <white>" + Math.round(d.chance() * 100) + "%");
+    }
+
+    private void setCost(CommandSender s, String[] a) {
+        MechanicDef d = need(s, a); if (d == null) return;
+        if (a.length < 3) { msg(s, "<red>/moon mechanic cost <id> <montant>  (0 = gratuit)"); return; }
+        d.setCost(Double.parseDouble(a[2])); module.put(d);
+        msg(s, "<green>Coût de " + d.id() + " = <white>" + d.cost() + "$ <gray>(débité au déclenchement si solvable)");
     }
 
     private void setPermission(CommandSender s, String[] a) {
@@ -252,7 +261,7 @@ public final class MechanicSubCommand implements SubCommand {
                 "create <id> / delete <id> / list / info <id> / reload",
                 "trigger <id> <type>  ·  match <id> <Material|custom:id|EntityType|none>",
                 "cooldown <id> <ticks>  ·  interval <id> <ticks>  ·  chance <id> <0.0-1.0>",
-                "permission <id> <node|none>  ·  enable <id> <on|off>",
+                "cost <id> <montant>  (capacité payante)  ·  permission <id> <node|none>  ·  enable <id> <on|off>",
                 "addaction <id> <type> [clé=valeur ...]  ·  removeaction <id> <index>  ·  clearactions <id>",
                 "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)  ·  validate <id>"
         };
@@ -267,13 +276,13 @@ public final class MechanicSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "trigger", "match", "cooldown",
-                    "interval", "chance", "permission", "enable", "addaction", "removeaction",
+                    "interval", "chance", "cost", "permission", "enable", "addaction", "removeaction",
                     "clearactions", "test", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "trigger", "match", "cooldown", "interval", "chance", "permission",
+                case "delete", "info", "trigger", "match", "cooldown", "interval", "chance", "cost", "permission",
                      "enable", "addaction", "removeaction", "clearactions", "test", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 default -> List.of();
             };
