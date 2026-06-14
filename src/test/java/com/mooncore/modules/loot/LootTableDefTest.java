@@ -135,6 +135,26 @@ class LootTableDefTest {
     }
 
     @Test
+    void producesNothingAndEmptyPoolDiagnostics() {
+        LootTableDef empty = new LootTableDef("vide");
+        assertTrue(empty.producesNothing());           // aucun pool
+        assertEquals(0, empty.totalEntries());
+        assertTrue(empty.emptyPoolIndices().isEmpty());
+
+        LootTableDef onlyEmptyPools = new LootTableDef("creux");
+        onlyEmptyPools.add(new LootPool(1, 1));         // pool sans entrée
+        onlyEmptyPools.add(new LootPool(1, 1));
+        assertTrue(onlyEmptyPools.producesNothing());   // pools présents mais aucune entrée
+        assertEquals(List.of(0, 1), onlyEmptyPools.emptyPoolIndices());
+
+        LootTableDef mixed = sample();                  // pool0=2 entrées, pool1=1 entrée
+        mixed.add(new LootPool(1, 1));                  // pool2 vide
+        assertFalse(mixed.producesNothing());
+        assertEquals(3, mixed.totalEntries());
+        assertEquals(List.of(2), mixed.emptyPoolIndices());
+    }
+
+    @Test
     void countRangeIsClampedConsistently() {
         // min > max fourni → max relevé au min ; valeurs négatives clampées à 0.
         LootEntry e = new LootEntry(null, Material.STONE, 1, 9, 2);

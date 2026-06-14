@@ -53,6 +53,27 @@ public final class LootTableDef {
         return out;
     }
 
+    /** Nombre total d'entrées sur tous les pools. Pur. */
+    public int totalEntries() {
+        int n = 0;
+        for (LootPool p : pools) n += p.entries().size();
+        return n;
+    }
+
+    /** Indices des pools sans aucune entrée (ne tirent rien), dans l'ordre. Pur → testable. */
+    public java.util.List<Integer> emptyPoolIndices() {
+        java.util.List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < pools.size(); i++) {
+            if (pools.get(i).entries().isEmpty()) out.add(i);
+        }
+        return out;
+    }
+
+    /** True si la table ne peut rien produire : aucun pool, ou aucune entrée sur l'ensemble des pools. Pur. */
+    public boolean producesNothing() {
+        return pools.isEmpty() || totalEntries() == 0;
+    }
+
     /** Ids des tables référencées par les entrées de cette table (imbrication), sans doublon. Pur. */
     public java.util.Set<String> referencedTables() {
         java.util.LinkedHashSet<String> refs = new java.util.LinkedHashSet<>();

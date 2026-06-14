@@ -303,25 +303,20 @@ public final class LootSubCommand implements SubCommand {
         LootTableDef d = need(s, a); if (d == null) return;
         java.util.List<String> issues = new ArrayList<>();
 
-        if (d.pools().isEmpty()) issues.add("aucun pool (la table ne produit rien)");
-        int totalEntries = 0;
-        java.util.List<Integer> emptyPools = new ArrayList<>();
-        for (int i = 0; i < d.pools().size(); i++) {
-            int n = d.pools().get(i).entries().size();
-            totalEntries += n;
-            if (n == 0) emptyPools.add(i);
+        if (d.producesNothing()) {
+            issues.add(d.pools().isEmpty() ? "aucun pool (la table ne produit rien)" : "aucune entrée (la table ne produit rien)");
         }
-        if (!emptyPools.isEmpty()) {
+        java.util.List<Integer> emptyPools = d.emptyPoolIndices();
+        if (!emptyPools.isEmpty() && !d.pools().isEmpty() && d.totalEntries() > 0) {
             issues.add("pool(s) sans entrée : " + emptyPools.stream().map(String::valueOf).collect(Collectors.joining(", ")));
         }
-        if (!d.pools().isEmpty() && totalEntries == 0) issues.add("aucune entrée (la table ne produit rien)");
 
         java.util.Set<String> dangling = d.danglingReferences(id -> module.def(id) != null);
         if (!dangling.isEmpty()) issues.add("référence(s) imbriquée(s) pendante(s) : " + String.join(", ", dangling));
 
         if (issues.isEmpty()) {
             int refs = d.referencedTables().size();
-            msg(s, "<green>✔ " + d.id() + " : valide <gray>(" + d.pools().size() + " pool(s), " + totalEntries
+            msg(s, "<green>✔ " + d.id() + " : valide <gray>(" + d.pools().size() + " pool(s), " + d.totalEntries()
                     + " entrée(s)" + (refs > 0 ? ", " + refs + " référence(s) imbriquée(s) toutes valides" : "") + ").");
         } else {
             msg(s, "<red>✖ " + d.id() + " : <white>" + String.join(" · ", issues));
