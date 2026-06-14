@@ -65,12 +65,12 @@ public final class MechanicDef {
     public void setIntervalTicks(int t) { this.intervalTicks = Math.max(1, Math.min(1_728_000, t)); }
 
     public double chance() { return chance; }
-    public void setChance(double c) { this.chance = Math.max(0.0, Math.min(1.0, c)); }
+    public void setChance(double c) { this.chance = Double.isNaN(c) ? 1.0 : Math.max(0.0, Math.min(1.0, c)); }
     /** True si le tirage {@code rngValue} ∈ [0,1) passe la probabilité {@code chance} (toujours vrai si chance ≥ 1). */
     public boolean passes(double rngValue) { return chance >= 1.0 || rngValue < chance; }
 
     public double cost() { return cost; }
-    public void setCost(double c) { this.cost = Math.max(0.0, c); }
+    public void setCost(double c) { this.cost = Double.isNaN(c) ? 0.0 : Math.max(0.0, c); }
     public boolean hasCost() { return cost > 0.0; }
 
     public String permission() { return permission; }

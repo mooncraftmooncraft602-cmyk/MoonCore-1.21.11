@@ -165,6 +165,8 @@ class MechanicDefTest {
         assertFalse(d.hasCost());                 // gratuit par défaut
         d.setCost(-50);
         assertEquals(0.0, d.cost(), 1e-9);        // négatif → 0
+        d.setCost(Double.NaN);
+        assertEquals(0.0, d.cost(), 1e-9);        // NaN → 0 (garde anti-NaN)
         d.setCost(250.0);
         assertTrue(d.hasCost());
         MemoryConfiguration cfg = new MemoryConfiguration();
@@ -199,6 +201,8 @@ class MechanicDefTest {
         d.setChance(-2.0);
         assertEquals(0.0, d.chance(), 1e-9);               // clampé à 0
         assertFalse(d.passes(0.0));                        // chance 0 → rien ne passe
+        d.setChance(Double.NaN);
+        assertEquals(1.0, d.chance(), 1e-9);               // NaN → 1.0 (défaut sûr, pas de blocage)
     }
 
     @Test
