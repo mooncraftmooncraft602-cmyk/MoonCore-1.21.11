@@ -136,13 +136,21 @@ public final class MechanicExecutor {
     }
 
     private void spawnMob(MechanicAction a, Player p) {
-        String name = a.param("entity", "").toUpperCase(Locale.ROOT).trim();
-        if (name.isEmpty()) return;
+        String raw = a.param("entity", "").trim();
+        if (raw.isEmpty()) return;
+        int count = Math.max(1, Math.min(20, a.intParam("count", 1)));
+        // entity=boss:<id> → invoque un boss custom MoonCore (autel/invocation data-driven).
+        if (raw.toLowerCase(Locale.ROOT).startsWith("boss:")) {
+            String bossId = raw.substring("boss:".length());
+            var boss = plugin.moduleManager().get(com.mooncore.modules.boss.BossManagerModule.class);
+            if (boss == null || !boss.exists(bossId)) return;
+            for (int i = 0; i < count; i++) boss.spawn(bossId, p.getLocation());
+            return;
+        }
         org.bukkit.entity.EntityType type;
-        try { type = org.bukkit.entity.EntityType.valueOf(name); }
+        try { type = org.bukkit.entity.EntityType.valueOf(raw.toUpperCase(Locale.ROOT)); }
         catch (IllegalArgumentException ex) { return; }
         if (!type.isSpawnable()) return;
-        int count = Math.max(1, Math.min(20, a.intParam("count", 1)));
         for (int i = 0; i < count; i++) p.getWorld().spawnEntity(p.getLocation(), type);
     }
 

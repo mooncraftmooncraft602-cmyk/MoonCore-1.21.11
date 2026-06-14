@@ -20,7 +20,7 @@ public enum ActionType {
     XP,         // params: amount (progression)
     TELEPORT,   // params: x, y, z [, world] OU target=spawn
     LIGHTNING,  // params: damage (true/false) — éclair à la position du joueur
-    SPAWN_MOB,  // params: entity (EntityType), count
+    SPAWN_MOB,  // params: entity (EntityType ou boss:<id> pour un boss custom MoonCore), count
     TITLE,      // params: title, subtitle (MiniMessage, %player%)
     CLEAR_EFFECTS, // aucun paramètre : retire tous les effets de potion
     FEED,       // params: amount (points de faim) — recharge la nourriture

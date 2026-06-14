@@ -397,7 +397,7 @@ public final class AiPrompts {
                 - money    { amount } (credite)  ·  take_money { amount } (debite, paye une capacite)
                 - xp { amount }  ·  damage { amount }  ·  heal { amount }
                 - teleport { x, y, z, world }  OU  { target: "spawn" }
-                - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
+                - lightning { damage }  ·  spawn_mob { entity, count }  (entity = EntityType OU boss:<id> pour un boss custom)  ·  title { title, subtitle }
                 - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
                 - launch { power, up }  (propulse le joueur)  ·  particle { particle, count }
                 - broadcast { text }  (message a TOUT le serveur ; vs message = joueur declencheur seul)
