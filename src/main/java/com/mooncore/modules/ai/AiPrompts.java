@@ -358,7 +358,7 @@ public final class AiPrompts {
                 - money    { amount }   ·  xp { amount }  ·  damage { amount }  ·  heal { amount }
                 - teleport { x, y, z, world }  OU  { target: "spawn" }
                 - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
-                - clear_effects { }  ·  feed { amount }
+                - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }

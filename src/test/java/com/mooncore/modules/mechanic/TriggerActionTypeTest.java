@@ -43,6 +43,8 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.TITLE, ActionType.fromText("titre"));
         assertEquals(ActionType.CLEAR_EFFECTS, ActionType.fromText("clear-effects"));
         assertEquals(ActionType.FEED, ActionType.fromText("nourris"));
+        assertEquals(ActionType.LOOT, ActionType.fromText("butin"));
+        assertEquals(ActionType.LOOT, ActionType.fromText("loot_table"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }

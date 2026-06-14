@@ -86,7 +86,26 @@ public final class MechanicExecutor {
                 p.setFoodLevel(Math.max(0, Math.min(20, p.getFoodLevel() + amt)));
                 p.setSaturation(Math.min(20f, p.getSaturation() + amt));
             }
+            case LOOT -> giveLoot(a, p);
             case NONE -> { /* ignoré */ }
+        }
+    }
+
+    private void giveLoot(MechanicAction a, Player p) {
+        String table = a.param("table", "").trim();
+        if (table.isEmpty()) return;
+        var loot = plugin.moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        if (loot == null) return;
+        var ci = plugin.services().get(com.mooncore.api.customitem.CustomItemManagerService.class).orElse(null);
+        for (com.mooncore.modules.loot.LootResult r : loot.roll(table, java.util.concurrent.ThreadLocalRandom.current())) {
+            if (r.count() <= 0) continue;
+            ItemStack stack;
+            if (r.isCustom()) {
+                stack = ci == null ? null : ci.create(r.itemId(), r.count());
+            } else {
+                stack = (r.material() == null || r.material().isAir()) ? null : new ItemStack(r.material(), r.count());
+            }
+            if (stack != null) p.getInventory().addItem(stack);
         }
     }
 
