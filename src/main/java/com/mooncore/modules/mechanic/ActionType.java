@@ -24,6 +24,8 @@ public enum ActionType {
     CLEAR_EFFECTS, // aucun paramètre : retire tous les effets de potion
     FEED,       // params: amount (points de faim) — recharge la nourriture
     LOOT,       // params: table (id d'une table de loot) — tire la table et donne le butin au joueur
+    LAUNCH,     // params: power [, up] — propulse le joueur dans la direction du regard
+    PARTICLE,   // params: particle, count — affiche des particules sur le joueur
     NONE;       // inerte (non reconnu)
 
     /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
@@ -47,6 +49,8 @@ public enum ActionType {
             case "clear_effects", "clear", "cure", "retire_effets", "milk" -> CLEAR_EFFECTS;
             case "feed", "nourris", "faim", "food" -> FEED;
             case "loot", "loot_table", "table_loot", "butin", "loottable" -> LOOT;
+            case "launch", "propulse", "boost", "velocity", "knockback" -> LAUNCH;
+            case "particle", "particule", "particles" -> PARTICLE;
             default -> NONE;
         };
     }

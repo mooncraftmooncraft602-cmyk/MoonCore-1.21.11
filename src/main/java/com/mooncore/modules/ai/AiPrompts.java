@@ -359,6 +359,7 @@ public final class AiPrompts {
                 - teleport { x, y, z, world }  OU  { target: "spawn" }
                 - lightning { damage }  ·  spawn_mob { entity, count }  ·  title { title, subtitle }
                 - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
+                - launch { power, up }  (propulse le joueur)  ·  particle { particle, count }
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }

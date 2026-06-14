@@ -87,6 +87,14 @@ public final class MechanicExecutor {
                 p.setSaturation(Math.min(20f, p.getSaturation() + amt));
             }
             case LOOT -> giveLoot(a, p);
+            case LAUNCH -> {
+                double power = a.doubleParam("power", 1.0);
+                double up = a.doubleParam("up", 0.4);
+                org.bukkit.util.Vector dir = p.getLocation().getDirection().normalize().multiply(power);
+                dir.setY(dir.getY() + up);
+                p.setVelocity(dir);
+            }
+            case PARTICLE -> spawnParticle(a, p);
             case NONE -> { /* ignoré */ }
         }
     }
@@ -107,6 +115,16 @@ public final class MechanicExecutor {
             }
             if (stack != null) p.getInventory().addItem(stack);
         }
+    }
+
+    private void spawnParticle(MechanicAction a, Player p) {
+        String name = a.param("particle", "").toUpperCase(Locale.ROOT).trim();
+        if (name.isEmpty()) return;
+        org.bukkit.Particle particle;
+        try { particle = org.bukkit.Particle.valueOf(name); }
+        catch (IllegalArgumentException ex) { return; }
+        int count = Math.max(1, Math.min(200, a.intParam("count", 10)));
+        p.getWorld().spawnParticle(particle, p.getLocation().add(0, 1, 0), count, 0.3, 0.5, 0.3, 0.0);
     }
 
     private void spawnMob(MechanicAction a, Player p) {

@@ -45,6 +45,8 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.FEED, ActionType.fromText("nourris"));
         assertEquals(ActionType.LOOT, ActionType.fromText("butin"));
         assertEquals(ActionType.LOOT, ActionType.fromText("loot_table"));
+        assertEquals(ActionType.LAUNCH, ActionType.fromText("propulse"));
+        assertEquals(ActionType.PARTICLE, ActionType.fromText("particule"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }
