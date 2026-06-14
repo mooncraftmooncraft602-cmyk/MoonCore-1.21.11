@@ -57,6 +57,7 @@ public final class AiSubCommand implements SubCommand {
             case "createbossdrop" -> createBossDrop(s, a);
             case "createreward" -> createReward(s, a);
             case "createrecipe" -> createRecipe(s, a);
+            case "createsmithing" -> createSmithing(s, a);
             case "balanceitem" -> balanceItem(s, a);
             case "generatelore" -> generateLore(s, a);
             case "describeitem" -> describeItem(s, a);
@@ -568,6 +569,24 @@ public final class AiSubCommand implements SubCommand {
         });
     }
 
+    private void createSmithing(CommandSender s, String[] a) {
+        if (a.length < 3) { msg(s, "<red>/moon ai createsmithing <id> <contraintes...>"); return; }
+        CustomItemManagerModule ci = module.customItemModule();
+        if (ci == null) { msg(s, "<red>CustomItemManager requis."); return; }
+        CustomItemDef def = ci.rawDef(a[1]);
+        if (def == null) { msg(s, "<red>Objet inconnu : " + a[1]); return; }
+        String prompt = "Objet : " + summary(def) + "\nContraintes : " + join(a, 2);
+        ask(s, "createsmithing", prompt, module.prompts().smithingSchemaSystem(), text -> {
+            CustomItemDef.SmithingRecipe smith = module.validator().extractSmithing(text);
+            if (smith == null) { fail(s, "createsmithing", prompt, "recette de forge invalide"); return; }
+            def.setSmithing(smith);
+            ci.put(def);
+            ci.recipeManager().unregisterAll();
+            ci.recipeManager().registerAll();
+            ok(s, "createsmithing", prompt, "recette de forge appliquée à " + def.id());
+        });
+    }
+
     private void balanceItem(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>/moon ai balanceitem <id> [consignes...]"); return; }
         CustomItemManagerModule ci = module.customItemModule();
@@ -858,7 +877,7 @@ public final class AiSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "ask", "config", "code", "coderun", "model", "set", "reload", "history", "createitem", "modifyitem", "createboss",
-                    "createblock", "retexture", "createbossdrop", "createreward", "createrecipe", "balanceitem", "generatelore", "describeitem"), a[0]);
+                    "createblock", "retexture", "createbossdrop", "createreward", "createrecipe", "createsmithing", "balanceitem", "generatelore", "describeitem"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
@@ -866,7 +885,7 @@ public final class AiSubCommand implements SubCommand {
                 case "model" -> filter(List.of("list", "set"), a[1]);
                 case "set" -> filter(new java.util.ArrayList<>(SETTABLE), a[1]);
                 // commandes ciblant un objet existant → propose les ids
-                case "modifyitem", "createrecipe", "balanceitem", "generatelore", "describeitem", "retexture" ->
+                case "modifyitem", "createrecipe", "createsmithing", "balanceitem", "generatelore", "describeitem", "retexture" ->
                         filter(itemIds(), a[1]);
                 default -> List.of();
             };

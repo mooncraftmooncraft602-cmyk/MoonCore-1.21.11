@@ -247,6 +247,21 @@ public final class AiActionValidator {
     }
 
     /** Extrait + valide une recette d'une sortie IA {@code {"recipe":{...}}}. */
+    /**
+     * Extrait une recette de forge d'une sortie IA {@code {"smithing":{"template":..,"base":..,"addition":..}}}.
+     * Ingrédients = Material ou {@code custom:<id>}. Retourne null si base ou addition manque/invalide.
+     */
+    public CustomItemDef.SmithingRecipe extractSmithing(String aiText) {
+        JsonObject root = parse(aiText);
+        if (root == null || !root.has("smithing") || !root.get("smithing").isJsonObject()) return null;
+        JsonObject sm = root.getAsJsonObject("smithing");
+        CustomItemDef.RecipeIngredient base = CustomItemDef.RecipeIngredient.parse(str(sm, "base", null));
+        CustomItemDef.RecipeIngredient addition = CustomItemDef.RecipeIngredient.parse(str(sm, "addition", null));
+        if (base == null || addition == null) return null;
+        CustomItemDef.RecipeIngredient template = CustomItemDef.RecipeIngredient.parse(str(sm, "template", null));
+        return new CustomItemDef.SmithingRecipe(template, base, addition);
+    }
+
     public CustomItemDef.Recipe extractRecipe(String aiText, List<String> warnings) {
         JsonObject root = parse(aiText);
         if (root == null || !root.has("recipe") || !root.get("recipe").isJsonObject()) return null;

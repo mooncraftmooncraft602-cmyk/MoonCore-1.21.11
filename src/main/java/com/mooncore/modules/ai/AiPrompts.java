@@ -246,6 +246,21 @@ public final class AiPrompts {
                 """;
     }
 
+    public String smithingSchemaSystem() {
+        return """
+                Tu conçois une recette de FORGE (table de forge, smithing) pour un objet existant.
+                Réponds UNIQUEMENT par un JSON :
+                {
+                  "smithing": {
+                    "template": "Material ou custom:<id> (patron, OPTIONNEL — omets si aucun)",
+                    "base": "Material ou custom:<id> (objet de base à transformer)",
+                    "addition": "Material ou custom:<id> (matériau ajouté)"
+                  }
+                }
+                base et addition sont OBLIGATOIRES. Material Bukkit en MAJUSCULES. Pas de texte hors JSON.
+                """;
+    }
+
     /** Prompt système pour générer du lore. */
     public String loreSchemaSystem() {
         return """
