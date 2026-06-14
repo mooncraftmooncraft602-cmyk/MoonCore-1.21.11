@@ -27,6 +27,7 @@ public enum ActionType {
     LAUNCH,     // params: power [, up] — propulse le joueur dans la direction du regard
     PARTICLE,   // params: particle, count — affiche des particules sur le joueur
     BROADCAST,  // params: text — message diffusé à TOUT le serveur (vs message = joueur seul)
+    PLAYER_COMMAND, // params: command — exécutée EN TANT QUE joueur (ses permissions ; vs command = console)
     NONE;       // inerte (non reconnu)
 
     /** Parse tolérant : insensible casse, accepte {@code -} {@code _} {@code espace}, alias FR/EN. */
@@ -53,6 +54,7 @@ public enum ActionType {
             case "launch", "propulse", "boost", "velocity", "knockback" -> LAUNCH;
             case "particle", "particule", "particles" -> PARTICLE;
             case "broadcast", "announce", "annonce", "diffuse", "bc" -> BROADCAST;
+            case "player_command", "player_cmd", "run_as_player", "commande_joueur", "self_command" -> PLAYER_COMMAND;
             default -> NONE;
         };
     }

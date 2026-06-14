@@ -99,6 +99,11 @@ public final class MechanicExecutor {
                 String text = placeholders(a.param("text", ""), p);
                 if (!text.isBlank()) Bukkit.broadcast(Text.mm(text));
             }
+            case PLAYER_COMMAND -> {
+                String cmd = placeholders(a.param("command", ""), p).trim();
+                if (cmd.startsWith("/")) cmd = cmd.substring(1);
+                if (!cmd.isEmpty()) p.performCommand(cmd);   // exécutée avec les permissions du joueur
+            }
             case NONE -> { /* ignoré */ }
         }
     }

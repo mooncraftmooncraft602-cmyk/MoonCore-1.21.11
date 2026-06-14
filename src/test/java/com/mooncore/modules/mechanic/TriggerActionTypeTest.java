@@ -49,6 +49,8 @@ class TriggerActionTypeTest {
         assertEquals(ActionType.PARTICLE, ActionType.fromText("particule"));
         assertEquals(ActionType.BROADCAST, ActionType.fromText("annonce"));
         assertEquals(ActionType.BROADCAST, ActionType.fromText("bc"));
+        assertEquals(ActionType.PLAYER_COMMAND, ActionType.fromText("run_as_player"));
+        assertEquals(ActionType.PLAYER_COMMAND, ActionType.fromText("commande_joueur"));
         assertEquals(ActionType.NONE, ActionType.fromText("xyz"));
         assertEquals(ActionType.NONE, ActionType.fromText(null));
     }

@@ -398,6 +398,7 @@ public final class AiPrompts {
                 - clear_effects { }  ·  feed { amount }  ·  loot { table }  (tire une table de loot existante)
                 - launch { power, up }  (propulse le joueur)  ·  particle { particle, count }
                 - broadcast { text }  (message a TOUT le serveur ; vs message = joueur declencheur seul)
+                - player_command { command }  (executee EN TANT QUE joueur, ses permissions ; vs command = console)
                 Équilibrage : cooldown raisonnable, pas d'actions abusives. Réponds en français pour le nom.
                 """;
     }
