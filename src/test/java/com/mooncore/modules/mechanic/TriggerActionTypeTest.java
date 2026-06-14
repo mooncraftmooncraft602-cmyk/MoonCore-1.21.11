@@ -91,4 +91,17 @@ class TriggerActionTypeTest {
         assertTrue(a.isValid());
         assertFalse(new MechanicAction(ActionType.NONE, null).isValid());
     }
+
+    @Test
+    void setParamEditsInPlaceAndRemovesOnNull() {
+        MechanicAction a = new MechanicAction(ActionType.MESSAGE, java.util.Map.of("text", "vieux"));
+        a.setParam("Text", "nouveau");                 // clé normalisée → écrase la valeur existante
+        assertEquals("nouveau", a.param("text", "?"));
+        a.setParam("color", "red");                    // nouvelle clé
+        assertEquals("red", a.param("color", "?"));
+        a.setParam("text", null);                      // valeur nulle → retire la clé
+        assertEquals("def", a.param("text", "def"));
+        a.setParam(null, "x");                         // clé nulle → no-op (pas d'exception)
+        assertEquals(1, a.params().size());            // seul 'color' subsiste
+    }
 }

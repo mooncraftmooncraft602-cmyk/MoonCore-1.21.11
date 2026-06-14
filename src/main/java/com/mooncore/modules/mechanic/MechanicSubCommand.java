@@ -45,6 +45,7 @@ public final class MechanicSubCommand implements SubCommand {
                 case "permission", "perm" -> setPermission(s, a);
                 case "enable" -> setEnabled(s, a);
                 case "addaction" -> addAction(s, a);
+                case "setparam", "param" -> setParam(s, a);
                 case "removeaction" -> removeAction(s, a);
                 case "clearactions" -> clearActions(s, a);
                 case "test" -> test(s, a);
@@ -221,6 +222,24 @@ public final class MechanicSubCommand implements SubCommand {
                 + ")<green> retirée de " + d.id() + " <gray>(" + d.actions().size() + " restante(s)).");
     }
 
+    private void setParam(CommandSender s, String[] a) {
+        MechanicDef d = need(s, a); if (d == null) return;
+        if (a.length < 4) { msg(s, "<red>/moon mechanic setparam <id> <actionIndex> <clé> [valeur…]  (valeur omise = retire la clé)"); return; }
+        int idx = Integer.parseInt(a[2]);
+        if (idx < 0 || idx >= d.actions().size()) {
+            msg(s, "<red>Action inexistante : " + idx + " (0–" + (d.actions().size() - 1) + ")"); return;
+        }
+        String key = a[3];
+        String value = a.length >= 5 ? String.join(" ", java.util.Arrays.copyOfRange(a, 4, a.length)) : null;
+        MechanicAction ac = d.actions().get(idx);
+        ac.setParam(key, value);
+        module.put(d);
+        msg(s, value == null
+                ? "<green>Paramètre <white>" + key.toLowerCase(Locale.ROOT) + "<green> retiré de l'action " + idx + " de " + d.id() + "."
+                : "<green>Action " + idx + " de " + d.id() + " : <white>" + key.toLowerCase(Locale.ROOT) + "=" + value
+                  + " <gray>(" + ac.type().name().toLowerCase(Locale.ROOT) + ")");
+    }
+
     private void clearActions(CommandSender s, String[] a) {
         MechanicDef d = need(s, a); if (d == null) return;
         d.actions().clear(); module.put(d);
@@ -270,7 +289,8 @@ public final class MechanicSubCommand implements SubCommand {
                 "trigger <id> <type>  ·  match <id> <Material|custom:id|EntityType|none>",
                 "cooldown <id> <ticks>  ·  interval <id> <ticks>  ·  chance <id> <0.0-1.0>",
                 "cost <id> <montant>  (capacité payante)  ·  permission <id> <node|none>  ·  enable <id> <on|off>",
-                "addaction <id> <type> [clé=valeur ...]  ·  removeaction <id> <index>  ·  clearactions <id>",
+                "addaction <id> <type> [clé=valeur ...]  ·  setparam <id> <actionIndex> <clé> [valeur…]  (édite/retire un param)",
+                "removeaction <id> <index>  ·  clearactions <id>",
                 "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)  ·  validate <id>"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
@@ -285,14 +305,14 @@ public final class MechanicSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "trigger", "match", "cooldown",
-                    "interval", "chance", "cost", "permission", "enable", "addaction", "removeaction",
+                    "interval", "chance", "cost", "permission", "enable", "addaction", "setparam", "removeaction",
                     "clearactions", "test", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "trigger", "match", "cooldown", "interval", "chance", "cost", "permission",
-                     "enable", "addaction", "removeaction", "clearactions", "test", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
+                     "enable", "addaction", "setparam", "removeaction", "clearactions", "test", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 default -> List.of();
             };
         }

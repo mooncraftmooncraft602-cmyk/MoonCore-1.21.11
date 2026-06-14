@@ -27,6 +27,17 @@ public final class MechanicAction {
     public ActionType type() { return type; }
     public Map<String, String> params() { return params; }
 
+    /**
+     * Définit (ou écrase) un paramètre — clé normalisée en minuscule comme à la construction. Une {@code value}
+     * nulle <b>retire</b> la clé. Permet d'éditer une action en place sans la retirer/recréer. Pur/testable.
+     */
+    public void setParam(String key, String value) {
+        if (key == null) return;
+        String k = key.toLowerCase(Locale.ROOT);
+        if (value == null) params.remove(k);
+        else params.put(k, value);
+    }
+
     public String param(String key, String def) {
         String v = params.get(key == null ? null : key.toLowerCase(Locale.ROOT));
         return v == null ? def : v;
