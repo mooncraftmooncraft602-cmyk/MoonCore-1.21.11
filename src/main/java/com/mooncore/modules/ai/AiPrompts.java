@@ -202,7 +202,7 @@ public final class AiPrompts {
                 kind="mechanic" → mécanique trigger→action. Champs :
                   id, display-name,
                   trigger (un de [INTERACT_BLOCK,BREAK_BLOCK,PLACE_BLOCK,USE_ITEM,KILL_ENTITY,DAMAGE_TAKEN,
-                  SNEAK,RESPAWN,PLAYER_JOIN,PLAYER_QUIT,INTERVAL]),
+                  SNEAK,DEATH,RESPAWN,CONSUME_ITEM,FISH,PLAYER_JOIN,PLAYER_QUIT,INTERVAL]),
                   match (Material|custom:<id>|EntityType|cause ; omets pour 'tout'),
                   cooldown-ticks, chance(0.0-1.0), actions:[ {type:(message|command|sound|potion|give_item|
                   money|xp|damage|heal|teleport|lightning|spawn_mob|title|feed|loot|launch|particle|broadcast),
@@ -376,7 +376,7 @@ public final class AiPrompts {
                 {
                   "id": "string a-z0-9_-",
                   "display-name": "nom MiniMessage, ex: <gold>Baguette de Soin</gold>",
-                  "trigger": un de [INTERACT_BLOCK, BREAK_BLOCK, PLACE_BLOCK, USE_ITEM, KILL_ENTITY, DAMAGE_TAKEN, SNEAK, RESPAWN, CONSUME_ITEM, FISH, PLAYER_JOIN, PLAYER_QUIT, INTERVAL],
+                  "trigger": un de [INTERACT_BLOCK, BREAK_BLOCK, PLACE_BLOCK, USE_ITEM, KILL_ENTITY, DAMAGE_TAKEN, SNEAK, DEATH, RESPAWN, CONSUME_ITEM, FISH, PLAYER_JOIN, PLAYER_QUIT, INTERVAL],
                   "match": "objet ciblé : Material (ex DIAMOND) ou custom:<id> ou EntityType ou cause de dégâts (FALL, FIRE...) ; omets pour 'tout'",
                   "cooldown-ticks": entier (anti-spam par joueur ; 20 = 1 s ; 0 = aucun),
                   "interval-ticks": entier (si trigger INTERVAL : période d'exécution par joueur),

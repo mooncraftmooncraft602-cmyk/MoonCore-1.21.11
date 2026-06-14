@@ -15,6 +15,7 @@ public enum TriggerType {
     KILL_ENTITY,      // mort d'une entité tuée par le joueur
     DAMAGE_TAKEN,     // le joueur subit des dégâts (matchKey = cause, ex FALL/FIRE/ENTITY_ATTACK)
     SNEAK,            // le joueur commence à s'accroupir
+    DEATH,            // le joueur meurt (matchKey = cause, ex FALL/ENTITY_ATTACK ; distinct de RESPAWN qui suit)
     RESPAWN,          // réapparition après la mort
     CONSUME_ITEM,     // le joueur mange/boit un item (custom via matchKey, sinon Material)
     FISH,             // le joueur attrape quelque chose à la pêche
@@ -35,6 +36,7 @@ public enum TriggerType {
             case "kill_entity", "kill", "kill_mob", "tue", "tue_entite" -> KILL_ENTITY;
             case "damage_taken", "damage", "hurt", "degats", "subit_degats", "on_damage" -> DAMAGE_TAKEN;
             case "sneak", "shift", "accroupi", "sneak_toggle" -> SNEAK;
+            case "death", "die", "mort", "meurt", "on_death" -> DEATH;
             case "respawn", "reapparition", "renait" -> RESPAWN;
             case "consume_item", "consume", "eat", "drink", "mange", "consomme" -> CONSUME_ITEM;
             case "fish", "fishing", "peche", "peche_poisson" -> FISH;
@@ -49,6 +51,6 @@ public enum TriggerType {
     public boolean usesMatchKey() {
         return this == INTERACT_BLOCK || this == BREAK_BLOCK || this == PLACE_BLOCK
                 || this == USE_ITEM || this == KILL_ENTITY || this == DAMAGE_TAKEN
-                || this == CONSUME_ITEM;
+                || this == CONSUME_ITEM || this == DEATH;
     }
 }

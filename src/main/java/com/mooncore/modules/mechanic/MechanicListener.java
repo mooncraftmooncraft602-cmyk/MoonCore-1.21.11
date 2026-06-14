@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -69,6 +70,13 @@ public final class MechanicListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSneak(PlayerToggleSneakEvent e) {
         if (e.isSneaking()) module.fire(TriggerType.SNEAK, e.getPlayer(), null);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDeath(PlayerDeathEvent e) {
+        EntityDamageEvent cause = e.getEntity().getLastDamageCause();
+        String key = cause == null ? null : cause.getCause().name().toLowerCase(Locale.ROOT);
+        module.fire(TriggerType.DEATH, e.getEntity(), key);   // matchKey = cause de mort (FALL, ENTITY_ATTACK…)
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

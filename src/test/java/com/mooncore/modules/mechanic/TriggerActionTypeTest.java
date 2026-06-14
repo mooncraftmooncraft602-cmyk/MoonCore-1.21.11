@@ -22,6 +22,9 @@ class TriggerActionTypeTest {
         assertEquals(TriggerType.PLACE_BLOCK, TriggerType.fromText("pose"));
         assertEquals(TriggerType.DAMAGE_TAKEN, TriggerType.fromText("degats"));
         assertEquals(TriggerType.SNEAK, TriggerType.fromText("accroupi"));
+        assertEquals(TriggerType.DEATH, TriggerType.fromText("death"));
+        assertEquals(TriggerType.DEATH, TriggerType.fromText("mort"));
+        assertTrue(TriggerType.DEATH.usesMatchKey());      // matchKey = cause de mort
         assertEquals(TriggerType.RESPAWN, TriggerType.fromText("respawn"));
         assertEquals(TriggerType.CONSUME_ITEM, TriggerType.fromText("eat"));
         assertEquals(TriggerType.CONSUME_ITEM, TriggerType.fromText("consomme"));
