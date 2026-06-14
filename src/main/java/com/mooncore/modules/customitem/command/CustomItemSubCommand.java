@@ -582,10 +582,10 @@ public final class CustomItemSubCommand implements SubCommand {
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "info", "delete", "remove", "rename", "edit", "clone", "get", "rarity", "model", "recipe", "drop", "reward", "paint" ->
+                case "info", "delete", "remove", "rename", "edit", "clone", "get", "rarity", "model", "drop", "reward", "paint" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(online(), a[1]);
-                case "smithing", "forge" -> filter(List.of("set", "clear"), a[1]);   // op d'abord
+                case "recipe", "smithing", "forge" -> filter(List.of("set", "clear"), a[1]);   // op d'abord
                 case "stat", "ability" -> filter(List.of("add", "set", "remove", "list"), a[1]);
                 case "pack" -> filter(List.of("rebuild", "resend", "url", "generate"), a[1]);
                 default -> List.of();
@@ -597,8 +597,7 @@ public final class CustomItemSubCommand implements SubCommand {
                 case "stat", "ability", "drop", "reward" -> filter(new ArrayList<>(module.ids()), a[2]);
                 case "rarity" -> filter(List.of("set"), a[2]);
                 case "model" -> filter(List.of("set", "preview"), a[2]);
-                case "recipe" -> filter(List.of("set", "clear"), a[2]);
-                case "smithing", "forge" -> filter(new ArrayList<>(module.ids()), a[2]);   // id après l op
+                case "recipe", "smithing", "forge" -> filter(new ArrayList<>(module.ids()), a[2]);   // id après l op
                 case "create" -> filter(materials(), a[2]);
                 case "edit" -> filter(List.of("material", "type", "tool", "glow", "unbreakable", "lore"), a[2]);
                 default -> List.of();
