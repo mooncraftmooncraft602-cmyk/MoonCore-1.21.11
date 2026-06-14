@@ -23,6 +23,9 @@ class TriggerActionTypeTest {
         assertEquals(TriggerType.DAMAGE_TAKEN, TriggerType.fromText("degats"));
         assertEquals(TriggerType.SNEAK, TriggerType.fromText("accroupi"));
         assertEquals(TriggerType.RESPAWN, TriggerType.fromText("respawn"));
+        assertEquals(TriggerType.CONSUME_ITEM, TriggerType.fromText("eat"));
+        assertEquals(TriggerType.CONSUME_ITEM, TriggerType.fromText("consomme"));
+        assertEquals(TriggerType.FISH, TriggerType.fromText("peche"));
         assertEquals(TriggerType.PLAYER_JOIN, TriggerType.fromText("connexion"));
         assertEquals(TriggerType.INTERVAL, TriggerType.fromText("timer"));
         assertEquals(TriggerType.NONE, TriggerType.fromText("n'importe quoi"));
@@ -61,6 +64,8 @@ class TriggerActionTypeTest {
         assertTrue(TriggerType.KILL_ENTITY.usesMatchKey());
         assertTrue(TriggerType.PLACE_BLOCK.usesMatchKey());
         assertTrue(TriggerType.DAMAGE_TAKEN.usesMatchKey());
+        assertTrue(TriggerType.CONSUME_ITEM.usesMatchKey());
+        assertFalse(TriggerType.FISH.usesMatchKey());
         assertFalse(TriggerType.SNEAK.usesMatchKey());
         assertFalse(TriggerType.RESPAWN.usesMatchKey());
         assertFalse(TriggerType.PLAYER_JOIN.usesMatchKey());

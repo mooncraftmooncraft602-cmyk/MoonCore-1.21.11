@@ -16,6 +16,8 @@ public enum TriggerType {
     DAMAGE_TAKEN,     // le joueur subit des dégâts (matchKey = cause, ex FALL/FIRE/ENTITY_ATTACK)
     SNEAK,            // le joueur commence à s'accroupir
     RESPAWN,          // réapparition après la mort
+    CONSUME_ITEM,     // le joueur mange/boit un item (custom via matchKey, sinon Material)
+    FISH,             // le joueur attrape quelque chose à la pêche
     PLAYER_JOIN,      // connexion
     PLAYER_QUIT,      // déconnexion
     INTERVAL,         // tick périodique (matchKey ignoré ; période portée par la mécanique)
@@ -34,6 +36,8 @@ public enum TriggerType {
             case "damage_taken", "damage", "hurt", "degats", "subit_degats", "on_damage" -> DAMAGE_TAKEN;
             case "sneak", "shift", "accroupi", "sneak_toggle" -> SNEAK;
             case "respawn", "reapparition", "renait" -> RESPAWN;
+            case "consume_item", "consume", "eat", "drink", "mange", "consomme" -> CONSUME_ITEM;
+            case "fish", "fishing", "peche", "peche_poisson" -> FISH;
             case "player_join", "join", "connexion", "arrivee" -> PLAYER_JOIN;
             case "player_quit", "quit", "leave", "deconnexion", "depart" -> PLAYER_QUIT;
             case "interval", "tick", "timer", "periodique", "periode" -> INTERVAL;
@@ -44,6 +48,7 @@ public enum TriggerType {
     /** True si ce déclencheur cible un objet identifié (bloc/item/cause) via {@code matchKey}. */
     public boolean usesMatchKey() {
         return this == INTERACT_BLOCK || this == BREAK_BLOCK || this == PLACE_BLOCK
-                || this == USE_ITEM || this == KILL_ENTITY || this == DAMAGE_TAKEN;
+                || this == USE_ITEM || this == KILL_ENTITY || this == DAMAGE_TAKEN
+                || this == CONSUME_ITEM;
     }
 }

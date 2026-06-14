@@ -63,7 +63,7 @@ public final class MechanicSubCommand implements SubCommand {
         if (module.def(id) != null) { msg(s, "<red>Cet id existe déjà."); return; }
         module.put(new MechanicDef(id));
         msg(s, "<green>Mécanique <white>" + id + "<green> créée. Définis son déclencheur : <white>/moon mechanic trigger "
-                + id + " <USE_ITEM|INTERACT_BLOCK|BREAK_BLOCK|PLACE_BLOCK|KILL_ENTITY|DAMAGE_TAKEN|SNEAK|RESPAWN|PLAYER_JOIN|INTERVAL>");
+                + id + " <USE_ITEM|INTERACT_BLOCK|BREAK_BLOCK|PLACE_BLOCK|KILL_ENTITY|DAMAGE_TAKEN|SNEAK|RESPAWN|CONSUME_ITEM|FISH|PLAYER_JOIN|INTERVAL>");
     }
 
     private void delete(CommandSender s, String[] a) {
