@@ -47,6 +47,7 @@ public final class MechanicSubCommand implements SubCommand {
                 case "removeaction" -> removeAction(s, a);
                 case "clearactions" -> clearActions(s, a);
                 case "test" -> test(s, a);
+                case "validate" -> validate(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Mécaniques rechargées."); }
                 default -> help(s);
             }
@@ -194,6 +195,21 @@ public final class MechanicSubCommand implements SubCommand {
         msg(s, "<green>Actions de " + d.id() + " exécutées sur toi (cooldown/filtre ignorés).");
     }
 
+    private void validate(CommandSender s, String[] a) {
+        MechanicDef d = need(s, a); if (d == null) return;
+        java.util.List<String> issues = new ArrayList<>();
+        if (d.trigger() == TriggerType.NONE) issues.add("déclencheur non défini");
+        if (d.actions().stream().noneMatch(MechanicAction::isValid)) issues.add("aucune action valide");
+        for (String table : d.lootTablesUsed()) {
+            if (!module.lootTableExists(table)) issues.add("action loot → table inconnue : " + table);
+        }
+        if (issues.isEmpty()) {
+            msg(s, "<green>✔ " + d.id() + " : valide" + (d.isRunnable() ? " et active." : " mais inactive (enabled=off)."));
+        } else {
+            msg(s, "<red>✖ " + d.id() + " : <white>" + String.join(" · ", issues));
+        }
+    }
+
     private MechanicDef need(CommandSender s, String[] a) {
         if (a.length < 2) { msg(s, "<red>Id manquant."); return null; }
         MechanicDef d = module.def(a[1]);
@@ -213,7 +229,7 @@ public final class MechanicSubCommand implements SubCommand {
                 "cooldown <id> <ticks>  ·  interval <id> <ticks>  ·  chance <id> <0.0-1.0>",
                 "permission <id> <node|none>  ·  enable <id> <on|off>",
                 "addaction <id> <type> [clé=valeur ...]  ·  removeaction <id> <index>  ·  clearactions <id>",
-                "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)"
+                "test <id>  (exécute les actions sur toi, ignore cooldown/filtre)  ·  validate <id>"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
         msg(s, "<gray>Types action : message, command, sound, potion, give_item, money, damage, heal, xp,");
@@ -227,13 +243,13 @@ public final class MechanicSubCommand implements SubCommand {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "trigger", "match", "cooldown",
                     "interval", "chance", "permission", "enable", "addaction", "removeaction",
-                    "clearactions", "test", "reload"), a[0]);
+                    "clearactions", "test", "validate", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
                 case "delete", "info", "trigger", "match", "cooldown", "interval", "chance", "permission",
-                     "enable", "addaction", "removeaction", "clearactions", "test" -> filter(new ArrayList<>(module.ids()), a[1]);
+                     "enable", "addaction", "removeaction", "clearactions", "test", "validate" -> filter(new ArrayList<>(module.ids()), a[1]);
                 default -> List.of();
             };
         }

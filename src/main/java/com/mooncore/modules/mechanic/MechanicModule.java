@@ -116,6 +116,12 @@ public final class MechanicModule extends AbstractModule {
         if (executor != null) executor.run(def, player);
     }
 
+    /** True si une table de loot de cet id existe (module loot présent). Pour la validation des actions {@code LOOT}. */
+    public boolean lootTableExists(String id) {
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        return loot != null && loot.def(id) != null;
+    }
+
     /** Clé de contexte d'un bloc : {@code custom:<id>} si bloc MoonCore, sinon Material en minuscule. */
     public String blockContextKey(org.bukkit.block.Block block) {
         if (block == null) return null;

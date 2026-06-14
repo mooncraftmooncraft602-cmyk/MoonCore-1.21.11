@@ -72,6 +72,18 @@ public final class MechanicDef {
     public List<MechanicAction> actions() { return actions; }
     public MechanicDef addAction(MechanicAction a) { if (a != null) actions.add(a); return this; }
 
+    /** Ids des tables de loot utilisées par les actions {@code LOOT} de cette mécanique (param {@code table}). Pur. */
+    public java.util.Set<String> lootTablesUsed() {
+        java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
+        for (MechanicAction a : actions) {
+            if (a.type() == ActionType.LOOT) {
+                String t = a.param("table", "").trim().toLowerCase(Locale.ROOT);
+                if (!t.isEmpty()) out.add(t);
+            }
+        }
+        return out;
+    }
+
     /** True si la mécanique est exécutable (active, déclencheur reconnu, au moins une action valide). */
     public boolean isRunnable() {
         if (!enabled || trigger == TriggerType.NONE) return false;

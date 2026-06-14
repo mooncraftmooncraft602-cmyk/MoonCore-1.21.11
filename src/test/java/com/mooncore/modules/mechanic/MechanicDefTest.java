@@ -70,6 +70,17 @@ class MechanicDefTest {
     }
 
     @Test
+    void lootTablesUsedCollectsFromLootActions() {
+        MechanicDef d = new MechanicDef("rewarder");
+        d.addAction(new MechanicAction(ActionType.MESSAGE, Map.of("text", "hi")));   // pas une action loot
+        d.addAction(new MechanicAction(ActionType.LOOT, Map.of("table", "Rare_Drops")));
+        d.addAction(new MechanicAction(ActionType.LOOT, Map.of("table", "rare_drops"))); // doublon (normalisé)
+        d.addAction(new MechanicAction(ActionType.LOOT, Map.of()));                   // loot sans table → ignoré
+        assertEquals(java.util.Set.of("rare_drops"), d.lootTablesUsed());
+        assertTrue(new MechanicDef("x").lootTablesUsed().isEmpty());
+    }
+
+    @Test
     void clampsCooldownAndInterval() {
         MechanicDef d = new MechanicDef("x");
         d.setCooldownTicks(-5);
