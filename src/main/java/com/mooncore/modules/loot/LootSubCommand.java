@@ -315,6 +315,10 @@ public final class LootSubCommand implements SubCommand {
         java.util.Set<String> dangling = d.danglingReferences(id -> module.def(id) != null);
         if (!dangling.isEmpty()) issues.add("référence(s) imbriquée(s) pendante(s) : " + String.join(", ", dangling));
 
+        java.util.List<String> cycle = LootManagerModule.detectReferenceCycle(d.id(),
+                id -> { LootTableDef t = module.def(id); return t == null ? java.util.Set.of() : t.referencedTables(); });
+        if (!cycle.isEmpty()) issues.add("cycle de références (tronqué au tirage) : " + String.join(" → ", cycle));
+
         if (issues.isEmpty()) {
             int refs = d.referencedTables().size();
             msg(s, "<green>✔ " + d.id() + " : valide <gray>(" + d.pools().size() + " pool(s), " + d.totalEntries()

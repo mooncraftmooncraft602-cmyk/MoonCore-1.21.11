@@ -77,6 +77,44 @@ public final class LootManagerModule extends AbstractModule {
         }
     }
 
+    /**
+     * Détecte un <b>cycle</b> de références imbriquées atteignable depuis {@code startId} (ex. A→B→A). Retourne
+     * le chemin du cycle (du nœud de rebouclage jusqu'à lui-même, ex. {@code [a, b, a]}) ou liste vide si aucun.
+     * Pur : {@code refsOf} (id → ids directement référencés) injecté → testable sans serveur. {@link LootResolver}
+     * coupe ces cycles au runtime (loot tronqué silencieusement) ; ceci permet de les <b>signaler</b> à l'auteur.
+     */
+    public static List<String> detectReferenceCycle(String startId, java.util.function.Function<String, java.util.Set<String>> refsOf) {
+        if (startId == null || refsOf == null) return List.of();
+        java.util.LinkedHashSet<String> stack = new java.util.LinkedHashSet<>();
+        java.util.Set<String> done = new java.util.HashSet<>();
+        List<String> cycle = new java.util.ArrayList<>();
+        if (dfsCycle(startId.toLowerCase(Locale.ROOT), refsOf, stack, done, cycle)) return cycle;
+        return List.of();
+    }
+
+    private static boolean dfsCycle(String id, java.util.function.Function<String, java.util.Set<String>> refsOf,
+                                    java.util.LinkedHashSet<String> stack, java.util.Set<String> done, List<String> cycle) {
+        if (stack.contains(id)) {                       // rebouclage : reconstruit le chemin du cycle
+            boolean started = false;
+            for (String n : stack) {
+                if (n.equals(id)) started = true;
+                if (started) cycle.add(n);
+            }
+            cycle.add(id);
+            return true;
+        }
+        if (!done.add(id)) return false;                // déjà exploré sans cycle
+        stack.add(id);
+        java.util.Set<String> refs = refsOf.apply(id);
+        if (refs != null) {
+            for (String next : refs) {
+                if (next != null && dfsCycle(next.toLowerCase(Locale.ROOT), refsOf, stack, done, cycle)) return true;
+            }
+        }
+        stack.remove(id);
+        return false;
+    }
+
     /** Ids des tables de {@code all} qui référencent {@code targetId} (imbrication). Pur statique, testable. */
     public static java.util.Set<String> referencingTables(java.util.Collection<LootTableDef> all, String targetId) {
         java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();
