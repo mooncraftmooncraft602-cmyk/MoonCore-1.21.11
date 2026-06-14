@@ -55,4 +55,29 @@ public final class MechanicAction {
 
     /** True si l'action est exploitable (type reconnu). */
     public boolean isValid() { return type != ActionType.NONE; }
+
+    private boolean hasParam(String key) { return !param(key, "").isBlank(); }
+
+    /**
+     * Nom du paramètre <b>requis mais absent</b> pour ce type d'action (sinon {@code null}). Sert à signaler
+     * les actions qui seraient des no-op silencieux à l'exécution (ex. {@code message} sans {@code text},
+     * {@code loot} sans {@code table}). Pur → testable sans serveur. Les types sans paramètre obligatoire
+     * (lightning, clear_effects, feed, launch) renvoient toujours {@code null}.
+     */
+    public String missingRequiredParam() {
+        return switch (type) {
+            case MESSAGE, BROADCAST, ACTIONBAR -> hasParam("text") ? null : "text";
+            case TITLE -> (hasParam("title") || hasParam("subtitle")) ? null : "title";
+            case COMMAND, PLAYER_COMMAND -> hasParam("command") ? null : "command";
+            case GIVE_ITEM -> hasParam("item") ? null : "item";
+            case SOUND -> hasParam("sound") ? null : "sound";
+            case POTION -> hasParam("effect") ? null : "effect";
+            case SPAWN_MOB -> hasParam("entity") ? null : "entity";
+            case PARTICLE -> hasParam("particle") ? null : "particle";
+            case LOOT -> hasParam("table") ? null : "table";
+            case MONEY, TAKE_MONEY, DAMAGE, HEAL, XP -> hasParam("amount") ? null : "amount";
+            case TELEPORT -> ("spawn".equalsIgnoreCase(param("target", "")) || hasParam("x")) ? null : "x|target";
+            default -> null;   // LIGHTNING, CLEAR_EFFECTS, FEED, LAUNCH, NONE : pas de param obligatoire
+        };
+    }
 }

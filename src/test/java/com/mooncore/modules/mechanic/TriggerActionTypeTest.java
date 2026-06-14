@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -90,6 +91,27 @@ class TriggerActionTypeTest {
         assertEquals(1.0, a.doubleParam("absent", 1.0), 1e-9);
         assertTrue(a.isValid());
         assertFalse(new MechanicAction(ActionType.NONE, null).isValid());
+    }
+
+    @Test
+    void missingRequiredParamDetectsNoOpActions() {
+        // Params manquants → nom du param requis.
+        assertEquals("text", new MechanicAction(ActionType.MESSAGE, java.util.Map.of()).missingRequiredParam());
+        assertEquals("table", new MechanicAction(ActionType.LOOT, java.util.Map.of()).missingRequiredParam());
+        assertEquals("item", new MechanicAction(ActionType.GIVE_ITEM, java.util.Map.of()).missingRequiredParam());
+        assertEquals("amount", new MechanicAction(ActionType.MONEY, java.util.Map.of()).missingRequiredParam());
+        assertEquals("command", new MechanicAction(ActionType.PLAYER_COMMAND, java.util.Map.of()).missingRequiredParam());
+        // Params présents → null (OK).
+        assertNull(new MechanicAction(ActionType.MESSAGE, java.util.Map.of("text", "salut")).missingRequiredParam());
+        assertNull(new MechanicAction(ActionType.LOOT, java.util.Map.of("table", "t")).missingRequiredParam());
+        // TITLE accepte title OU subtitle.
+        assertNull(new MechanicAction(ActionType.TITLE, java.util.Map.of("subtitle", "x")).missingRequiredParam());
+        // TELEPORT : target=spawn OU x suffisent.
+        assertNull(new MechanicAction(ActionType.TELEPORT, java.util.Map.of("target", "spawn")).missingRequiredParam());
+        assertEquals("x|target", new MechanicAction(ActionType.TELEPORT, java.util.Map.of()).missingRequiredParam());
+        // Types sans param obligatoire → toujours null.
+        assertNull(new MechanicAction(ActionType.CLEAR_EFFECTS, java.util.Map.of()).missingRequiredParam());
+        assertNull(new MechanicAction(ActionType.LIGHTNING, java.util.Map.of()).missingRequiredParam());
     }
 
     @Test

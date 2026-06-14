@@ -258,6 +258,13 @@ public final class MechanicSubCommand implements SubCommand {
         java.util.List<String> issues = new ArrayList<>();
         if (d.trigger() == TriggerType.NONE) issues.add("déclencheur non défini");
         if (d.actions().stream().noneMatch(MechanicAction::isValid)) issues.add("aucune action valide");
+        for (int i = 0; i < d.actions().size(); i++) {
+            String missing = d.actions().get(i).missingRequiredParam();
+            if (missing != null) {
+                issues.add("action " + i + " (" + d.actions().get(i).type().name().toLowerCase(Locale.ROOT)
+                        + ") sans paramètre requis « " + missing + " »");
+            }
+        }
         for (String table : d.danglingLootTables(module::lootTableExists)) {
             issues.add("action loot → table inconnue : " + table);
         }
