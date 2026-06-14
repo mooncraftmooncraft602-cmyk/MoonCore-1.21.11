@@ -35,8 +35,13 @@ public final class AbnormalGainDetector {
         Deque<Gain> dq = gains.computeIfAbsent(player, k -> new ArrayDeque<>());
         double total;
         synchronized (dq) {
+            // Élague d'abord et somme le total AVANT le nouveau gain : si la fenêtre a naturellement
+            // dégonflé sous le seuil (sans appel record entre-temps), on ré-arme le flag — sinon un pic
+            // de dupe après expiration de la fenêtre ne serait jamais re-signalé (évasion).
+            double pre = pruneAndSum(dq, nowMs);
+            if (pre < threshold) flagged.put(player, Boolean.FALSE);
             dq.addLast(new Gain(nowMs, amount));
-            total = pruneAndSum(dq, nowMs);
+            total = pre + amount;
         }
         boolean over = total >= threshold;
         Boolean was = flagged.put(player, over);
