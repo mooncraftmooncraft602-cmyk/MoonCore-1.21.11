@@ -84,10 +84,10 @@ public final class LootSubCommand implements SubCommand {
         if (defs.isEmpty()) { msg(s, "<gray>Aucune table de loot. <white>/moon loot create <id>"); return; }
         msg(s, "<gradient:#8a2be2:#c77dff>Tables de loot</gradient> <dark_gray>(" + defs.size() + ")");
         for (LootTableDef d : defs) {
-            int entries = d.pools().stream().mapToInt(p -> p.entries().size()).sum();
             boolean dangling = !d.danglingReferences(id -> module.def(id) != null).isEmpty();
-            msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.pools().size() + " pool(s), " + entries + " entrée(s))"
-                    + (dangling ? " <red>⚠ réf. pendante" : ""));
+            String warn = d.producesNothing() ? " <red>⚠ ne produit rien"
+                    : (dangling ? " <red>⚠ réf. pendante" : "");
+            msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.pools().size() + " pool(s), " + d.totalEntries() + " entrée(s))" + warn);
         }
     }
 
