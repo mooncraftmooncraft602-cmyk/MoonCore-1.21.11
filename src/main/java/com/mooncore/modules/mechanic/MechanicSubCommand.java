@@ -79,7 +79,8 @@ public final class MechanicSubCommand implements SubCommand {
         msg(s, "<gradient:#8a2be2:#c77dff>Mécaniques custom</gradient> <dark_gray>(" + defs.size() + ")");
         for (MechanicDef d : defs) {
             boolean dangling = !d.danglingLootTables(module::lootTableExists).isEmpty()
-                    || !d.danglingCustomItems(module::customItemExists).isEmpty();
+                    || !d.danglingCustomItems(module::customItemExists).isEmpty()
+                    || !d.danglingBosses(module::bossExists).isEmpty();
             msg(s, " <dark_gray>▸ <white>" + d.id() + " <gray>(" + d.trigger().name().toLowerCase(Locale.ROOT)
                     + ", " + d.actions().size() + " action(s)" + (d.isRunnable() ? "" : ", <red>inactive<gray>") + ")"
                     + (dangling ? " <red>⚠ référence pendante" : ""));
@@ -106,6 +107,8 @@ public final class MechanicSubCommand implements SubCommand {
         if (!dl.isEmpty()) msg(s, " <red>⚠ table(s) de loot inconnue(s) : <white>" + String.join(", ", dl));
         java.util.Set<String> di = d.danglingCustomItems(module::customItemExists);
         if (!di.isEmpty()) msg(s, " <red>⚠ item(s) custom inconnu(s) : <white>" + String.join(", ", di));
+        java.util.Set<String> db = d.danglingBosses(module::bossExists);
+        if (!db.isEmpty()) msg(s, " <red>⚠ boss inconnu(s) : <white>" + String.join(", ", db));
     }
 
     private void setTrigger(CommandSender s, String[] a) {
