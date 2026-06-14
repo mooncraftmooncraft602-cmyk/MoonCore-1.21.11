@@ -70,6 +70,7 @@ def main():
     ap.add_argument("--dropout", type=float, default=0.1)
     ap.add_argument("--threads", type=int, default=os.cpu_count() or 8)
     ap.add_argument("--out", default=os.path.join(HERE, "model.pt"))
+    ap.add_argument("--data", default=DATA, help="dossier contenant meta.pkl/train.bin/val.bin")
     ap.add_argument("--quick", action="store_true")
     args = ap.parse_args()
 
@@ -80,11 +81,11 @@ def main():
     torch.set_num_threads(args.threads)
     device = "cpu"
 
-    with open(os.path.join(DATA, "meta.pkl"), "rb") as f:
+    with open(os.path.join(args.data, "meta.pkl"), "rb") as f:
         meta = pickle.load(f)
     vocab_size = meta["vocab_size"]
-    train_arr = np.memmap(os.path.join(DATA, "train.bin"), dtype=np.uint16, mode="r")
-    val_arr = np.memmap(os.path.join(DATA, "val.bin"), dtype=np.uint16, mode="r")
+    train_arr = np.memmap(os.path.join(args.data, "train.bin"), dtype=np.uint16, mode="r")
+    val_arr = np.memmap(os.path.join(args.data, "val.bin"), dtype=np.uint16, mode="r")
     splits = {"train": train_arr, "val": val_arr}
     print(f"vocab={vocab_size} train={len(train_arr):,} val={len(val_arr):,} threads={args.threads}")
 

@@ -42,3 +42,5 @@ tools/forge-model/model.pt
 tools/forge-model/*.log
 tools/forge-model/__pycache__/
 tools/forge-model/samples/
+tools/forge-model/data-dsl/
+tools/forge-model/model-dsl.pt
