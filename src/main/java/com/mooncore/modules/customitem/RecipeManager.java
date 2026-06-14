@@ -32,6 +32,35 @@ public final class RecipeManager {
             register(def);
             registerSmelt(def);
             registerStonecut(def);
+            registerSmithing(def);
+        }
+    }
+
+    /** Recette de FORGE (smithing transform 1.20+) : base + addition (+ template) → l'objet custom. */
+    public boolean registerSmithing(CustomItemDef def) {
+        if (!def.canSmith()) return false;
+        NamespacedKey key = new NamespacedKey(plugin, "ci_smith_" + def.id());
+        try {
+            ItemStack result = module.buildItem(def, 1);
+            CustomItemDef.SmithingRecipe sm = def.smithing();
+            RecipeChoice base = choiceFor(sm.base);
+            RecipeChoice addition = choiceFor(sm.addition);
+            if (base == null || addition == null) {
+                plugin.logger().warn("Recette de forge ignorée pour " + def.id() + " : base/addition introuvable.");
+                return false;
+            }
+            // Template requis par l'API ; à défaut, accepte un smithing template vide (n'importe quel patron).
+            RecipeChoice template = sm.template != null ? choiceFor(sm.template)
+                    : new RecipeChoice.MaterialChoice(org.bukkit.Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE);
+            if (template == null) template = new RecipeChoice.MaterialChoice(org.bukkit.Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE);
+            org.bukkit.inventory.SmithingTransformRecipe recipe =
+                    new org.bukkit.inventory.SmithingTransformRecipe(key, result, template, base, addition);
+            plugin.getServer().addRecipe(recipe);
+            registered.add(key);
+            return true;
+        } catch (Exception e) {
+            plugin.logger().warn("Recette de forge invalide pour " + def.id() + " : " + e.getMessage());
+            return false;
         }
     }
 

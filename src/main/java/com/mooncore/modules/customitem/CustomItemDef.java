@@ -89,6 +89,24 @@ public final class CustomItemDef implements CustomItemView {
         }
     }
 
+    /**
+     * Recette de forge (smithing transform, 1.20+) : {@code base} + {@code addition} (+ {@code template})
+     * → l'item custom. {@code template} optionnel (null = pas de patron requis). Le résultat est l'item lui-même.
+     */
+    public static final class SmithingRecipe {
+        public RecipeIngredient template;   // patron (smithing template), optionnel
+        public RecipeIngredient base;        // item de base à transformer
+        public RecipeIngredient addition;    // matériau ajouté
+
+        public SmithingRecipe() {}
+        public SmithingRecipe(RecipeIngredient template, RecipeIngredient base, RecipeIngredient addition) {
+            this.template = template; this.base = base; this.addition = addition;
+        }
+
+        /** Valide si base ET addition sont définis (template facultatif). */
+        public boolean isValid() { return base != null && addition != null; }
+    }
+
     /** Appareil de cuisson pour la recette de fonte d'un item custom. */
     public enum SmeltType {
         FURNACE("furnace", "four"),
@@ -124,6 +142,7 @@ public final class CustomItemDef implements CustomItemView {
     private final List<AbilityRef> abilities = new ArrayList<>();
     private final List<DropRule> drops = new ArrayList<>();
     private Recipe recipe = null;
+    private SmithingRecipe smithing = null;      // null = pas de recette de forge
     private Material smeltsInto = null;          // null = ne fond pas (pas de recette de fournaise)
     private String smeltsIntoCustom = null;      // si non null : résultat = item custom (prioritaire sur smeltsInto)
     private SmeltType smeltType = SmeltType.FURNACE; // four / haut-fourneau / fumoir
@@ -203,6 +222,10 @@ public final class CustomItemDef implements CustomItemView {
     public List<DropRule> drops() { return drops; }
     public Recipe recipe() { return recipe; }
     public void setRecipe(Recipe recipe) { this.recipe = recipe; }
+
+    public SmithingRecipe smithing() { return smithing; }
+    public void setSmithing(SmithingRecipe smithing) { this.smithing = smithing; }
+    public boolean canSmith() { return smithing != null && smithing.isValid(); }
 
     // ---- Fonte (l'objet comme entrée de fournaise) ----
     public Material smeltsInto() { return smeltsInto; }
@@ -355,6 +378,9 @@ public final class CustomItemDef implements CustomItemView {
             r.amount = this.recipe.amount;
             c.recipe = r;
         }
+        if (this.smithing != null) {
+            c.smithing = new SmithingRecipe(this.smithing.template, this.smithing.base, this.smithing.addition);
+        }
         c.smeltsInto = this.smeltsInto;
         c.smeltsIntoCustom = this.smeltsIntoCustom;
         c.smeltType = this.smeltType;
@@ -443,6 +469,15 @@ public final class CustomItemDef implements CustomItemView {
             }
         } else {
             s.set("smelt", null);
+        }
+
+        if (canSmith()) {
+            ConfigurationSection sg = s.createSection("smithing");
+            if (smithing.template != null) sg.set("template", smithing.template.storageKey());
+            sg.set("base", smithing.base.storageKey());
+            sg.set("addition", smithing.addition.storageKey());
+        } else {
+            s.set("smithing", null);
         }
 
         if (canCut()) {
@@ -573,6 +608,15 @@ public final class CustomItemDef implements CustomItemView {
                 if (rm != null) d.setSmeltsInto(rm, amt);
             }
             d.setSmeltType(SmeltType.fromId(sm.getString("type", "furnace")));
+        }
+
+        ConfigurationSection sg = s.getConfigurationSection("smithing");
+        if (sg != null) {
+            SmithingRecipe smith = new SmithingRecipe(
+                    RecipeIngredient.parse(sg.getString("template")),
+                    RecipeIngredient.parse(sg.getString("base")),
+                    RecipeIngredient.parse(sg.getString("addition")));
+            if (smith.isValid()) d.smithing = smith;
         }
 
         ConfigurationSection cut = s.getConfigurationSection("stonecut");
