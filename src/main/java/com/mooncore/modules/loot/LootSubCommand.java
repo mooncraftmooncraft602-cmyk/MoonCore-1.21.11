@@ -37,6 +37,8 @@ public final class LootSubCommand implements SubCommand {
                 case "addpool" -> addPool(s, a);
                 case "addentry" -> addEntry(s, a);
                 case "clearpools" -> clearPools(s, a);
+                case "removepool" -> removePool(s, a);
+                case "removeentry" -> removeEntry(s, a);
                 case "test", "roll" -> test(s, a);
                 case "give" -> give(s, a);
                 case "fill" -> fill(s, a);
@@ -123,6 +125,30 @@ public final class LootSubCommand implements SubCommand {
                 + (customId != null ? "✦ " + customId : mat.name()) + " <gray>×" + cMin + "–" + cMax + " poids " + weight);
     }
 
+    private void removePool(CommandSender s, String[] a) {
+        LootTableDef d = need(s, a); if (d == null) return;
+        if (a.length < 3) { msg(s, "<red>/moon loot removepool <id> <poolIndex>"); return; }
+        int idx = Integer.parseInt(a[2]);
+        if (idx < 0 || idx >= d.pools().size()) { msg(s, "<red>Pool inexistant : " + idx + " (0–" + (d.pools().size() - 1) + ")"); return; }
+        d.pools().remove(idx);
+        module.put(d);
+        msg(s, "<green>Pool <white>" + idx + "<green> retiré de " + d.id() + " <gray>(" + d.pools().size() + " restant(s)).");
+    }
+
+    private void removeEntry(CommandSender s, String[] a) {
+        LootTableDef d = need(s, a); if (d == null) return;
+        if (a.length < 4) { msg(s, "<red>/moon loot removeentry <id> <poolIndex> <entryIndex>"); return; }
+        int pi = Integer.parseInt(a[2]);
+        if (pi < 0 || pi >= d.pools().size()) { msg(s, "<red>Pool inexistant : " + pi + " (0–" + (d.pools().size() - 1) + ")"); return; }
+        LootPool pool = d.pools().get(pi);
+        int ei = Integer.parseInt(a[3]);
+        if (ei < 0 || ei >= pool.entries().size()) { msg(s, "<red>Entrée inexistante : " + ei + " (0–" + (pool.entries().size() - 1) + ")"); return; }
+        pool.entries().remove(ei);
+        module.put(d);
+        msg(s, "<green>Entrée <white>" + ei + "<green> retirée du pool " + pi + " de " + d.id()
+                + " <gray>(" + pool.entries().size() + " restante(s)).");
+    }
+
     private void clearPools(CommandSender s, String[] a) {
         LootTableDef d = need(s, a); if (d == null) return;
         d.pools().clear();
@@ -184,7 +210,7 @@ public final class LootSubCommand implements SubCommand {
                 "create <id> / delete <id> / list / info <id> / reload",
                 "addpool <id> [rollsMin] [rollsMax]  (ajoute un pool de tirages)",
                 "addentry <id> <poolIndex> <Material|custom:itemId> [poids] [min] [max]",
-                "clearpools <id>  (retire tous les pools)",
+                "removepool <id> <poolIndex>  ·  removeentry <id> <poolIndex> <entryIndex>  ·  clearpools <id>",
                 "test <id> [n]  (simule n tirages, max 20)  ·  give <joueur> <id>  (donne le butin tiré)",
                 "fill <id>  (remplit le conteneur visé avec le butin tiré — design de donjons)"
         };
@@ -198,13 +224,13 @@ public final class LootSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "addpool", "addentry",
-                    "clearpools", "test", "give", "fill", "reload"), a[0]);
+                    "removepool", "removeentry", "clearpools", "test", "give", "fill", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "addpool", "addentry", "clearpools", "test", "fill" ->
-                        filter(new ArrayList<>(module.ids()), a[1]);
+                case "delete", "info", "addpool", "addentry", "removepool", "removeentry",
+                     "clearpools", "test", "fill" -> filter(new ArrayList<>(module.ids()), a[1]);
                 case "give" -> filter(org.bukkit.Bukkit.getOnlinePlayers().stream()
                         .map(org.bukkit.entity.Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();
