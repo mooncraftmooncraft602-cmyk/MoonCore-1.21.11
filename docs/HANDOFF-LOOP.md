@@ -2,8 +2,9 @@
 
 > Instance Claude en **mode boucle** ayant exécuté **tout le plan d'action de la section 4** du
 > `PROJECT_MOON_MASTER_BRAIN.md` (Étapes A→E), une sous-tâche atomique par passe, build + tests verts
-> à chaque commit. ~38 commits, **115 tests verts**. Branche : `loop/master-brain` (non encore mergée
-> sur `main`). Build : voir mémoire `mooncore-build-command` (JDK 21 + wrapper, le `mvnw` direct est cassé).
+> à chaque commit. Puis **backlog vision §2** : 2 nouveaux types data-driven complets (loot + mécaniques).
+> **237 tests verts** au dernier point. Branche : `loop/master-brain` (non encore mergée sur `main`).
+> Build : voir mémoire `mooncore-build-command` (JDK 21 + wrapper, le `mvnw` direct est cassé).
 
 ## Ce qui a été livré (par étape)
 
@@ -43,13 +44,40 @@
   chaînées via `unifiedCreateSystem()`). `--dry` (preview sans persister), perms granulaires
   `mooncore.admin.create.<type>`, confirmation `delete … confirm`, audit `mooncore_ai_audit`, rebuild pack.
 
+## Backlog vision §2 — nouveaux types data-driven (post-plan, COMPLETS)
+
+### Tables de loot génériques (`modules/loot/`)
+- `LootEntry`/`LootPool`/`LootResult`/`LootTableDef` : pools pondérés, sélection cumulée **robuste aux bornes**,
+  rolls, round-trip YAML (ordre préservé). Tirage **100% pur** (RNG injecté) → testé déterministe.
+- `LootTableStore` (loot/<id>.yml) + `LootManagerModule` (registry, miroir SQL type `loot`, API `roll`).
+- **3 consommateurs** : `CropDef`/`CustomBlockDef`/`BossDefinition` ont un champ `lootTableId` ; récolte de
+  culture / casse de bloc / défaite de boss tirent la table (repli sur le drop fixe).
+- `/moon loot` (create/addpool/addentry/clearpools/**test** simulation/…) + handler `/moon content … loot` + IA
+  (`lootSchemaSystem`/`validateLoot`) + import `ContentMigrator`. **Complet (model→store→module→3 conso→cmd→IA→SQL).**
+
+### Mécaniques génériques trigger→action (`modules/mechanic/`)
+- `TriggerType` (11 : INTERACT/BREAK/PLACE_BLOCK, USE_ITEM, KILL_ENTITY, DAMAGE_TAKEN, SNEAK, RESPAWN, JOIN, QUIT,
+  INTERVAL) + `ActionType` (15 : message/command/sound/potion/give_item/money/damage/heal/xp/teleport/lightning/
+  spawn_mob/title/clear_effects/feed), `fromText` **tolérant** (alias FR-EN, défaut NONE).
+- `MechanicDef` (trigger/matchKey/cooldown/interval/**chance**/**permission**/enabled/actions, round-trip, `isRunnable`).
+- `MechanicCooldowns` (pur, temps en ticks injecté, **testé aux bornes**) + `MechanicExecutor` (LIVE, dispatch
+  défensif) + `MechanicListener` (events→triggers, MONITOR/ignoreCancelled) + tick INTERVAL. **Système actif en jeu.**
+- `/moon mechanic` (trigger/match/cooldown/interval/chance/permission/addaction/test/…) + handler `/moon content …
+  mechanic` + IA (`mechanicSchemaSystem`/`validateMechanic`) + import `ContentMigrator`. **Complet.**
+- Gating d'exécution : `enabled` → `matchKey` → `permission` → `chance` → `cooldown`.
+- **Restes (LIVE/optionnel)** : éditeur GUI, triggers/actions additionnels.
+
 ## Pour tester en jeu (côté utilisateur)
 1. Build (mémoire `mooncore-build-command`), déposer le jar, démarrer le serveur 1.21.11.
 2. `content.storage-mode: both` dans config.yml puis `/moon admin migrate-content` pour peupler le SQL.
 3. `/moon content create item epee_lunaire une epee legendaire qui vole de la vie` (IA), `… --dry` pour prévisualiser.
 4. `/moon content createall un minerai lunaire, sa pioche et son boss gardien`.
 5. Cultures : `/moon crop create ble_lunaire`, régler, `/moon crop giveseed <joueur> ble_lunaire`, planter sur FARMLAND.
-6. Valider les **parties live de l'Étape D** (rendu/édition 3D) — c'est ce qui reste à finaliser.
+6. Loot : `/moon loot create butin`, `/moon loot addpool butin 1 1`, `/moon loot addentry butin 0 DIAMOND 5 1 2`,
+   `/moon loot test butin 10` ; lier : `/moon crop drop`/`block`/`boss` via leur champ `loot-table` = `butin`.
+7. Mécaniques : `/moon mechanic create zap`, `/moon mechanic trigger zap use_item`, `/moon mechanic match zap custom:baguette`,
+   `/moon mechanic addaction zap lightning`, `/moon mechanic chance zap 0.5`, `/moon mechanic test zap`.
+8. Valider les **parties live de l'Étape D** (rendu/édition 3D) — c'est ce qui reste à finaliser.
 
 ## Notes d'intégration
 - Migrations réservées : **1400** (content), **1401** (crop_placement). 1300=IA, 200=antifarm.
