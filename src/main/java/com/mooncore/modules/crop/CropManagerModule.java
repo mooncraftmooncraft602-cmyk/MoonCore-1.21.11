@@ -274,6 +274,12 @@ public final class CropManagerModule extends AbstractModule {
         return loot == null ? java.util.List.of() : loot.rollItems(def.lootTableId(), rng);  // matérialisation centralisée
     }
 
+    /** True si une table de loot de cet id existe (pour avertir d'une référence erronée). */
+    public boolean lootTableExists(String id) {
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        return loot != null && loot.def(id) != null;
+    }
+
     /** Item graine (custom prioritaire, sinon Material). {@code null} si quantité nulle. */
     public org.bukkit.inventory.ItemStack seedItem(CropDef def, int amount) {
         if (def == null || amount <= 0) return null;

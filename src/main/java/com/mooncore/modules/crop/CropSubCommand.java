@@ -42,6 +42,7 @@ public final class CropSubCommand implements SubCommand {
                 case "light" -> setLight(s, a);
                 case "water" -> setWater(s, a);
                 case "drop" -> setDrop(s, a);
+                case "loottable", "loot" -> setLootTable(s, a);
                 case "replant" -> setReplant(s, a);
                 case "giveseed" -> giveSeed(s, a);
                 case "reload" -> { module.reloadDefinitions(); msg(s, "<green>Cultures rechargées."); }
@@ -165,6 +166,22 @@ public final class CropSubCommand implements SubCommand {
                 + " <gray>×" + d.dropMin() + "–" + d.dropMax());
     }
 
+    private void setLootTable(CommandSender s, String[] a) {
+        CropDef d = need(s, a); if (d == null) return;
+        if (a.length < 3) { msg(s, "<red>/moon crop loottable <id> <tableId|none>"); return; }
+        String v = a[2].equalsIgnoreCase("none") ? null : a[2];
+        d.setLootTableId(v);
+        module.put(d);
+        if (d.usesLootTable()) {
+            msg(s, "<green>Récolte de " + d.id() + " = table de loot <white>" + d.lootTableId());
+            if (!module.lootTableExists(d.lootTableId())) {
+                msg(s, "<yellow>⚠ Table de loot inconnue : <white>" + d.lootTableId() + "<yellow> (crée-la, sinon repli sur le drop fixe).");
+            }
+        } else {
+            msg(s, "<green>Récolte de " + d.id() + " = drop fixe (table de loot retirée).");
+        }
+    }
+
     private void setReplant(CommandSender s, String[] a) {
         CropDef d = need(s, a); if (d == null) return;
         if (a.length < 3) { msg(s, "<red>/moon crop replant <id> <on|off>"); return; }
@@ -203,6 +220,7 @@ public final class CropSubCommand implements SubCommand {
                 "seed <id> <Material|custom:itemId> · placeon <id> <Material>",
                 "stages <id> <n> · growth <id> <ticks> · light <id> <0-15> · water <id> <on|off>",
                 "drop <id> <Material|custom:itemId> [min] [max] · replant <id> <on|off>",
+                "loottable <id> <tableId|none>  (récolte = tirage d'une table de loot)",
                 "giveseed <joueur> <id> [n]  (donne la graine à planter)"
         };
         for (String x : l) msg(s, " <dark_gray>▸ <gray>" + x);
@@ -214,12 +232,12 @@ public final class CropSubCommand implements SubCommand {
     public List<String> tabComplete(MoonCore plugin, CommandSender s, String[] a) {
         if (a.length == 1) {
             return filter(List.of("create", "delete", "list", "info", "seed", "placeon", "stages",
-                    "growth", "light", "water", "drop", "replant", "giveseed", "reload"), a[0]);
+                    "growth", "light", "water", "drop", "loottable", "replant", "giveseed", "reload"), a[0]);
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
         if (a.length == 2) {
             return switch (sub) {
-                case "delete", "info", "seed", "placeon", "stages", "growth", "light", "water", "drop", "replant" ->
+                case "delete", "info", "seed", "placeon", "stages", "growth", "light", "water", "drop", "loottable", "replant" ->
                         filter(new ArrayList<>(module.ids()), a[1]);
                 case "giveseed" -> filter(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), a[1]);
                 default -> List.of();
