@@ -103,12 +103,31 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
         for (CustomBlockDef def : defs.values()) {
             if (def.stateIndex() < 0) {
                 int idx = nextFreeState();
+                if (idx < 0) {
+                    // Capacité épuisée : ne PAS assigner -1 (forIndex(-1) collisionnerait avec l'état 799).
+                    log().warn("Capacité de blocs custom épuisée (" + BlockStateMap.capacity()
+                            + ") : le bloc '" + def.id() + "' reste sans état et ne sera pas rendu.");
+                    continue;
+                }
                 def.setStateIndex(idx);
                 store.save(def);
             }
             byState.put(def.stateIndex(), def);
         }
     }
+
+    /** Capacité maximale de blocs custom (combinaisons d'état note_block). */
+    public int capacity() { return BlockStateMap.capacity(); }
+
+    /** Nombre de blocs custom ayant déjà un état note_block assigné. */
+    public int usedStateCount() {
+        int n = 0;
+        for (CustomBlockDef d : defs.values()) if (d.stateIndex() >= 0) n++;
+        return n;
+    }
+
+    /** True si toutes les combinaisons d'état note_block sont prises (création impossible). */
+    public boolean atCapacity() { return nextFreeState() < 0; }
 
     private int nextFreeState() {
         java.util.Set<Integer> used = new java.util.HashSet<>(byState.keySet());
@@ -165,7 +184,16 @@ public final class CustomBlockManagerModule extends AbstractModule implements Cu
     public Map<String, CustomBlockDef> rawDefs() { return defs; }
 
     public void put(CustomBlockDef def) {
-        if (def.stateIndex() < 0) def.setStateIndex(nextFreeState());
+        if (def.stateIndex() < 0) {
+            int idx = nextFreeState();
+            if (idx < 0) {
+                // Capacité épuisée : refus plutôt qu'assignation de -1 (collision silencieuse).
+                log().warn("Capacité de blocs custom épuisée (" + BlockStateMap.capacity()
+                        + ") : '" + def.id() + "' non enregistré (aucun état note_block libre).");
+                return;
+            }
+            def.setStateIndex(idx);
+        }
         defs.put(def.id(), def);
         byState.put(def.stateIndex(), def);
         store.save(def);

@@ -37,21 +37,25 @@ public final class BlockStateMap {
             "xylophone", "iron_xylophone", "cow_bell", "didgeridoo", "bit", "banjo", "pling",
             "zombie", "skeleton", "creeper", "dragon", "wither_skeleton", "piglin", "custom_head");
 
-    private static final int NOTES = 25;
+    static {
+        // Garde-fou : le cœur pur (BlockStateCoord) suppose 16 instruments classiques. S'il diverge
+        // du tableau ci-dessus, l'attribution d'état serait fausse → on échoue tôt (fail-fast).
+        if (INSTRUMENTS.length != BlockStateCoord.INSTRUMENT_COUNT) {
+            throw new IllegalStateException("BlockStateMap/BlockStateCoord désynchronisés : "
+                    + INSTRUMENTS.length + " != " + BlockStateCoord.INSTRUMENT_COUNT);
+        }
+    }
 
     private BlockStateMap() {}
 
-    public static int capacity() { return INSTRUMENTS.length * NOTES * 2; } // 800
+    public static int capacity() { return BlockStateCoord.capacity(); } // 800
 
     public static List<String> allInstrumentNames() { return ALL_INSTRUMENT_NAMES; }
 
     public static State forIndex(int index) {
-        int i = ((index % capacity()) + capacity()) % capacity();
-        int instr = i / (NOTES * 2);
-        int rem = i % (NOTES * 2);
-        int note = rem / 2;
-        boolean powered = (rem % 2) == 1;
-        return new State((Instrument) INSTRUMENTS[instr][0], (String) INSTRUMENTS[instr][1], note, powered);
+        BlockStateCoord c = BlockStateCoord.fromIndex(index);
+        Object[] entry = INSTRUMENTS[c.instrumentIndex()];
+        return new State((Instrument) entry[0], (String) entry[1], c.note(), c.powered());
     }
 
     /** Applique l'état d'index donné à une donnée de note block. */
@@ -70,8 +74,6 @@ public final class BlockStateMap {
             if (INSTRUMENTS[k][0] == instr) { instrIdx = k; break; }
         }
         if (instrIdx < 0) return -1;
-        int note = data.getNote().getId();
-        boolean powered = data.isPowered();
-        return instrIdx * (NOTES * 2) + note * 2 + (powered ? 1 : 0);
+        return new BlockStateCoord(instrIdx, data.getNote().getId(), data.isPowered()).toIndex();
     }
 }

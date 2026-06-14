@@ -78,10 +78,22 @@ public final class CustomBlockSubCommand implements SubCommand {
         if (a.length < 2) { msg(s, "<red>/moon block create <id>"); return; }
         String id = a[1].toLowerCase(Locale.ROOT);
         if (module.rawDef(id) != null) { msg(s, "<red>Cet id existe déjà."); return; }
+        // Garde-fou capacité : sans ce refus, le bloc recevrait un état -1 qui collisionne
+        // silencieusement avec l'état 799 (texture/modèle d'un autre bloc).
+        if (module.atCapacity()) {
+            msg(s, "<red>Capacité maximale atteinte (" + module.capacity()
+                    + " blocs custom). Supprime un bloc existant avant d'en créer un nouveau.");
+            return;
+        }
         CustomBlockDef d = new CustomBlockDef(id);
         module.put(d);
+        if (d.stateIndex() < 0) { msg(s, "<red>Échec : aucun état note_block libre."); return; }
         msg(s, "<green>Bloc <white>" + id + "<green> créé (état " + d.stateIndex() + "). "
                 + "Texture : <white>blocks-textures/" + id + ".png<green> ou via l'IA, puis <white>/moon block pack");
+        int used = module.usedStateCount();
+        if (used >= module.capacity() * 9 / 10) {
+            msg(s, "<yellow>⚠ " + used + "/" + module.capacity() + " états utilisés — proche de la limite.");
+        }
     }
 
     private void list(CommandSender s) {
