@@ -49,4 +49,9 @@ public final class LootEntry {
         if (countMax <= countMin) return countMin;
         return countMin + rng.nextInt(countMax - countMin + 1);
     }
+
+    /** Copie de cette entrée avec un poids différent (le reste inchangé). Pur — l'entrée est immuable. */
+    public LootEntry withWeight(int newWeight) {
+        return new LootEntry(itemId, material, newWeight, countMin, countMax, tableRef);
+    }
 }
