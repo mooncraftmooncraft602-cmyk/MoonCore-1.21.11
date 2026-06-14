@@ -66,6 +66,7 @@ public final class CustomItemSubCommand implements SubCommand {
                 case "rarity" -> rarity(s, a);
                 case "model" -> model(s, a);
                 case "recipe" -> recipe(s, a);
+                case "smithing", "forge" -> smithing(s, a);
                 case "drop" -> drop(s, a);
                 case "reward" -> reward(s, a);
                 case "export" -> msg(s, "<gray>Les définitions sont déjà des fichiers : <white>items/" + arg(a, 1, "<id>") + ".yml");
@@ -396,6 +397,34 @@ public final class CustomItemSubCommand implements SubCommand {
         d.setRecipe(r); module.put(d);
         module.recipeManager().unregisterAll(); module.recipeManager().registerAll();
         msg(s, "<green>Recette enregistrée pour " + d.id());
+    }
+
+    private void smithing(CommandSender s, String[] a) {
+        // /moon item smithing set <id> <base> <addition> [template]  |  smithing clear <id>
+        if (a.length < 3) { msg(s, "<red>/moon item smithing <set|clear> <id> [base addition [template]]"); return; }
+        String op = a[1].toLowerCase(Locale.ROOT);
+        CustomItemDef d = module.rawDef(a[2]);
+        if (d == null) { msg(s, "<red>Id inconnu."); return; }
+        if (op.equals("clear")) {
+            d.setSmithing(null); module.put(d);
+            module.recipeManager().unregisterAll(); module.recipeManager().registerAll();
+            msg(s, "<green>Recette de forge supprimée."); return;
+        }
+        if (!op.equals("set") || a.length < 5) {
+            msg(s, "<red>/moon item smithing set <id> <base> <addition> [template]");
+            msg(s, "<gray>base/addition/template = Material ou custom:<itemId>. Ex : smithing set epee_legendaire custom:epee_base NETHERITE_INGOT");
+            return;
+        }
+        CustomItemDef.RecipeIngredient base = CustomItemDef.RecipeIngredient.parse(a[3]);
+        CustomItemDef.RecipeIngredient addition = CustomItemDef.RecipeIngredient.parse(a[4]);
+        if (base == null) { msg(s, "<red>Base inconnue : " + a[3]); return; }
+        if (addition == null) { msg(s, "<red>Addition inconnue : " + a[4]); return; }
+        CustomItemDef.RecipeIngredient template = a.length >= 6 ? CustomItemDef.RecipeIngredient.parse(a[5]) : null;
+        d.setSmithing(new CustomItemDef.SmithingRecipe(template, base, addition));
+        module.put(d);
+        module.recipeManager().unregisterAll(); module.recipeManager().registerAll();
+        msg(s, "<green>Recette de forge enregistrée pour " + d.id() + " <gray>(base " + a[3] + " + addition " + a[4]
+                + (template != null ? " + patron " + a[5] : "") + ").");
     }
 
     private void drop(CommandSender s, String[] a) {
