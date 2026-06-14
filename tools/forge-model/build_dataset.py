@@ -42,14 +42,14 @@ def _ramp_line(name: str, hexes: list[str]) -> str:
 
 
 def _theme_ramp(th: lexicon.Theme, rng: random.Random) -> list[str]:
-    """Rampe d'un thème. Variation FAIBLE : signal thème->teinte net (le modèle apprend la bonne teinte)."""
-    hue = th["hue"] + rng.uniform(-3, 3)
-    sat = max(0.0, min(1.0, th["sat"] + rng.uniform(-0.04, 0.04)))
+    """Rampe d'un thème. Variation TRÈS faible : signal thème->teinte maximalement net et cohérent."""
+    hue = th["hue"] + rng.uniform(-2, 2)
+    sat = max(0.0, min(1.0, th["sat"] + rng.uniform(-0.03, 0.03)))
     hl = th["hl"]
     lo = rng.uniform(0.12, 0.15)
-    hi = rng.uniform(0.88, 0.93)
+    hi = rng.uniform(0.88, 0.92)
     return colors.make_ramp(hue, sat, stops=STOPS, light_lo=lo, light_hi=hi,
-                            highlight_hue=hl, rng=rng, hue_jitter=1.5)
+                            highlight_hue=hl, rng=rng, hue_jitter=1.0)
 
 
 def _make_name(th: lexicon.Theme, rng: random.Random) -> str:
@@ -78,31 +78,29 @@ def _make_name(th: lexicon.Theme, rng: random.Random) -> str:
 def generate(target_chars: int, seed: int, sample: bool) -> list[str]:
     rng = random.Random(seed)
     lines: list[str] = []
-    total = 0
 
-    # 1) ancrage couleurs nommées (monochrome ramp autour de la couleur)
+    # 1) ancrage couleurs nommées (rampe autour de la couleur)
     for name, hx in CSS_COLORS.items():
         body = colors.hex_to_rgb(hx)
-        for _ in range(2):
-            ramp = colors.ramp_from_rgb(body, stops=STOPS, rng=rng, hue_jitter=4.0)
+        for _ in range(3):
+            ramp = colors.ramp_from_rgb(body, stops=STOPS, rng=rng, hue_jitter=3.0)
             for disp in (name.capitalize(), f"Couleur {name}", f"{name} color"):
-                ln = _ramp_line(disp, ramp)
-                lines.append(ln); total += len(ln)
+                lines.append(_ramp_line(disp, ramp))
 
-    # 2) cœur : thèmes x matériaux x adjectifs, plusieurs variantes de palette par nom
-    limit = 200 if sample else 10**9
-    while total < target_chars and len(lines) < limit:
-        th = rng.choice(lexicon.THEMES)
-        name = _make_name(th, rng)
-        variants = 1 if sample else rng.randint(1, 2)
-        for _ in range(variants):
-            ramp = _theme_ramp(th, rng)
-            ln = _ramp_line(name, ramp)
-            lines.append(ln); total += len(ln)
-            if total >= target_chars and not sample:
-                break
+    # 2) cœur ÉQUILIBRÉ : chaque thème reçoit le MÊME nombre d'exemples (aucun thème sous-appris).
+    n_themes = len(lexicon.THEMES)
+    if sample:
+        per_theme = 4
+    else:
+        avg_line = 64
+        per_theme = max(400, target_chars // (n_themes * avg_line))
+    for th in lexicon.THEMES:
+        for _ in range(per_theme):
+            name = _make_name(th, rng)
+            lines.append(_ramp_line(name, _theme_ramp(th, rng)))
+
     rng.shuffle(lines)
-    return lines
+    return lines[:200] if sample else lines
 
 
 def write_outputs(lines: list[str], out_dir: str, sample: bool) -> None:

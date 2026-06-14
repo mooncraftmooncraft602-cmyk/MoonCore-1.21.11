@@ -34,6 +34,34 @@ class ForgeRobustnessTest {
         assertEquals("arcane", PaletteResolver.fromName("Bâton du Sorcier").name());
         assertEquals("acier", PaletteResolver.fromName("Lame d'Acier").name());
         assertEquals("sang", PaletteResolver.fromName("Dague Sanguine").name());
+        // thèmes étendus (≥30 au total)
+        assertEquals("soleil", PaletteResolver.fromName("Couronne Solaire").name());
+        assertEquals("dragon", PaletteResolver.fromName("Écailles de Dragon").name());
+        assertEquals("phenix", PaletteResolver.fromName("Plumes du Phénix").name());
+        assertEquals("jade", PaletteResolver.fromName("Statuette de Jade").name());
+        assertEquals("saphir", PaletteResolver.fromName("Pendentif Saphir").name());
+        assertEquals("turquoise", PaletteResolver.fromName("Lame Turquoise").name());
+        assertEquals("ender", PaletteResolver.fromName("Gantelets de l'Ender").name());
+        assertEquals("rose", PaletteResolver.fromName("Bouclier de Sakura").name());
+        assertEquals("corail", PaletteResolver.fromName("Trident de Corail").name());
+        assertEquals("foudre", PaletteResolver.fromName("Marteau de la Foudre").name());
+        // marche pour outils / armures / minerais (matériaux), pas que les armes
+        assertEquals("feu", PaletteResolver.fromName("Pioche Ardente").name());
+        assertEquals("glace", PaletteResolver.fromName("Plastron Glacial").name());
+        assertEquals("poison", PaletteResolver.fromName("Casque Venimeux").name());
+        assertEquals("or", PaletteResolver.fromName("Minerai Sacré").name());
+    }
+
+    @Test
+    void at_least_30_distinct_themes() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (String n : new String[]{"vent","feu","glace","foudre","ombre","poison","sang","or","nature",
+                "ocean","soleil","lune","ender","nether","rose","arcane","cuivre","cristal","acier","sable",
+                "rubis","obsidienne","corail","menthe","lavande","citron","chocolat","cendre","chaos","dragon",
+                "phenix","vampire","spectral","jade","saphir","turquoise"}) {
+            seen.add(PaletteResolver.fromName("Lame de " + n).name());
+        }
+        assertTrue(seen.size() >= 30, "au moins 30 thèmes distincts reconnus, vu : " + seen.size());
     }
 
     @Test

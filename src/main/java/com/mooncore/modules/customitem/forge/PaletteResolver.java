@@ -39,55 +39,73 @@ public final class PaletteResolver {
         return false;
     }
 
+    /** Un thème : nom canonique, teinte/saturation de base, teinte de reflet (-1 = pas de reflet), mots-clés. */
+    private record Theme(String name, double hue, double sat, double hl, String[] keys) {}
+
+    private static Theme t(String name, double hue, double sat, double hl, String keys) {
+        return new Theme(name, hue, sat, hl, keys.split(" "));
+    }
+
+    /** 36 thèmes distincts (teintes réparties), miroir du lexique d'entraînement du modèle. */
+    private static final java.util.List<Theme> THEMES = java.util.List.of(
+        t("vent", 145, .75, 150, "vent wind air aero tempete storm zephyr tornade cyclone bourrasque gale aerien"),
+        t("feu", 12, .95, 44, "feu fire flamme flame brasier infernal magma lave lava ardent blaze ember braise pyro ignis embrase"),
+        t("glace", 200, .80, 188, "glace ice gel givre frost frozen neige snow blizzard polaire arctique cryo gele glacial hiver"),
+        t("foudre", 268, .72, 52, "foudre thunder eclair lightning orage electrique voltaique tonnerre volt spark fulgur galvanique"),
+        t("ombre", 272, .50, 286, "ombre tenebre tenebres shadow nuit night void neant obscur umbra occulte sombre noirceur"),
+        t("poison", 88, .85, 72, "poison venin venom toxique toxic acide acid corrosif venimeux putride peste miasme noxious"),
+        t("sang", 358, .85, 8, "sang blood sanguin crimson carnage gore ecarlate hemo saignant boucher"),
+        t("or", 46, .92, 52, "or gold dore royal divin holy sacre celeste lumiere light radiant saint aureum glorieux imperial"),
+        t("nature", 110, .62, 95, "nature foret forest terre earth emeraude emerald sylvestre feuille leaf bois wood verdant druide"),
+        t("ocean", 212, .85, 195, "ocean mer sea aqua eau water marine abyssal tide maree naval ondine aquatique neptune"),
+        t("soleil", 32, .95, 48, "soleil sun solaire solar aurore dawn midi helios ensoleille estival"),
+        t("lune", 226, .32, 220, "lune moon lunaire lunar argent silver stellaire etoile star selene nocturne astral"),
+        t("ender", 168, .60, 286, "ender enderite chorus warp teleport endermite perle warped"),
+        t("nether", 348, .55, 30, "nether enfer hell wither ame soul wraith damne maudit"),
+        t("rose", 332, .70, 342, "rose pink amour love fleur flower sakura cerise blossom petale romantique"),
+        t("arcane", 286, .65, 292, "arcane amethyste amethyst magie magic mystique mystic sorcier wizard mage enchante rune runique ensorcele"),
+        t("cuivre", 24, .70, 36, "cuivre copper bronze rouille rust laiton oxyde"),
+        t("cristal", 186, .70, 190, "cristal crystal diamant diamond prisme prism gemme scintillant etincelant"),
+        t("acier", 210, .08, -1, "acier iron fer steel metal chrome gris gray grey titane titan blinde forge"),
+        t("sable", 42, .72, 52, "sable sand desert dune ambre amber topaze topaz aride"),
+        t("rubis", 348, .88, 4, "rubis ruby grenat garnet vermillon"),
+        t("obsidienne", 280, .35, 250, "obsidienne obsidian onyx basalte basalt tenebreux"),
+        t("corail", 10, .78, 24, "corail coral saumon salmon peche"),
+        t("menthe", 158, .60, 150, "menthe mint fraicheur menthole"),
+        t("lavande", 278, .45, 295, "lavande lavender lilas lilac prune mauve glycine"),
+        t("citron", 62, .90, 56, "citron lemon lime citrus agrume soufre sulfur souffre"),
+        t("chocolat", 24, .50, 36, "chocolat chocolate cafe coffee brun brown boue mud terreux cacao"),
+        t("cendre", 220, .05, -1, "cendre ash fumee smoke brume mist fog nuage cloud poussiere"),
+        t("chaos", 308, .60, 120, "chaos corrompu corrupt corruption eldritch folie madness demence aberrant"),
+        t("dragon", 16, .82, 44, "dragon draconique drake wyrm draconien"),
+        t("phenix", 22, .95, 52, "phenix phoenix renaissance immortel"),
+        t("vampire", 352, .60, 358, "vampire vampirique sombrelame demoniaque demon"),
+        t("spectral", 182, .25, 195, "spectral fantome ghost ethere pale revenant hante"),
+        t("jade", 162, .62, 168, "jade olivine peridot malachite"),
+        t("saphir", 228, .80, 215, "saphir sapphire azur azure cobalt indigo"),
+        t("turquoise", 176, .72, 180, "turquoise teal sarcelle lagon cyan")
+    );
+
     /**
-     * Palette pour un nom donné. Le 1er thème reconnu gagne ; sinon repli par hash de teinte. Garantit
-     * toujours une palette non nulle.
+     * Palette pour un nom donné. Le 1er thème reconnu (par mot entier) gagne ; sinon repli par hash de
+     * teinte. Garantit toujours une palette non nulle, pour TOUT nom.
      */
     public static ThemePalette fromName(String name) {
         String s = normalize(name);
-
-        if (has(s, "vent", "wind", "aero", "tempete", "storm", "air", "tornade", "cyclone", "zephyr"))
-            return ThemePalette.ramp("vent", 0x1b5e20, 0x66bb6a, 0xe8f5e9);            // vert + blanc
-        if (has(s, "feu", "fire", "flamme", "flame", "brasier", "infernal", "magma", "lave", "lava", "ardent", "blaze", "ember"))
-            return ThemePalette.ramp("feu", 0x7f1d00, 0xef6c00, 0xffe082);            // rouge → orange → jaune
-        if (has(s, "glace", "ice", "gel", "givre", "frost", "frozen", "neige", "snow", "blizzard", "polaire", "arctique"))
-            return ThemePalette.ramp("glace", 0x0d47a1, 0x4fc3f7, 0xe1f5fe);          // bleu → cyan → blanc
-        if (has(s, "foudre", "thunder", "eclair", "lightning", "orage", "electric", "voltaic", "volt", "tonnerre", "storm"))
-            return ThemePalette.ramp("foudre", 0x4a148c, 0xffd54f, 0xfffde7);         // violet → jaune → blanc
-        if (has(s, "ombre", "tenebre", "shadow", "dark", "nuit", "night", "void", "neant", "abyss", "abysse", "obscur", "noir"))
-            return ThemePalette.ramp("ombre", 0x0a0a14, 0x4a148c, 0x9575cd);          // noir → violet
-        if (has(s, "poison", "venin", "venom", "toxic", "toxique", "acide", "acid", "corrosif", "venimeux"))
-            return ThemePalette.ramp("poison", 0x1b5e20, 0x7cb342, 0xccff90);         // vert toxique
-        if (has(s, "sang", "blood", "sanguin", "crimson", "demon", "demoniaque", "carnage", "gore"))
-            return ThemePalette.ramp("sang", 0x4a0000, 0xc62828, 0xff8a80);           // rouge sombre
-        if (has(s, "or", "gold", "dore", "royal", "divin", "holy", "sacre", "celeste", "lumiere", "light", "radiant", "saint"))
-            return ThemePalette.ramp("or", 0x7c5400, 0xffca28, 0xfff8e1);             // or → blanc chaud
-        if (has(s, "nature", "foret", "forest", "terre", "earth", "emeraude", "emerald", "sylvestre", "feuille", "leaf", "bois", "wood"))
-            return ThemePalette.ramp("nature", 0x1b3a0f, 0x43a047, 0xc5e1a5);         // vert forêt
-        if (has(s, "ocean", "mer", "sea", "aqua", "eau", "water", "marine", "abyssal", "tide", "maree", "naval"))
-            return ThemePalette.ramp("ocean", 0x012e40, 0x0097a7, 0xb2ebf2);          // bleu profond → cyan
-        if (has(s, "soleil", "sun", "solaire", "solar", "aurore", "dawn", "midi"))
-            return ThemePalette.ramp("soleil", 0xbf360c, 0xffa726, 0xfff59d);         // orange solaire
-        if (has(s, "lune", "moon", "lunaire", "lunar", "argent", "silver", "stellaire", "etoile", "star"))
-            return ThemePalette.ramp("lune", 0x263859, 0x90a4ae, 0xeceff1);           // bleu nuit → argent
-        if (has(s, "ender", "enderite", "chorus", "endermite", "perle", "warp", "teleport"))
-            return ThemePalette.ramp("ender", 0x06231f, 0x1de9b6, 0xd1c4e9);          // teal → mauve
-        if (has(s, "nether", "enfer", "hell", "wither", "wraith", "soul", "ame"))
-            return ThemePalette.ramp("nether", 0x2a0a0a, 0x8e24aa, 0x4dd0e1);         // sombre → ame
-        if (has(s, "rose", "pink", "amour", "love", "fleur", "flower", "sakura", "cerise"))
-            return ThemePalette.ramp("rose", 0x880e4f, 0xec407a, 0xfce4ec);           // rose
-        if (has(s, "violet", "purple", "amethyste", "amethyst", "magie", "magic", "arcane", "mystique", "mystic", "sorcier", "wizard", "mage"))
-            return ThemePalette.ramp("arcane", 0x311b92, 0x7e57c2, 0xede7f6);         // violet arcane
-        if (has(s, "cuivre", "copper", "bronze", "rouille", "rust"))
-            return ThemePalette.ramp("cuivre", 0x5d2e0a, 0xc97b4a, 0xffccbc);
-        if (has(s, "diamant", "diamond", "cristal", "crystal", "saphir", "sapphire"))
-            return ThemePalette.ramp("cristal", 0x006064, 0x26c6da, 0xe0f7fa);
-        if (has(s, "fer", "iron", "acier", "steel", "metal", "chrome", "gris", "gray", "grey"))
-            return ThemePalette.ramp("acier", 0x37474f, 0x90a4ae, 0xeceff1);
-        if (has(s, "arc-en-ciel", "rainbow", "prisme", "prism", "spectre", "spectral", "chromatique"))
-            return rainbow();
-
+        if (has(s, "arc-en-ciel", "rainbow", "prisme", "spectre", "chromatique")) return rainbow();
+        for (Theme th : THEMES) {
+            if (has(s, th.keys())) return rampOf(th);
+        }
         return fromHash(s.isBlank() ? "item" : s);
+    }
+
+    /** Rampe sombre→clair d'un thème (HSL), reflet désaturé/éclairci — cohérent avec le dataset du modèle. */
+    private static ThemePalette rampOf(Theme th) {
+        int dark = hsl(th.hue(), Math.min(1.0, th.sat() + 0.05), 0.17);
+        int mid = hsl(th.hue(), th.sat(), 0.50);
+        double hlHue = th.hl() >= 0 ? th.hl() : th.hue();
+        int light = hsl(hlHue, th.sat() * 0.45, 0.86);
+        return ThemePalette.ramp(th.name(), dark, mid, light);
     }
 
     /** Repli : teinte déterministe issue du hash du nom → rampe sombre/vif/clair de cette teinte. */
