@@ -370,6 +370,7 @@ public final class AiActionValidator {
             JsonObject sr = root.getAsJsonObject("seed-return");
             d.setSeedReturnRange(intOf(sr, "min", 0), intOf(sr, "max", 1));
         }
+        d.setLootTableId(str(root, "loot-table", null));
         return d;
     }
 

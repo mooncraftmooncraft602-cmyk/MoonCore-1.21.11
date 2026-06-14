@@ -78,9 +78,20 @@ public final class CropListener implements Listener {
 
     private void harvest(Player p, World w, Location loc, CropDef def) {
         ThreadLocalRandom rng = ThreadLocalRandom.current();
-        int dropAmt = randomBetween(rng, def.dropMin(), def.dropMax());
-        ItemStack drop = module.harvestDrop(def, dropAmt);
-        if (drop != null) w.dropItemNaturally(loc, drop);
+        if (def.usesLootTable()) {
+            // Récolte = tirage de la table de loot référencée (repli sur le drop fixe si elle ne produit rien).
+            java.util.List<ItemStack> loot = module.lootDrops(def, rng);
+            if (loot.isEmpty()) {
+                ItemStack drop = module.harvestDrop(def, randomBetween(rng, def.dropMin(), def.dropMax()));
+                if (drop != null) w.dropItemNaturally(loc, drop);
+            } else {
+                for (ItemStack stack : loot) w.dropItemNaturally(loc, stack);
+            }
+        } else {
+            int dropAmt = randomBetween(rng, def.dropMin(), def.dropMax());
+            ItemStack drop = module.harvestDrop(def, dropAmt);
+            if (drop != null) w.dropItemNaturally(loc, drop);
+        }
 
         int seedAmt = randomBetween(rng, def.seedReturnMin(), def.seedReturnMax());
         ItemStack seeds = module.seedItem(def, seedAmt);

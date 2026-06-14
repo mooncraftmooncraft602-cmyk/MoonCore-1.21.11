@@ -263,6 +263,34 @@ public final class CropManagerModule extends AbstractModule {
         return new org.bukkit.inventory.ItemStack(def.dropMaterial(), amount);
     }
 
+    /**
+     * Tire la table de loot référencée par la culture ({@link CropDef#lootTableId}) et matérialise les
+     * résultats en ItemStacks. Liste vide si la culture n'utilise pas de table, si le module loot est
+     * absent ou si la table est introuvable (le drop fixe reste utilisé en repli côté listener).
+     */
+    public java.util.List<org.bukkit.inventory.ItemStack> lootDrops(CropDef def, java.util.random.RandomGenerator rng) {
+        java.util.List<org.bukkit.inventory.ItemStack> out = new java.util.ArrayList<>();
+        if (def == null || !def.usesLootTable()) return out;
+        var loot = plugin().moduleManager().get(com.mooncore.modules.loot.LootManagerModule.class);
+        if (loot == null) return out;
+        for (com.mooncore.modules.loot.LootResult r : loot.roll(def.lootTableId(), rng)) {
+            org.bukkit.inventory.ItemStack stack = toItemStack(r);
+            if (stack != null) out.add(stack);
+        }
+        return out;
+    }
+
+    /** Convertit un résultat de loot en ItemStack (item custom prioritaire, sinon Material). */
+    private org.bukkit.inventory.ItemStack toItemStack(com.mooncore.modules.loot.LootResult r) {
+        if (r == null || r.count() <= 0) return null;
+        if (r.isCustom()) {
+            var ci = customItems();
+            return ci == null ? null : ci.create(r.itemId(), r.count());
+        }
+        if (r.material() == null || r.material().isAir()) return null;
+        return new org.bukkit.inventory.ItemStack(r.material(), r.count());
+    }
+
     /** Item graine (custom prioritaire, sinon Material). {@code null} si quantité nulle. */
     public org.bukkit.inventory.ItemStack seedItem(CropDef def, int amount) {
         if (def == null || amount <= 0) return null;

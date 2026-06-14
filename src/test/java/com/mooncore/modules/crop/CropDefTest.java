@@ -43,6 +43,24 @@ class CropDefTest {
     }
 
     @Test
+    void lootTableReferenceRoundTrips() {
+        CropDef d = new CropDef("magic_berry");
+        assertFalse(d.usesLootTable());                 // aucun par défaut
+        d.setLootTableId("  Magic_Harvest  ");          // normalisé (trim + lower)
+        assertTrue(d.usesLootTable());
+        assertEquals("magic_harvest", d.lootTableId());
+
+        MemoryConfiguration cfg = new MemoryConfiguration();
+        d.save(cfg);
+        CropDef back = CropDef.load("magic_berry", cfg);
+        assertEquals("magic_harvest", back.lootTableId());
+        assertTrue(back.usesLootTable());
+
+        d.setLootTableId("");                           // vide → désactive
+        assertFalse(d.usesLootTable());
+    }
+
+    @Test
     void clampsBoundsAndStageKeys() {
         CropDef d = new CropDef("test");
         d.setStages(99);                 // borné à 16

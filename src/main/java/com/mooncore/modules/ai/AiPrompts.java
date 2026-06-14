@@ -292,10 +292,11 @@ public final class AiPrompts {
                   "requires-water": booléen (exige une terre labourée hydratée),
                   "drop": { "item": "Material ou custom:<itemId>", "min": entier, "max": entier },
                   "seed-return": { "min": entier, "max": entier },
-                  "replantable": booléen (repart à l'étape 0 après récolte au lieu de disparaître)
+                  "replantable": booléen (repart à l'étape 0 après récolte au lieu de disparaître),
+                  "loot-table": "id optionnel d'une table de loot ; si présent, la récolte tire cette table au lieu du drop fixe"
                 }
                 Valeurs équilibrées : 4 étapes, 600-1200 ticks/étape, min-light 9, drop 1-2,
-                seed-return 0-1. Réponds en français pour le nom.
+                seed-return 0-1. Omets loot-table sauf demande explicite. Réponds en français pour le nom.
                 """;
     }
 

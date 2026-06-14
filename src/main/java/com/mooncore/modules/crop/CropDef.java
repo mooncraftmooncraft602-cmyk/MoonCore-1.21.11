@@ -41,6 +41,7 @@ public final class CropDef {
     private int seedReturnMin = 0;                  // graines rendues à la récolte
     private int seedReturnMax = 1;
     private boolean replantable = true;            // remet l'étape 0 au lieu de casser
+    private String lootTableId = null;             // si non null : récolte = tirage de cette table de loot (prioritaire sur drop fixe)
 
     public CropDef(String id) {
         this.id = id.toLowerCase(Locale.ROOT);
@@ -99,6 +100,13 @@ public final class CropDef {
     public boolean replantable() { return replantable; }
     public void setReplantable(boolean b) { this.replantable = b; }
 
+    public String lootTableId() { return lootTableId; }
+    public void setLootTableId(String id) {
+        this.lootTableId = (id == null || id.isBlank()) ? null : id.toLowerCase(Locale.ROOT).trim();
+    }
+    /** True si la récolte doit tirer une table de loot plutôt que le drop fixe. */
+    public boolean usesLootTable() { return lootTableId != null; }
+
     public void save(ConfigurationSection s) {
         s.set("display-name", displayName);
         s.set("seed", seed.name());
@@ -116,6 +124,7 @@ public final class CropDef {
         s.set("seed-return.min", seedReturnMin);
         s.set("seed-return.max", seedReturnMax);
         s.set("replantable", replantable);
+        s.set("loot-table", lootTableId);
     }
 
     public static CropDef load(String id, ConfigurationSection s) {
@@ -137,6 +146,7 @@ public final class CropDef {
         d.setDropRange(s.getInt("drop.min", 1), s.getInt("drop.max", 2));
         d.setSeedReturnRange(s.getInt("seed-return.min", 0), s.getInt("seed-return.max", 1));
         d.replantable = s.getBoolean("replantable", true);
+        d.setLootTableId(s.getString("loot-table", null));
         return d;
     }
 
